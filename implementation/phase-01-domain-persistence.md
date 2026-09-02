@@ -15,7 +15,7 @@ Phase 00 COMPLETE.
 Domain modeling, repository pattern, SQLAlchemy session boundaries, Alembic migrations, optimistic lifecycle transitions, UUID/ULID identifiers, transactional consistency.
 
 ## Planned Deliverables
-Domain models for collection, document, document version, page, chunk, ingestion job, query/audit metadata; SQLAlchemy mappings; repository interfaces/adapters; initial migrations.
+Domain models for collection (with `owner_id`), document, document version (full ADR-011 lifecycle enum), page, chunk, ingestion job, query/audit metadata, API principal, and `RetrievedCandidate`; SQLAlchemy mappings; repository interfaces/adapters; initial migrations. Hash uniqueness is per collection among non-deleted versions.
 
 ## Implementation Tasks
 1. Define enums and immutable identifiers.

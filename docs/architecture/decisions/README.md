@@ -1,8 +1,8 @@
 # Step 2 — Architecture Decision Workshop
 
 **Project:** Cited RAG Bot  
-**Status:** Accepted after Step 9 architecture review  
-**Version:** 1.0
+**Status:** Accepted after Step 9 architecture review; V1 contracts frozen in ADR-011  
+**Version:** 1.1
 
 ## Purpose
 
@@ -39,20 +39,23 @@ The ADR index is the authoritative status registry for these decisions. Detailed
 | ADR-008 | Original PDF storage | Object-storage abstraction; local filesystem in development and S3-compatible production adapter | Accepted |
 | ADR-009 | Model/provider boundaries | Embedding, reranking, generation, parser, storage and retrieval infrastructure behind explicit adapters | Accepted |
 | ADR-010 | Evaluation gates | Versioned golden dataset and retrieval/citation/no-answer regression gates | Accepted |
+| ADR-011 | V1 locked policies | Lifecycle, versioning, Qdrant named vectors, READY filters, auth, citations, fail-closed, worker, eval ablations | Accepted |
+
+Individual ADR files are **Accepted**. Do not treat leftover “Proposed” language in older revisions as license to redesign. ADR-011 wins on any remaining contradiction.
 
 ## Step 9 Frozen Policies
 
 ### Retrieval failure policy
 
-V1 fails the query closed when a mandatory dense or sparse retrieval dependency fails. It must not silently return a degraded dense-only or sparse-only answer. A future degraded mode may be introduced only through a new ADR and evaluation evidence.
+V1 fails the query closed when a mandatory dense or sparse retrieval **dependency** fails. It must not silently return a degraded dense-only or sparse-only answer. One retriever returning **zero hits** is not a dependency failure; fuse the surviving list. A future degraded mode may be introduced only through a new ADR and evaluation evidence. Evaluation ablations use `EvaluationRunConfig`, not production degraded mode.
 
 ### Sparse retrieval implementation
 
-Sparse retrieval remains inside the Qdrant retrieval boundary for V1. The exact sparse encoder/representation is a configuration and evaluation choice finalized in Phase 07; adding a second lexical search engine is out of scope unless evaluation demonstrates a material need.
+Sparse retrieval remains inside the Qdrant retrieval boundary for V1. The collection schema uses named vectors `dense` and `sparse` on the same chunk UUID, created in Phase 06. V1 default encoder is FastEmbed BM42 behind `SparseEncoder`. Adding a second lexical search engine is out of scope unless evaluation demonstrates a material need.
 
 ### Reranking
 
-Use a provider-neutral `Reranker` interface. Prefer a local cross-encoder for the baseline so the project can evaluate reranking independently of a hosted vendor. Hosted adapters may be added without changing orchestration.
+Use a provider-neutral `Reranker` interface. Prefer a local cross-encoder for the baseline so the project can evaluate reranking independently of a hosted vendor. Hosted adapters may be added without changing orchestration. Production reranker failure is `RERANKER_ERROR`, not silent fused-order fallback.
 
 ### Source PDF retention
 
@@ -60,7 +63,7 @@ Retain the original PDF for the lifetime of the active document version. Deletin
 
 ### Authentication boundary
 
-Portfolio V1 uses a simple API-key authentication boundary and strict collection scoping. Full enterprise IAM, SSO, RBAC and multi-organization tenancy remain out of scope. The architecture must not make later user-level authorization impossible.
+Portfolio V1 uses API-key authentication (`Authorization: Bearer <api_key>`) and strict collection scoping. `Collection.owner_id` is the API principal. Document GET/DELETE authorize through `document.collection_id`. Full enterprise IAM, SSO, RBAC and multi-organization tenancy remain out of scope. The architecture must not make later user-level authorization impossible. Auth exists from Phase 02; Phase 18 hardens it.
 
 ### Evaluation thresholds
 
@@ -82,6 +85,8 @@ Every retrieval operation is scoped to a collection. Every indexed evidence item
 - `page_number`
 - `chunk_id`
 - `chunk_order`
+
+Only the **active READY** document version is searchable.
 
 ### Citation integrity
 

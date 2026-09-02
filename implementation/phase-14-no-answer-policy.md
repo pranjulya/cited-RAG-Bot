@@ -6,7 +6,7 @@
 Implement explicit insufficient-evidence behavior so unsupported questions do not become hallucinated answers.
 
 ## Prerequisites
-Phases 10–13 COMPLETE.
+Phases 11–13 COMPLETE. Phase 12 may emit structured abstention; this phase owns policy.
 
 ## References
 PRD FR-14, HLD No-Answer Flow, evaluation strategy.
@@ -20,7 +20,7 @@ No-answer policy service, decision reasons, configuration hooks, evaluation inst
 ## Tasks
 1. Define decision points before and after generation.
 2. Distinguish no candidates, weak evidence, context rejection, explicit model abstention, and infrastructure failure.
-3. Never translate provider/infrastructure errors into `INSUFFICIENT_EVIDENCE`.
+3. Never translate provider/infrastructure errors into `INSUFFICIENT_EVIDENCE`. Zero READY documents → `INSUFFICIENT_EVIDENCE` / `NO_READY_DOCUMENTS`.
 4. Keep thresholds configurable and baseline-driven.
 5. Emit machine-readable reason codes for evaluation.
 

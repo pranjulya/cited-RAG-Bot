@@ -2,8 +2,8 @@
 
 ## Master Implementation Plan
 
-**Status:** Draft for implementation review  
-**Version:** 0.1  
+**Status:** Accepted for implementation (ADR-011 freeze)  
+**Version:** 1.1  
 **Scope:** PDF-only, multi-document Cited RAG with page-level citations
 
 ---
@@ -39,6 +39,7 @@ Before implementing any phase, read the relevant documents below.
 - `docs/architecture/decisions/ADR-008-source-pdf-storage.md`
 - `docs/architecture/decisions/ADR-009-provider-boundaries.md`
 - `docs/architecture/decisions/ADR-010-evaluation-gates.md`
+- `docs/architecture/decisions/ADR-011-v1-locked-policies.md`
 
 ### Architecture
 
@@ -75,9 +76,9 @@ The implementation must preserve these rules:
 6. Hybrid retrieval must use an explicit fusion strategy.
 7. Retrieved candidates must be reranked before final context construction.
 8. Generation must use only approved evidence.
-9. The application owns citation identities.
+9. The application owns citation identities. The model sees evidence IDs and text only.
 10. The model may cite only request-scoped evidence IDs supplied by the application.
-11. Returned citations must be deterministically validated.
+11. Returned citations must be deterministically validated. Fabricated IDs fail the request. Public citations omit `chunk_id`.
 12. Unsupported questions must return a controlled insufficient-evidence result.
 13. Evaluation must measure retrieval, reranking, answer grounding, citations, and no-answer behavior independently.
 14. Source PDF content is untrusted data and must never become trusted system instruction.
@@ -93,7 +94,7 @@ The current architecture proposes:
 API                  FastAPI / Python
 Metadata             PostgreSQL
 Retrieval             Qdrant
-Queue / coordination Redis-backed async worker
+Queue / coordination Redis + arq worker
 PDF parser            Docling behind parser abstraction
 Hybrid fusion         Reciprocal Rank Fusion
 Reranking             Replaceable cross-encoder / hosted adapter
@@ -102,7 +103,7 @@ Observability         Structured logs + metrics + traces
 Evaluation            Versioned golden dataset + automated evaluation harness
 ```
 
-These remain subject to the ADR review gate. If an ADR changes, update this document before implementation continues.
+These are accepted. ADR-011 freezes lifecycle, Qdrant schema, auth, citations, fail-closed retrieval, and READY ownership. If an ADR changes, update this document before implementation continues.
 
 ---
 
@@ -127,11 +128,13 @@ Normalize content
    ↓
 Chunk with provenance
    ↓
+Persist durable page/chunk metadata
+   ↓
 Generate dense + sparse representations
    ↓
-Index retrieval artifacts
+Index retrieval artifacts (named vectors on chunk UUID)
    ↓
-Persist durable page/chunk metadata
+Verify dense + sparse completeness
    ↓
 Mark document READY
 ```
@@ -226,11 +229,11 @@ Implement collection, document, document-version, page, chunk, ingestion-job, an
 
 ### Phase 02 — PDF Upload, Object Storage, and Document Lifecycle
 
-Implement collection-scoped PDF upload, file validation envelope, source storage abstraction, document/version creation, duplicate policy hooks, lifecycle states, and status API.
+Implement collection-scoped PDF upload, API-key collection authorization, file validation envelope, source storage abstraction, document/version creation, per-collection content-hash idempotency, lifecycle states including `QUEUED`, and status API.
 
 ### Phase 03 — Asynchronous Ingestion Worker
 
-Introduce queue/worker execution, idempotent job processing, retries, status transitions, correlation IDs, and classified ingestion failures.
+Introduce arq/Redis worker execution, idempotent job processing keyed by `document_version_id`, retries, `QUEUED → PROCESSING` (never `READY`), correlation IDs, and classified ingestion failures.
 
 ### Phase 04 — PDF Parsing and Page Provenance
 
@@ -242,11 +245,11 @@ Implement configurable chunking while retaining document/version/page/chunk iden
 
 ### Phase 06 — Embedding and Dense Indexing
 
-Implement embedding provider abstraction, batch embedding generation, dense vector indexing, metadata filters, idempotent upserts, and index failure handling.
+Implement embedding provider abstraction, batch embedding generation, and Qdrant collection creation with named vectors `dense` and `sparse`. Upsert dense vectors on chunk UUIDs with collection/version payload. Do not mark `READY`. Do not create a dense-only collection.
 
 ### Phase 07 — Sparse Indexing and Retrieval
 
-Implement sparse/lexical representation and retrieval for exact terms, identifiers, numbers, and rare terminology while preserving the same chunk identity contract.
+Implement `SparseEncoder` (default FastEmbed BM42), sparse upserts on the **same** Qdrant points, collection-scoped sparse retrieval, shared `RetrievedCandidate`, and the ingestion-finalize check that sets `READY` only after dense + sparse artifacts exist.
 
 ### Phase 08 — Dense Retrieval
 
@@ -254,11 +257,11 @@ Implement collection-scoped semantic retrieval, configurable top-K behavior, can
 
 ### Phase 09 — Hybrid Retrieval and RRF
 
-Run dense and sparse retrieval, deduplicate chunk candidates, apply Reciprocal Rank Fusion, handle one-side-empty results, and produce deterministic fused candidates.
+Run dense and sparse retrieval, deduplicate chunk candidates, apply in-process Reciprocal Rank Fusion, handle one-side-empty results, and fail closed on operational retriever failure.
 
 ### Phase 10 — Reranking
 
-Implement replaceable reranker abstraction, candidate reranking, timeouts/degraded policy, before/after ranking telemetry, and evaluation hooks.
+Implement replaceable reranker abstraction, candidate reranking, timeout → `RERANKER_ERROR` in production, before/after ranking telemetry, and evaluation hooks (`EvaluationRunConfig` may disable rerank).
 
 ### Phase 11 — Context Builder and Evidence Contract
 
@@ -270,7 +273,7 @@ Implement provider-neutral generation, strict evidence-only prompting, structure
 
 ### Phase 13 — Citation Mapping and Validation
 
-Map request-scoped evidence IDs to authoritative chunks/pages, reject invented or unauthorized citations, validate collection/document/page relationships, and render the external citation contract.
+Map request-scoped evidence IDs to authoritative chunks/pages, fail closed on invented IDs (`CITATION_VALIDATION_FAILED`), validate collection/document/page relationships, and render public citations without `chunk_id`.
 
 ### Phase 14 — No-Answer Decision Policy
 
@@ -282,7 +285,7 @@ Wire authorization, retrieval, fusion, reranking, context building, generation, 
 
 ### Phase 16 — Document Deletion and Index Consistency
 
-Implement safe deletion/tombstoning, retrieval artifact cleanup, source PDF cleanup policy, version consistency, retryable cleanup jobs, and tests preventing orphan searchable chunks.
+Implement safe deletion/tombstoning after index phases (not blocked on the query API), retrieval artifact cleanup, source PDF cleanup policy, version consistency, retryable cleanup jobs, and tests preventing orphan searchable chunks. Query-race tests wait until Phase 15.
 
 ### Phase 17 — Observability
 
@@ -328,13 +331,14 @@ Phase 03 Async Ingestion
 Phase 04 Parsing
        ↓
 Phase 05 Chunking
-      /   \
-     v     v
-Phase 06  Phase 07
-Dense     Sparse
-Index     Index
-     \     /
-      v   v
+      /         \
+     v           v
+Phase 06        Phase 07
+Dense index     Sparse index + retrieve
+(named vectors  + READY finalize
+ created)
+     \           /
+      v         v
 Phase 08 Dense Retrieval
        ↓
 Phase 09 Hybrid Retrieval + RRF
@@ -350,8 +354,10 @@ Phase 13 Citation Validation
 Phase 14 No-Answer Policy
        ↓
 Phase 15 End-to-End Query API
-       ↓
+
 Phase 16 Deletion Consistency
+  depends on 02, 03, 06, 07
+  (query-race tests after 15)
        ↓
 Phase 17 Observability
        ↓
@@ -632,7 +638,7 @@ Expected learning areas include:
 
 ## 17. Review Gates Before Coding
 
-Before Phase 00 production implementation begins, complete the architecture review gate:
+Before Phase 00 production implementation begins, complete the architecture review gate and ADR-011 freeze:
 
 - review PRD vs HLD consistency;
 - review HLD vs LLD consistency;

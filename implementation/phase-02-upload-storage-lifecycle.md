@@ -18,14 +18,16 @@ Multipart uploads, MIME validation, content hashing, object-storage abstraction,
 Collection/document endpoints, upload service, `ObjectStorage` port, local storage adapter, document hash/version policy hooks, status endpoint.
 
 ## Implementation Tasks
-1. Validate collection access and PDF envelope.
-2. Validate extension/MIME/signature consistently.
-3. Stream upload rather than reading unbounded files into memory.
-4. Compute content hash while storing.
-5. Create document/version records in `UPLOADED` state.
-6. Store object key by collection/document/version.
-7. Return `202 Accepted` with document identifier and status.
-8. Add status retrieval endpoint.
+1. Authenticate with `Authorization: Bearer <api_key>` and authorize collection ownership (`Collection.owner_id`).
+2. Validate collection access and PDF envelope.
+3. Validate extension/MIME/signature consistently.
+4. Stream upload rather than reading unbounded files into memory.
+5. Compute content hash while storing.
+6. Apply ADR-011 duplicate policy: same hash in the same collection returns the existing document; new bytes create version 1.
+7. Create document/version records, enqueue in Phase 03; until the queue exists, persist `UPLOADED` then document the `QUEUED` transition as Phase 03. Upload `202` status is `QUEUED` once enqueue exists.
+8. Store object key by collection/document/version.
+9. `GET`/`DELETE /v1/documents/{document_id}` authorize via `document.collection_id` and return 404 for unauthorized.
+10. Add status retrieval endpoint.
 
 ## Required Tests
 Valid PDF upload, non-PDF rejection, empty file rejection, oversized file rejection, duplicate-content policy behavior, storage failure rollback/compensation, collection scoping.

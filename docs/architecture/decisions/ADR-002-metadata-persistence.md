@@ -1,6 +1,6 @@
 # ADR-002 — Durable Metadata Persistence
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Decision:** Use PostgreSQL as the durable system of record for application metadata, provenance, ingestion state, document versions, and query audit metadata.
 
 ## Context

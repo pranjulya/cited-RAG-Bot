@@ -1,6 +1,6 @@
 # Project 04 — Phase Implementation Guide
 
-**Status:** PLANNING COMPLETE, IMPLEMENTATION NOT STARTED
+**Status:** PLANNING COMPLETE, ADR-011 FROZEN, IMPLEMENTATION NOT STARTED
 
 This folder is the execution layer for `Implementation.md`. Each phase is intentionally small enough to implement, test, review, learn, and complete before moving to the next dependency.
 
@@ -34,16 +34,16 @@ Before any phase:
 | 04 | PDF Parsing and Page Provenance | 03 |
 | 05 | Provenance-Aware Chunking | 04 |
 | 06 | Embedding and Dense Indexing | 05 |
-| 07 | Sparse Indexing and Retrieval | 05 |
+| 07 | Sparse Indexing, Retrieval, READY finalize | 06 (Qdrant named-vector collection must exist) |
 | 08 | Dense Retrieval | 06 |
 | 09 | Hybrid Retrieval and RRF | 07, 08 |
 | 10 | Reranking | 09 |
 | 11 | Context Builder and Evidence Contract | 10 |
 | 12 | Grounded Generation | 11 |
 | 13 | Citation Mapping and Validation | 12 |
-| 14 | No-Answer Decision Policy | 10–13 |
-| 15 | End-to-End Query API | 09–14 |
-| 16 | Document Deletion and Index Consistency | 02, 06, 07, 15 |
+| 14 | No-Answer Decision Policy | 11–13 |
+| 15 | End-to-End Query API | 14 |
+| 16 | Document Deletion and Index Consistency | 02, 03, 06, 07 (query-race tests after 15) |
 | 17 | Observability | 03, 15 |
 | 18 | Security Hardening | 15–17 |
 | 19 | Evaluation Harness | 09–15 |
@@ -62,7 +62,10 @@ Before any phase:
 - Retrieval indexes are derived artifacts.
 - Provider SDKs stay behind adapters.
 - Retrieved PDF content is untrusted data.
-- The LLM never invents authoritative document/page/chunk identifiers.
+- The LLM never invents authoritative document/page/chunk identifiers and never receives those identifiers in the prompt.
+- Production retrieval is fail-closed on dependency failure; empty hit lists still fuse.
+- Only the active READY document version is searchable.
+- Read `docs/architecture/decisions/ADR-011-v1-locked-policies.md` with every phase.
 - No-answer is a valid success outcome.
 - Evaluation measures retrieval, reranking, grounding, citation quality, and no-answer separately.
 

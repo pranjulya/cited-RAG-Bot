@@ -21,8 +21,8 @@ Citation validator service, evidence-ID lookup, external citation DTO, validatio
 1. Validate every returned evidence ID exists in the request evidence map.
 2. Resolve chunk → document version → PDF page from authoritative metadata.
 3. Verify collection membership and document version validity.
-4. Reject duplicate/unknown/unauthorized references according to contract.
-5. Render external citation with document name, page number, and chunk ID where exposed.
+4. Unknown or unapproved evidence IDs fail the request with `CITATION_VALIDATION_FAILED`. Do not repair or strip-and-answer.
+5. Render external citation with `document_id`, `document_version_id`, `document_name`, `page_start`, `page_end`. Do not expose `chunk_id`.
 6. Record citation-validation outcome for telemetry/evaluation.
 
 ## Tests

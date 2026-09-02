@@ -19,7 +19,7 @@ Final README, Learning index, concept notes, production scenarios, interview Q&A
 
 ## Tasks
 1. Finalize README with problem, architecture, setup, demo flow, citations, limitations, and benchmark summary.
-2. Build `Learning/` structure with concepts learned per phase.
+2. Index and polish `Learning/` notes already written per phase; do not create Learning from scratch here.
 3. Add scenario notes for important production failures and their fixes.
 4. Add interview questions/answers covering RAG, hybrid retrieval, reranking, provenance, citation validation, evaluation, security, async ingestion, and observability.
 5. Document architecture decisions and rejected alternatives in plain English.

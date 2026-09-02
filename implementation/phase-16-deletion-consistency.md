@@ -6,7 +6,7 @@
 Delete or tombstone documents safely so no stale searchable chunks remain in derived retrieval indexes.
 
 ## Prerequisites
-Phases 02, 06, 07, and 15 COMPLETE.
+Phases 02, 03, 06, and 07 COMPLETE. Concurrent query/delete tests are added after Phase 15.
 
 ## References
 PRD FR-16, HLD data ownership model, LLD cleanup behavior.

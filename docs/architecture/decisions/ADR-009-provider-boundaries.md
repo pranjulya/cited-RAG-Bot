@@ -1,6 +1,6 @@
 # ADR-009 — Model and Provider Boundaries
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Decision:** Embedding, reranking, and generation capabilities must be accessed through explicit provider interfaces/adapters.
 
 ## Context
@@ -11,9 +11,14 @@ The project should teach architecture, not lock itself to one SDK. Providers, mo
 
 Define separate contracts such as:
 
+- `DocumentParser`
+- `ObjectStorage`
+- `JobQueue`
 - `EmbeddingProvider`
+- `SparseEncoder`
+- `DenseRetriever` / `SparseRetriever`
 - `Reranker`
-- `GenerationProvider`
+- `GroundedGenerator` (`GenerationProvider` in earlier drafts)
 
 Provider-specific request/response types stay inside adapters. Core services consume domain models.
 

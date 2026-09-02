@@ -1,6 +1,6 @@
 # ADR-006 — Citation Contract and Validation
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Decision:** Citation identity is created and owned by the application. The LLM may reference only evidence IDs supplied in the prompt; the application resolves those IDs to document/page/chunk metadata and validates them before returning a response.
 
 ## Context
@@ -15,21 +15,19 @@ Example evidence supplied to the LLM:
 
 ```text
 [E1]
-document_id=doc_123
-page=17
-chunk_id=chunk_456
-text=...
+Evidence:
+"Employees are entitled to ..."
 ```
 
-The model is instructed to cite evidence IDs, not invent source metadata.
+Do not send `document_id`, `chunk_id`, or page numbers to the model. Provenance stays in the server-side evidence map. The model may cite only evidence IDs such as `E1`.
 
 The response pipeline then:
 
 1. parses cited evidence IDs;
 2. verifies each ID was in the approved context;
 3. maps the ID deterministically to persisted provenance;
-4. rejects/removes fabricated evidence references according to the response policy;
-5. returns external citation objects with document name/page information.
+4. if any cited evidence ID is unknown or was not approved for this request, fail with `CITATION_VALIDATION_FAILED` (V1 does not repair or strip-and-answer);
+5. returns external citation objects with document id, document version, document name, and page range (not `chunk_id`).
 
 ## Important Distinction
 

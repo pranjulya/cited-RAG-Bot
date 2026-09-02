@@ -38,6 +38,7 @@ flowchart TB
     API --> REDIS
     API --> QD
     API --> OBJ
+    API --> EMB
     API --> RR
     API --> LLM
 

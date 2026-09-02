@@ -7,10 +7,13 @@ Create the minimal production-oriented Python/FastAPI foundation required by eve
 
 ## Prerequisites
 - Steps 1–7 reviewed.
-- Step 9 architecture review must approve starting code.
+- Step 9 architecture review passed.
+- Step 10 implementation readiness present.
+- ADR-011 V1 locks accepted.
 
 ## Architecture References
 - `Implementation.md`
+- `docs/architecture/decisions/ADR-011-v1-locked-policies.md`
 - `docs/architecture/HLD.md`
 - `docs/architecture/LLD.md`
 
@@ -27,25 +30,35 @@ FastAPI application lifecycle, dependency injection, Pydantic settings, package 
 - `tests/unit/`
 - `tests/integration/`
 - `Dockerfile`
-- `docker-compose.yml`
-- `AGENTS.md`
-- `CLAUDE.md`
+- `docker-compose.yml` (API only in this phase)
+- root `README.md` with install/test/run commands
+- `Learning/README.md`
+- `.github/workflows/ci.yml` (ruff, mypy, unit tests)
+- do **not** recreate existing `AGENTS.md` / `CLAUDE.md`
 
 ## Implementation Tasks
-1. Define Python package and dependency groups.
-2. Add typed settings loaded from environment.
+1. Define Python package `src/cited_rag` and dependency groups.
+2. Add typed settings loaded from environment (`CITED_RAG_` prefix), including a placeholder API-key setting. Do not hardcode later RAG knobs as literals in adapters; add settings fields as phases need them.
 3. Create FastAPI application factory.
 4. Add `/health` liveness endpoint.
-5. Add `/ready` readiness skeleton that can later check required dependencies.
+5. Add `/ready` skeleton that returns a documented body such as `{"status":"not_configured"}` until dependency checks exist. Deterministic: HTTP 200 with that contract in Phase 00.
 6. Configure pytest, linting, formatting, and static typing.
-7. Add Docker development baseline.
-8. Add coding-agent rules referencing `Implementation.md` and current phase.
+7. Add Docker development baseline for the API image only.
+8. Add root README, `Learning/` stub, and CI for lint/type/unit. Keep existing agent rule files.
+
+## Security
+No secrets in the repo. `.env` gitignored. `.env.example` placeholders only. Debug disabled when `environment=production`. Do not log API keys.
+
+## Observability
+Correlation-id / structured logging conventions only. No metrics stack yet.
 
 ## Required Tests
 - application imports successfully;
 - health returns 200;
+- `/ready` returns the documented Phase 00 body;
 - invalid configuration fails clearly;
-- test configuration does not require production secrets.
+- test configuration does not require production secrets;
+- ruff and mypy pass in CI config.
 
 ## Failure Scenarios
 Missing environment values, malformed config, application startup failure, Docker startup mismatch.

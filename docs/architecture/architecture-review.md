@@ -1,8 +1,8 @@
 # Step 9 — Architecture Review Gate
 
 **Project:** Cited RAG Bot  
-**Status:** PASSED  
-**Version:** 1.0  
+**Status:** PASSED; follow-up freeze in ADR-011  
+**Version:** 1.1  
 **Scope:** Pre-implementation architecture consistency, security, failure-mode, and evaluation review
 
 ---
@@ -324,3 +324,25 @@ Phase 00 may begin only if the implementer agrees to these rules:
 **Final Step 9 decision: APPROVED TO PREPARE PHASE 00.**
 
 This approval does not mean Phase 00 implementation has started. Step 10 must first establish implementation readiness and agent execution rules.
+
+---
+
+## 13. Follow-up freeze (ADR-011)
+
+A later full-document review found that Step 9 froze the ADR **index** while ADR bodies, HLD/LLD “lock before coding” lists, lifecycle strings, citation examples, and phase files still disagreed.
+
+Those contradictions are closed in `docs/architecture/decisions/ADR-011-v1-locked-policies.md`. Implementers must treat ADR-011 as authoritative for:
+
+- package root `src/cited_rag/`;
+- `QUEUED` / `DELETING` / `DELETED` lifecycle;
+- per-collection content-hash versioning and active READY retrieval;
+- Qdrant named vectors `dense`+`sparse` on chunk UUIDs, created in Phase 06;
+- READY only after both indexes, Postgres provenance before Qdrant upsert;
+- fail-closed retriever **errors**, fuse empty hit lists, eval ablations via `EvaluationRunConfig`;
+- `RERANKER_ERROR` and `CITATION_VALIDATION_FAILED` (no V1 repair);
+- model-visible evidence = E-id + text only; public citations omit `chunk_id`;
+- API-key auth from Phase 02; document routes authorize via collection;
+- arq worker; FastEmbed BM42 default sparse encoder;
+- deletion after 02/03/06/07; CI/Learning from Phase 00.
+
+Do not re-open LLD §27 items in a phase file.

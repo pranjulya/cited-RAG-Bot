@@ -32,11 +32,11 @@ flowchart TD
     WORKER --> PARSER
     PARSER --> NORMALIZE
     NORMALIZE --> CHUNK
+    CHUNK -->|Persist pages/chunks| PG
     CHUNK --> EMBED
     EMBED --> INDEX
     INDEX --> QD
-    INDEX -->|Persist pages/chunks/index metadata| PG
-    INDEX -->|All mandatory artifacts available| READY[Set document version READY]
+    INDEX -->|Verify dense+sparse completeness| READY[Set document version READY]
     READY --> PG
 
     PARSER -. failure .-> FAILED[Set FAILED + classified reason]
@@ -54,10 +54,15 @@ The expected lifecycle is:
 ```text
 UPLOADED
    ↓
+QUEUED
+   ↓
 PROCESSING
    ├──→ READY
    └──→ FAILED
+READY → DELETING → DELETED
 ```
+
+`READY` requires PostgreSQL provenance plus dense and sparse named vectors on each chunk UUID (ADR-011).
 
 ## Provenance Requirement
 

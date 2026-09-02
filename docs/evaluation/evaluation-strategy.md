@@ -1,8 +1,8 @@
 # Step 5 — Evaluation Strategy
 
 **Project:** Cited RAG Bot  
-**Status:** Draft for architecture review  
-**Version:** 0.1  
+**Status:** Accepted for implementation (ADR-011 freeze)  
+**Version:** 1.1  
 **Scope:** PDF-only, multi-document RAG with page-level citations
 
 ---
@@ -727,13 +727,31 @@ Conceptual per-question output:
 {
   "run_id": "eval_2026_001",
   "question_id": "q_001",
+  "run_config": {
+    "dense": true,
+    "sparse": true,
+    "rerank": true
+  },
   "retrieval": {
     "dense_candidates": [],
     "sparse_candidates": [],
     "fused_candidates": [],
     "reranked_candidates": [],
-    "recall_at_10": 1
+    "recall_at_10_page": 1
   },
+  "context": {
+    "approved_evidence_ids": ["E1", "E2"],
+    "dropped_by_budget": []
+  },
+  "generation": {
+    "status": "ANSWERED",
+    "claims": [],
+    "evidence_ids_before_validation": ["E1"]
+  },
+  "validation": {
+    "outcome": "ok"
+  },
+  "no_answer_reason": null,
   "answer": {
     "status": "ANSWERED",
     "faithfulness_score": 2,
@@ -746,14 +764,19 @@ Conceptual per-question output:
   },
   "latency_ms": {
     "retrieval": 0,
+    "fusion": 0,
     "reranking": 0,
+    "context": 0,
     "generation": 0,
+    "citation_validation": 0,
     "total": 0
   }
 }
 ```
 
-Exact schema belongs in LLD.
+Gold labels are page-level. Recall@K / MRR collapse chunks to `(document_id, page)` before scoring. nDCG is used only when graded labels exist.
+
+`run_config` disables stages for ablations. It is not the production query policy (ADR-011).
 
 ---
 
@@ -983,4 +1006,4 @@ Step 5 is complete when the architecture team agrees that:
 - release thresholds will be established from a measured baseline rather than guessed;
 - the evaluation requirements are detailed enough for the LLD to define concrete interfaces and schemas.
 
-The next design step is **Step 6 — Low-Level Design (LLD)**.
+LLD and ADR-011 are accepted. Implementers use this strategy plus the per-question result model in §18. Numeric release thresholds still wait for a measured baseline.

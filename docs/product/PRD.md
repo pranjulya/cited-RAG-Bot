@@ -2,8 +2,8 @@
 
 ## Product Requirements Document (PRD)
 
-**Status:** Draft for architecture review  
-**Version:** 0.1  
+**Status:** Accepted for implementation (ADR-011 freeze)  
+**Version:** 1.1  
 **Scope:** PDF-only RAG with page-level citations
 
 ---
@@ -184,14 +184,9 @@ Every citation must identify which document supplied the evidence.
 
 ### FR-03 — Document Lifecycle
 
-Each document shall expose an ingestion status such as:
+Each document version shall expose an ingestion status. Product-visible states include `UPLOADED`, `PROCESSING`, `READY`, and `FAILED`. Implementation also uses `QUEUED`, `DELETING`, and `DELETED` (ADR-011).
 
-- `UPLOADED`
-- `PROCESSING`
-- `READY`
-- `FAILED`
-
-Documents must not participate in retrieval before indexing completes successfully.
+Documents must not participate in retrieval before the **active** version reaches `READY` and both dense and sparse indexes exist.
 
 ---
 
@@ -291,14 +286,15 @@ A successful factual answer shall return citations such as:
 
 ```json
 {
-  "document_id": "doc_123",
+  "document_id": "uuid",
+  "document_version_id": "uuid",
   "document_name": "example.pdf",
-  "page_number": 17,
-  "chunk_id": "chunk_456"
+  "page_start": 17,
+  "page_end": 17
 }
 ```
 
-The final external representation may evolve, but the internal evidence mapping must remain exact and auditable.
+The public API does not expose `chunk_id`. Internal mapping remains `evidence_id → chunk → PostgreSQL provenance`. Cross-page chunks use an explicit page range.
 
 ---
 
@@ -383,10 +379,11 @@ Potential operational/evaluation endpoints will be decided later and should not 
   "status": "ANSWERED",
   "citations": [
     {
-      "document_id": "doc_001",
+      "document_id": "uuid",
+      "document_version_id": "uuid",
       "document_name": "policy.pdf",
-      "page_number": 12,
-      "chunk_id": "chunk_991"
+      "page_start": 12,
+      "page_end": 12
     }
   ],
   "metadata": {
@@ -474,7 +471,7 @@ V1 must account for:
 - document deletion and index cleanup;
 - resource limits against ingestion/query abuse.
 
-A dedicated security design will be produced before implementation.
+Security controls are specified in HLD §10, LLD §22, architecture-review §7, and ADR-011 (API-key auth, collection scoping, untrusted PDF text). Phase 18 hardens limits and adversarial tests; it does not introduce authorization for the first time.
 
 ---
 
@@ -672,30 +669,28 @@ Product-level completion requires:
 
 ---
 
-## 20. Open Architecture Decisions
+## 20. Architecture Decisions
 
-The PRD intentionally does not prematurely choose technologies where measurement or trade-off analysis is needed.
+Resolved by accepted ADRs and ADR-011 except where listed as configuration:
 
-The next step must resolve these through ADRs / architecture review:
+1. PDF parser — Docling behind `DocumentParser`.
+2. Chunking — page-first; size/overlap numbers are evaluation config.
+3. Embedding model — configuration; provider behind `EmbeddingProvider`.
+4. Vector store — Qdrant named vectors `dense` + `sparse`.
+5. Sparse search — `SparseEncoder` default FastEmbed BM42 inside Qdrant.
+6. Hybrid fusion — in-process RRF.
+7. Reranker — replaceable; local cross-encoder preferred; failure is `RERANKER_ERROR`.
+8. Metadata SoR — PostgreSQL.
+9. Async ingestion — Redis + arq.
+10. File storage — `ObjectStorage`; local dev, S3-compatible prod.
+11. LLM — `GroundedGenerator` adapter; model is configuration.
+12. Citations — application evidence IDs; public page-range citations; fabrication fails closed.
+13. Evaluation — versioned golden dataset (ADR-010).
+14. Caching — not in V1.
+15. Auth — API key + collection ownership.
+16. Deployment — Docker Compose for V1; not Kubernetes.
 
-1. PDF parser — e.g. Docling vs PyMuPDF-style approach vs alternatives.
-2. Chunking strategy.
-3. Embedding model/provider.
-4. Vector database/storage.
-5. Sparse search implementation.
-6. Hybrid fusion strategy.
-7. Reranker implementation/model.
-8. Metadata/system-of-record design.
-9. Async ingestion architecture.
-10. File/object storage strategy.
-11. LLM provider abstraction and initial provider.
-12. Citation representation and claim-to-evidence validation depth.
-13. Evaluation framework/tooling.
-14. Caching strategy.
-15. Authentication/authorization scope for the portfolio V1.
-16. Deployment target.
-
-No LLD should be frozen until the high-impact decisions above have been reviewed.
+Numeric quality thresholds remain post-baseline.
 
 ---
 

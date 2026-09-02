@@ -18,7 +18,7 @@ Authentication vs authorization, tenant isolation, untrusted document content, p
 Portfolio auth boundary, collection authorization middleware/service, hardened upload limits, query limits, secret validation, adversarial security tests.
 
 ## Tasks
-1. Finalize portfolio auth mechanism and collection ownership checks.
+1. Harden the API-key and collection-ownership controls introduced in Phases 00/02 (do not introduce auth here for the first time).
 2. Enforce collection filters in every retrieval path.
 3. Add upload size/type/signature/resource limits.
 4. Add request/query length and concurrency limits.

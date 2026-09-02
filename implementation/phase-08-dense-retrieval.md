@@ -19,7 +19,7 @@ Dense retriever service, query-embedding integration, `RetrievalCandidate` outpu
 
 ## Tasks
 1. Embed incoming query via embedding provider port.
-2. Search dense index with mandatory collection filter.
+2. Search dense index with mandatory `collection_id` and `document_version_id IN (active READY versions)` filters. Collection-only filters are a defect.
 3. Return stable chunk IDs, rank, score, and provenance metadata.
 4. Make candidate count configurable.
 5. Record retrieval latency and candidate counts.

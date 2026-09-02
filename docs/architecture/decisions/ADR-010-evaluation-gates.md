@@ -1,6 +1,6 @@
 # ADR-010 — Evaluation Gates
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Decision:** Treat retrieval, reranking, answer groundedness, citation quality, and no-answer behavior as independent evaluation dimensions. Maintain a versioned golden dataset and use evaluation results as release gates after baseline thresholds are established.
 
 ## Context
@@ -45,4 +45,4 @@ The golden dataset must include factual, semantic, exact-keyword, multi-page, mu
 
 ## Validation Required
 
-Step 5 will define dataset format, metric computation, baseline procedure, regression policy, and release thresholds.
+Dataset format and metric families are in `docs/evaluation/evaluation-strategy.md`. Numeric release thresholds are still not invented before a baseline. Ablations use `EvaluationRunConfig`; they must not reuse a production degraded-retrieval flag (ADR-011).

@@ -6,7 +6,7 @@
 Wire authorization, retrieval, fusion, reranking, context building, grounded generation, no-answer policy, and citation validation into the public collection query endpoint.
 
 ## Prerequisites
-Phases 09–14 COMPLETE.
+Phase 14 COMPLETE.
 
 ## References
 PRD API contract, HLD query sequence, LLD orchestration.

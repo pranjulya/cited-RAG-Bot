@@ -6,7 +6,7 @@
 Add lexical/sparse retrieval for exact names, identifiers, numbers, rare terms, and phrases while preserving the same chunk identity contract as dense retrieval.
 
 ## Prerequisites
-Phase 05 COMPLETE.
+Phase 06 COMPLETE (Qdrant collection already has named vectors `dense` and `sparse`).
 
 ## References
 ADR-003, ADR-004, PRD FR-07, evaluation strategy.
@@ -18,12 +18,12 @@ Sparse vectors, BM25-style ranking, lexical vs semantic retrieval, term frequenc
 Sparse encoder/index adapter, sparse retriever port implementation, common `RetrievalCandidate` model.
 
 ## Tasks
-1. Define sparse indexing representation behind an adapter.
-2. Index the same stable chunk IDs used by dense indexing.
-3. Enforce collection filters at query time.
-4. Return normalized internal candidates with rank and raw score metadata.
-5. Add deterministic top-K configuration.
-6. Record sparse configuration/version for evaluation reproducibility.
+1. Define `SparseEncoder` (default FastEmbed BM42) and sparse retriever ports.
+2. Upsert `sparse` on the **same** chunk UUID points created in Phase 06. Do not create a second point identity or a second Qdrant collection.
+3. Share the `RetrievedCandidate` model with Phase 08.
+4. Enforce `collection_id` and `document_version_id IN (active READY set)` at query time. Before READY finalize, retrieval tests use explicit version ids and must not treat PROCESSING versions as production-searchable.
+5. After both named vectors exist for the version, run ingestion-finalize: verify completeness, then `PROCESSING → READY` and set `active_version_id`. Dense-only must remain non-READY / `FAILED` if sparse fails.
+6. Record sparse encoder name/version for evaluation reproducibility.
 
 ## Tests
 Exact identifier match, rare keyword match, number/phrase query, collection isolation, empty result, re-index idempotency.
@@ -32,7 +32,7 @@ Exact identifier match, rare keyword match, number/phrase query, collection isol
 Sparse index unavailable, tokenization mismatch, one-sided partial indexing, stale payload.
 
 ## Acceptance Criteria
-Sparse retrieval can independently recover evidence that dense search may miss and all results obey collection/provenance constraints.
+Sparse retrieval can independently recover evidence that dense search may miss; results obey collection and READY/version filters; READY is set only after dense+sparse completeness.
 
 ## Definition of Done
 Sparse indexing/retrieval tests, docs, review, Learning notes complete.

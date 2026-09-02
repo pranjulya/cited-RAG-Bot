@@ -1,6 +1,6 @@
 # ADR-008 — Source PDF Storage
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Decision:** Retain original uploaded PDFs through an object-storage abstraction. Use local filesystem storage for development and S3-compatible storage for production deployments.
 
 ## Context
@@ -9,7 +9,7 @@ The system needs the original document for auditability, reprocessing, parser up
 
 ## Decision
 
-Introduce a `DocumentStorage` abstraction. Application/database records store durable object references rather than embedding file bytes in PostgreSQL.
+Introduce an `ObjectStorage` abstraction (`DocumentStorage` in earlier drafts refers to the same port). Application/database records store durable object references rather than embedding file bytes in PostgreSQL.
 
 ## Consequences
 
@@ -25,4 +25,4 @@ Introduce a `DocumentStorage` abstraction. Application/database records store du
 
 ## Validation Required
 
-Security design must define encryption, access permissions, file naming/key strategy, retention, and secure deletion expectations.
+Key layout, retention until document/version deletion, and local-vs-S3 adapters are specified in LLD §18 and ADR-011. TLS and encryption-at-rest for production object storage are Phase 18 hardening requirements.

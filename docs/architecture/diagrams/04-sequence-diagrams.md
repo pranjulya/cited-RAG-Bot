@@ -19,7 +19,8 @@ sequenceDiagram
     API->>Store: Persist original PDF
     API->>PG: Create document/version = UPLOADED
     API->>Queue: Enqueue ingestion job
-    API-->>Client: 202 Accepted + document_id
+    API->>PG: Set QUEUED
+    API-->>Client: 202 Accepted + QUEUED
 
     Queue->>Worker: Deliver ingestion job
     Worker->>PG: Set PROCESSING
@@ -27,11 +28,12 @@ sequenceDiagram
     Worker->>Parser: Parse preserving page boundaries
     Parser-->>Worker: PageContent[]
     Worker->>Worker: Normalize + provenance-aware chunking
+    Worker->>PG: Persist page/chunk provenance
     Worker->>Embed: Create dense/sparse representations
     Embed-->>Worker: Retrieval representations
-    Worker->>QD: Upsert retrieval points
-    Worker->>PG: Persist page/chunk provenance
-    Worker->>PG: Set READY
+    Worker->>QD: Upsert named dense/sparse vectors on chunk UUID
+    Worker->>Worker: Verify completeness
+    Worker->>PG: Set READY + active_version_id
 ```
 
 ## B. Online Query

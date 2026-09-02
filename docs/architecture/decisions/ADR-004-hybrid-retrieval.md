@@ -1,6 +1,6 @@
 # ADR-004 — Hybrid Retrieval and Fusion
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Decision:** Retrieve dense and sparse candidates independently, then combine them using Reciprocal Rank Fusion (RRF) for V1.
 
 ## Context
@@ -17,7 +17,7 @@ The retrieval pipeline will:
 4. combine ranked lists with RRF;
 5. return a configurable candidate set to the reranker.
 
-Fusion lives behind a `FusionStrategy` interface.
+Fusion lives behind a `FusionStrategy` interface in application code. V1 does not use Qdrant-native RRF for the online path so dense and sparse lists stay independently observable.
 
 ## Why RRF
 
@@ -32,14 +32,14 @@ RRF operates on rank positions rather than assuming dense and sparse score scale
 
 Weighted or learned fusion should only replace the baseline if evaluation demonstrates meaningful improvement.
 
-## Failure Behavior To Decide
+## Failure Behavior
 
-Architecture review must lock whether one retriever failing causes:
+Locked in ADR-011:
 
-- fail-closed query behavior; or
-- explicit degraded mode using the surviving retriever.
-
-Silent degradation is not allowed.
+- operational dense or sparse failure → fail-closed query (`DENSE_RETRIEVAL_ERROR` / `SPARSE_RETRIEVAL_ERROR`);
+- one retriever returning zero hits → fuse the surviving list;
+- production must not silently answer dense-only or sparse-only;
+- evaluation ablations use `EvaluationRunConfig`, not a production degraded mode.
 
 ## Validation Required
 

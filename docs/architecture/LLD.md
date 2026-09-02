@@ -1,11 +1,11 @@
 # Step 6 — Low-Level Design (LLD)
 
 **Project:** Cited RAG Bot  
-**Status:** Draft for architecture review  
-**Version:** 0.1  
+**Status:** Accepted for implementation (ADR-011 freeze)  
+**Version:** 1.1  
 **Scope:** PDF-only, multi-document Cited RAG with page-level citations
 
-> This LLD refines the PRD, Step 2 ADR set, Step 3 HLD, Step 4 diagrams, and Step 5 evaluation strategy into concrete module boundaries, interfaces, API contracts, data structures, state transitions, failure behavior, and persistence responsibilities. Technology-specific choices remain replaceable behind adapters until the ADRs are accepted.
+> This LLD refines the PRD, accepted ADRs (including ADR-011), HLD, diagrams, and evaluation strategy into concrete module boundaries, interfaces, API contracts, data structures, state transitions, failure behavior, and persistence responsibilities. Provider SDKs stay behind adapters. V1 product contracts in ADR-011 are not optional.
 
 ---
 
@@ -18,16 +18,19 @@
 5. Page provenance must survive every pipeline stage.
 6. Retrieval, fusion, reranking, generation, and citation validation must be independently testable.
 7. `INSUFFICIENT_EVIDENCE` is a first-class successful outcome, not an error.
-8. Degraded retrieval behavior must be explicit and observable.
+8. Production retrieval is fail-closed on dependency failure; empty retriever lists still fuse. Evaluation ablations are a separate run config.
 9. Every long-running ingestion step must be idempotent or safely retryable.
 10. Evaluation hooks must expose intermediate outputs without contaminating online business logic.
 
 ---
 
-## 2. Proposed Package Structure
+## 2. Package Structure
+
+Application code lives under `src/cited_rag/` (ADR-011). Phase 00 creates `main.py`, `config.py`, and `api/health.py` here; later phases add the modules below.
 
 ```text
-src/
+src/cited_rag/
+├── main.py
 ├── api/
 │   ├── dependencies.py
 │   ├── errors.py
@@ -79,6 +82,7 @@ src/
 │   ├── repositories.py
 │   ├── queue.py
 │   ├── embedding.py
+│   ├── sparse_encoder.py
 │   ├── retriever.py
 │   ├── reranker.py
 │   ├── generator.py
@@ -112,7 +116,7 @@ src/
     └── settings.py
 ```
 
-This is a target logical structure. Exact file names can be adjusted during implementation, but responsibilities should remain stable.
+Exact file names can be adjusted during implementation. The package root `src/cited_rag/` and the port/adapter split must remain stable.
 
 ---
 
@@ -251,7 +255,7 @@ EvidenceItem
 - text: str
 ```
 
-The LLM sees `evidence_id`; it does not invent document/page identifiers.
+The LLM sees `evidence_id` and evidence text only. It does not receive document/page/chunk identifiers.
 
 ---
 
@@ -283,6 +287,16 @@ class EmbeddingProvider(Protocol):
     async def embed_query(self, text: str) -> list[float]: ...
 ```
 
+### SparseEncoder
+
+```python
+class SparseEncoder(Protocol):
+    async def encode_documents(self, texts: list[str]) -> list[SparseVector]: ...
+    async def encode_query(self, text: str) -> SparseVector: ...
+```
+
+V1 default adapter: FastEmbed BM42 (or the documented equivalent). Query-time sparse encoding is required; it is not implied by `EmbeddingProvider`.
+
 ### DenseRetriever / SparseRetriever
 
 ```python
@@ -293,7 +307,7 @@ class SparseRetriever(Protocol):
     async def retrieve(self, query, collection_id, top_k) -> list[RetrievedCandidate]: ...
 ```
 
-Collection filtering must be enforced inside the retrieval operation, not after retrieval.
+Collection filtering **and** `document_version_id IN (active READY versions)` must be enforced inside the retrieval operation, not after retrieval. Callers load the READY/active version set from PostgreSQL and pass it into both retrievers.
 
 ### Reranker
 
@@ -316,6 +330,8 @@ class JobQueue(Protocol):
     async def enqueue_ingestion(self, document_version_id: UUID) -> str: ...
 ```
 
+V1 adapter: arq on Redis. Idempotency key is `document_version_id`.
+
 ### Repository Ports
 
 Separate repository interfaces should exist for:
@@ -331,6 +347,18 @@ Separate repository interfaces should exist for:
 ---
 
 ## 5. API Contracts
+
+Authenticated routes require `Authorization: Bearer <api_key>`. The principal must own the target collection. `GET /health` and `GET /ready` are unauthenticated.
+
+Also required:
+
+```text
+GET    /v1/collections/{collection_id}
+GET    /health
+GET    /ready
+```
+
+List-all-collections and list-documents-in-collection are optional V1 convenience endpoints; if omitted, say so in the public README rather than inventing them mid-phase.
 
 ### POST /v1/collections
 
@@ -362,8 +390,9 @@ Validation:
 - MIME/type validation;
 - configurable size limit;
 - non-empty file;
-- duplicate policy based on content hash;
-- source file persisted before ingestion begins.
+- duplicate policy: content-hash uniqueness per collection among non-deleted versions (ADR-011);
+- source file persisted before ingestion begins;
+- version is `QUEUED` in the `202` response after enqueue.
 
 Response `202`:
 
@@ -377,13 +406,17 @@ Response `202`:
 
 ### GET /v1/documents/{document_id}
 
-Returns current version and ingestion state.
+Returns current version and ingestion state. Authorize via `document.collection_id`. Missing and unauthorized documents both return `404`.
+
+### POST /v1/collections/{collection_id}/documents/{document_id}/versions
+
+Creates version `N+1` of an existing document. While the new version is processing, the previous **active READY** version remains searchable. `active_version_id` switches when the new version reaches `READY`.
 
 ### DELETE /v1/documents/{document_id}
 
-Deletion is logically asynchronous if retrieval artifacts and object storage cleanup cannot complete transactionally.
+Authorize via `document.collection_id` (same 404 rule). Deletion is logically asynchronous if retrieval artifacts and object storage cleanup cannot complete transactionally.
 
-Response may be `202` with `DELETING` state.
+Response may be `202` with `DELETING` state. Tombstone + index purge does not wait for the query API to exist (Phase 16 after 02/03/06/07).
 
 ### POST /v1/collections/{collection_id}/query
 
@@ -405,10 +438,10 @@ Response `200`:
   "citations": [
     {
       "document_id": "uuid",
+      "document_version_id": "uuid",
       "document_name": "handbook.pdf",
       "page_start": 17,
-      "page_end": 17,
-      "chunk_id": "uuid"
+      "page_end": 17
     }
   ]
 }
@@ -517,11 +550,11 @@ Recommended V1 strategy:
 
 1. validate non-empty normalized question;
 2. confirm collection exists/access is allowed;
-3. ensure collection has READY documents;
-4. execute dense and sparse retrieval in parallel;
+3. load active READY `document_version_id`s for the collection (zero READY versions → `INSUFFICIENT_EVIDENCE` / `NO_READY_DOCUMENTS`, not a 5xx);
+4. execute dense and sparse retrieval in parallel with collection + version-id filters;
 5. classify dependency failures;
-6. apply configured degraded-mode policy;
-7. fuse candidates;
+6. fail closed on operational retriever failure; fuse when one side is an empty hit list;
+7. fuse candidates in application RRF (`FusionStrategy`);
 8. deduplicate by `chunk_id`;
 9. rerank fused candidate set;
 10. apply evidence-selection policy;
@@ -543,29 +576,17 @@ RRF is preferred initially because it avoids comparing incompatible dense/sparse
 
 ## 10. Retrieval Failure Policy
 
-Define explicit policy enum:
+Production V1 is fail-closed (`STRICT`). `ALLOW_SINGLE_RETRIEVER` is not a V1 production policy.
 
-```text
-STRICT
-ALLOW_SINGLE_RETRIEVER
-```
+### STRICT (production)
 
-### STRICT
+If dense or sparse retrieval fails operationally, query returns `DENSE_RETRIEVAL_ERROR` or `SPARSE_RETRIEVAL_ERROR`.
 
-If dense or sparse retrieval fails operationally, query returns a controlled dependency error.
+If one retriever returns zero candidates and the other succeeds, fuse the surviving list. Empty hits are not operational failure.
 
-### ALLOW_SINGLE_RETRIEVER
+### Evaluation ablations
 
-If one retriever fails but the other succeeds, query may continue only when:
-
-- policy explicitly enables it;
-- response trace marks degraded mode;
-- metrics increment degraded-query count;
-- evaluation can separately assess degraded behavior.
-
-Silent fallback is prohibited.
-
-Recommended initial production default: `STRICT` until baseline behavior and operational needs justify degradation.
+Dense-only, sparse-only, and hybrid-without-rerank comparisons use `EvaluationRunConfig` that disables stages. That config is not wired as a production query fallback. A future production degraded mode requires a new ADR.
 
 ---
 
@@ -584,9 +605,9 @@ Outputs:
 
 If reranker fails:
 
-- default fail policy should be explicit;
-- optional fallback to fused ordering can be enabled only through configuration and telemetry;
-- never silently skip reranking when the system is advertised/evaluated as using reranking.
+- production default is `RERANKER_ERROR`;
+- do not silently return fused ordering;
+- evaluation may disable reranking through `EvaluationRunConfig`.
 
 ---
 
@@ -606,13 +627,11 @@ Example model-facing evidence:
 
 ```text
 [E1]
-Source document: employee_handbook.pdf
-Source page: 17
 Evidence:
 "Employees are entitled to ..."
 ```
 
-The model may reference `E1`; server-side code later maps `E1` to authoritative citation metadata.
+The model may reference `E1` only. Document name, version, page, and chunk id stay in the server-side evidence map and are rendered after validation.
 
 ---
 
@@ -670,12 +689,7 @@ Generation instructions must state:
 
 Citation validator does **not** prove semantic entailment. Semantic citation correctness belongs to the evaluation harness.
 
-If a model returns an unknown evidence ID, the response must not expose it as a citation. Policy options:
-
-- one bounded repair attempt; or
-- fail response with `CITATION_VALIDATION_FAILED`.
-
-The default must be locked before implementation.
+If a model returns an unknown or unapproved evidence ID, fail the request with `CITATION_VALIDATION_FAILED`. V1 does not repair, strip fabricated IDs, or return `ANSWERED` after partial fabrication. The response must not expose unvalidated provenance.
 
 ---
 
@@ -697,6 +711,8 @@ Thresholds must come from baseline evaluation, not arbitrary constants.
 
 Operational dependency failures are not `INSUFFICIENT_EVIDENCE`; they are controlled errors.
 
+A collection with zero READY documents is `INSUFFICIENT_EVIDENCE` with reason `NO_READY_DOCUMENTS`. Unauthorized collection access is `403`/`404`.
+
 ---
 
 ## 16. Persistence Model
@@ -705,7 +721,7 @@ Operational dependency failures are not `INSUFFICIENT_EVIDENCE`; they are contro
 
 ```text
 collections
-users_or_api_principals        # depending on auth decision
+api_principals                 # API-key principals; Collection.owner_id references this
 documents
 document_versions
 pages
@@ -722,7 +738,7 @@ evaluation_results
 ### Important constraints
 
 - unique `(document_id, version_number)`;
-- unique document-version content hash according to duplicate policy;
+- unique `(collection_id, content_hash)` among non-deleted versions (same PDF may exist in two collections);
 - unique `(document_version_id, page_number)`;
 - unique chunk ID/content identity strategy;
 - foreign keys preserve document → version → page/chunk provenance;
@@ -737,9 +753,11 @@ Exact SQL schema belongs in implementation phase database design/migrations.
 Each searchable point should contain:
 
 ```text
-point_id = chunk_id
-vectors = dense + sparse representation as selected by ADR
-payload:
+point_id = chunk UUID (Qdrant UUID id, not a free-form string)
+named vectors on the same point:
+  dense
+  sparse
+payload (filter-indexed where used):
   collection_id
   document_id
   document_version_id
@@ -749,9 +767,13 @@ payload:
   index_version
 ```
 
-The authoritative full chunk text may remain in PostgreSQL or may be copied into retrieval payload for performance. The final choice should account for payload size, retrieval latency, and provenance consistency.
+Create **both** named vectors when the Qdrant collection is created in Phase 06. Phase 07 updates the same point.
 
-Every query must apply `collection_id` and readiness/version filters at retrieval time.
+Authoritative chunk text lives in PostgreSQL. Payload may copy text for rerank latency; if copied, it must stay consistent with PostgreSQL.
+
+Every query must apply `collection_id` and `document_version_id IN (active READY versions)` inside Qdrant. Collection-only filters are a security defect. One application Qdrant collection is used; RAG collections are payload filters, not separate Qdrant collections.
+
+Do not use Qdrant-native RRF for the V1 online path.
 
 ---
 
@@ -900,9 +922,9 @@ reranker provider/model
 after-rerank top_n
 context token budget
 generator provider/model
-retrieval failure policy
-reranker fallback policy
-citation repair policy
+retrieval failure policy (production STRICT; eval uses EvaluationRunConfig)
+reranker failure policy (production RERANKER_ERROR)
+citation failure policy (CITATION_VALIDATION_FAILED, no V1 repair)
 object storage backend
 queue backend
 logging content policy
@@ -1001,8 +1023,9 @@ sequenceDiagram
     participant Search
 
     API->>Store: persist immutable source PDF
-    API->>PG: create document/version
+    API->>PG: create document/version UPLOADED
     API->>Queue: enqueue version ID
+    API->>PG: QUEUED
     Queue->>Worker: consume
     Worker->>PG: PROCESSING
     Worker->>Store: load source
@@ -1016,20 +1039,22 @@ sequenceDiagram
 
 ---
 
-## 27. Decisions Still Requiring Explicit Lock Before Coding
+## 27. V1 Locks (ADR-011)
 
-1. Docling as V1 parser or alternate parser.
-2. PostgreSQL + Qdrant vs single-store retrieval architecture.
-3. Sparse representation implementation inside Qdrant.
-4. Local reranker default vs hosted provider default.
-5. strict vs degraded retrieval failure mode.
-6. reranker failure fallback policy.
-7. citation repair attempt vs immediate controlled failure.
-8. API-key-only portfolio auth vs user-level auth.
-9. raw page/chunk text storage location and retention.
-10. exact chunking baseline configuration.
+The following are **locked**. Do not re-open them in a phase file:
 
-These should be resolved in Step 9 architecture review if not accepted earlier.
+1. Docling behind `DocumentParser`.
+2. PostgreSQL + Qdrant split; Qdrant named vectors `dense` + `sparse` on chunk UUID.
+3. `SparseEncoder` default: FastEmbed BM42 (or documented equivalent); no second lexical engine.
+4. Local cross-encoder preferred V1 reranker; production failure is `RERANKER_ERROR`.
+5. Production retrieval STRICT; empty lists fuse; eval ablations via `EvaluationRunConfig`.
+6. Citation fabrication → `CITATION_VALIDATION_FAILED`; no V1 repair.
+7. API-key auth (`Authorization: Bearer`); collection `owner_id`; document routes authorize via collection.
+8. Chunk text authoritative in PostgreSQL; optional Qdrant payload copy.
+9. Worker adapter: arq; lifecycle includes `QUEUED` / `DELETING` / `DELETED`.
+10. Chunk size/overlap **numbers** remain evaluation configuration; page-first chunking is the strategy.
+
+Exact embedding/generation/reranker **model names**, top-K, RRF `k`, and numeric quality thresholds remain configuration.
 
 ---
 

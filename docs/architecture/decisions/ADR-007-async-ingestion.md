@@ -1,6 +1,6 @@
 # ADR-007 — Asynchronous Ingestion
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Decision:** PDF ingestion executes asynchronously through a worker/queue boundary instead of keeping the upload HTTP request open until parsing and indexing complete.
 
 ## Context
@@ -11,9 +11,9 @@ PDF parsing, chunking, embedding generation, dense/sparse indexing, and status t
 
 The upload API stores the source PDF, creates durable document/job metadata, and enqueues ingestion work. A worker executes the ingestion pipeline and updates status transitions such as:
 
-`UPLOADED -> PROCESSING -> READY | FAILED`
+`UPLOADED -> QUEUED -> PROCESSING -> READY | FAILED`
 
-Use a queue abstraction with Redis-backed infrastructure for V1. Exact worker library is finalized in LLD after comparing operational simplicity and retry semantics.
+Use a queue abstraction with Redis-backed infrastructure for V1. The V1 adapter is **arq**. Job identity is `document_version_id`. See ADR-011 for lease, retry, and READY ownership.
 
 ## Required Properties
 
@@ -33,4 +33,4 @@ Use a queue abstraction with Redis-backed infrastructure for V1. Exact worker li
 
 ## Validation Required
 
-LLD must define job identifiers, retry policy, partial-failure recovery, and deletion behavior while ingestion is active.
+Phase 03 tests must cover duplicate delivery, crash/restart, bounded retry, and illegal transitions. Partial-index recovery and deletion-while-ingesting are covered in Phases 06–07 and 16 (ADR-011).

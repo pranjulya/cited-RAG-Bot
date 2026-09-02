@@ -23,8 +23,8 @@ Context builder service, evidence package model, token-budget calculator, determ
 3. Deduplicate/merge only with explicit rules.
 4. Enforce evidence count and token budget.
 5. Assign `E1`, `E2`, ... per request.
-6. Produce mapping from evidence ID to authoritative chunk/document/page.
-7. Never expose arbitrary provider-generated provenance as trusted identity.
+6. Produce mapping from evidence ID to authoritative chunk/document/page **server-side**.
+7. Model-facing context is evidence ID + chunk text only. Do not send document_id, chunk_id, or page numbers to the model.
 
 ## Tests
 Budget trimming, stable evidence order, duplicate handling, mapping integrity, empty evidence, oversized chunk.

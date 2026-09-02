@@ -20,7 +20,7 @@ Generation provider port, default adapter, grounded prompt builder, structured a
 ## Tasks
 1. Separate trusted system instructions from untrusted PDF evidence.
 2. Require answer based only on supplied evidence.
-3. Allow citations only from `E1..En` supplied for the request.
+3. Allow citations only from `E1..En` supplied for the request. Prompt evidence is ID + text only (no document/page/chunk ids).
 4. Define structured `ANSWERED` and `INSUFFICIENT_EVIDENCE` outputs.
 5. Add provider timeout/rate-limit/error translation.
 6. Record model, latency, token usage, and configuration metadata.

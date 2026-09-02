@@ -1,11 +1,11 @@
 # Step 3 — High-Level Design (HLD)
 
 **Project:** Cited RAG Bot  
-**Status:** Draft for architecture review  
-**Version:** 0.1  
+**Status:** Accepted for implementation (ADR-011 freeze)  
+**Version:** 1.1  
 **Scope:** PDF-only, multi-document Cited RAG with page-level citations
 
-> This HLD is based on the Step 1 PRD and the Step 2 proposed ADRs. Technology-specific decisions remain reviewable until the ADRs are marked Accepted. The system boundaries and responsibilities defined here should remain stable even if an implementation technology changes.
+> This HLD is based on the PRD and accepted ADRs, including ADR-011. System boundaries stay stable if an adapter implementation changes. V1 product contracts in ADR-011 are not optional.
 
 ---
 
@@ -67,6 +67,7 @@ flowchart LR
     WORKER --> QD
 
     API --> QD
+    API --> EMB
     API --> RR
     API --> LLM
 
@@ -209,8 +210,9 @@ Responsibilities:
 Document lifecycle:
 
 ```text
-UPLOADED -> PROCESSING -> READY
-                    \-> FAILED
+UPLOADED -> QUEUED -> PROCESSING -> READY
+                               \-> FAILED
+READY -> DELETING -> DELETED
 ```
 
 A document must never participate in retrieval before the version reaches `READY`.
@@ -385,19 +387,21 @@ sequenceDiagram
     API->>Store: Persist original PDF
     API->>PG: Create document/version = UPLOADED
     API->>Queue: Enqueue ingestion job
-    API-->>Client: 202 Accepted + document_id
+    API->>PG: Set QUEUED
+    API-->>Client: 202 Accepted + document_id + QUEUED
 
     Queue->>Worker: Consume job
     Worker->>PG: Set PROCESSING
     Worker->>Store: Read source PDF
     Worker->>Parser: Parse by page
     Parser-->>Worker: Page-aware content
-    Worker->>Worker: Normalize + chunk + provenance
-    Worker->>Embed: Generate embedding representations
-    Embed-->>Worker: Embeddings
-    Worker->>Search: Upsert dense/sparse retrieval points
-    Worker->>PG: Persist page/chunk/index metadata
-    Worker->>PG: Set READY
+    Worker->>Worker: Normalize + provenance-aware chunking
+    Worker->>PG: Persist page/chunk provenance
+    Worker->>Embed: Generate dense + sparse representations
+    Embed-->>Worker: Representations
+    Worker->>Search: Upsert named dense/sparse vectors
+    Worker->>Worker: Verify index completeness
+    Worker->>PG: Set READY + active_version_id
 ```
 
 ### Ingestion consistency rule
@@ -513,7 +517,7 @@ High-level controls:
 - deletion removes or invalidates searchable retrieval artifacts;
 - resource limits around upload, ingestion, query size, and concurrency.
 
-The portfolio V1 authentication mechanism will be finalized in LLD/security design.
+Portfolio V1 authentication is API-key (`Authorization: Bearer <api_key>`) with collection ownership (ADR-011).
 
 ---
 
@@ -565,13 +569,13 @@ High-cardinality IDs belong in traces/logs, not uncontrolled metric labels.
 ### Query
 
 - no relevant evidence -> controlled no-answer;
-- reranker unavailable -> degraded behavior must be explicit/configured, not accidental;
+- reranker unavailable -> `RERANKER_ERROR` in production; evaluation may disable rerank via run config;
 - generation provider unavailable -> controlled provider error, no fabricated answer;
 - citation validation failure -> fail/repair according to LLD policy; never return unvalidated citations.
 
 ### Retrieval component failure
 
-The architecture supports either strict fail-closed or explicitly configured degraded dense-only/sparse-only behavior. The default policy must be locked before implementation. Silent degradation is forbidden.
+Production V1 is fail-closed when dense or sparse retrieval is operationally unavailable. One retriever returning zero hits is not a failure; fuse the surviving list. Silent dense-only or sparse-only answers are forbidden. Evaluation ablations use `EvaluationRunConfig`, not production degraded mode (ADR-011).
 
 ---
 
@@ -615,6 +619,7 @@ flowchart LR
     API --> PG
     API --> REDIS
     API --> QD
+    API --> EMB
     API --> RERANK
     API --> LLM
     REDIS --> WORKER
@@ -680,22 +685,22 @@ These rules must survive implementation choices:
 
 ---
 
-## 17. Decisions Still Requiring Explicit Lock Before LLD
+## 17. Decisions Locked for Implementation
 
-The HLD intentionally leaves these as review gates rather than hiding assumptions:
+Resolved by accepted ADRs and ADR-011:
 
-1. Accept Docling as primary parser?
-2. Accept PostgreSQL + Qdrant split?
-3. Implement sparse retrieval directly in Qdrant or via separate lexical engine?
-4. Accept RRF as initial fusion strategy?
-5. Select default reranker implementation/provider.
-6. Strict query failure vs degraded retrieval when one retriever fails.
-7. Accept Redis-backed ingestion queue implementation.
-8. Source PDF retention/deletion policy.
-9. Portfolio authentication model.
-10. Baseline evaluation thresholds after benchmark data exists.
+1. Docling behind `DocumentParser`.
+2. PostgreSQL + Qdrant split.
+3. Sparse retrieval inside Qdrant named vector `sparse`; default FastEmbed BM42.
+4. In-process RRF (`FusionStrategy`).
+5. Local cross-encoder preferred; reranker failure is `RERANKER_ERROR`.
+6. Fail-closed on retriever dependency failure; empty lists fuse.
+7. Redis-backed queue; V1 adapter arq.
+8. Source PDFs retained until document/version deletion.
+9. API-key authentication and collection ownership.
+10. Numeric evaluation thresholds after the first baseline, not before.
 
-These decisions are tracked in Step 2 ADRs.
+See ADR-011 for lifecycle, versioning, Qdrant schema, citations, and READY filters.
 
 ---
 

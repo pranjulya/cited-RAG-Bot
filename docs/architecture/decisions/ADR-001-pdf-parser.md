@@ -1,6 +1,6 @@
 # ADR-001 — PDF Parser
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Decision:** Use Docling as the primary V1 PDF parser behind a parser interface.
 
 ## Context
@@ -17,7 +17,7 @@ Conceptual contract:
 
 ```python
 class DocumentParser(Protocol):
-    def parse(self, source: BinaryIO) -> ParsedDocument:
+    async def parse(self, source: BinaryIO) -> list[ParsedPage]:
         ...
 ```
 
@@ -44,4 +44,4 @@ Cons: heavier dependency/operational surface for the focused V1.
 
 ## Validation Required
 
-Before marking Accepted, benchmark representative PDFs and verify that extracted content retains correct page provenance.
+Parser page-number fidelity is proven in Phase 04 with fixture PDFs (including corrupt, password-protected, and extraction-empty cases). Golden parser samples in the evaluation corpus measure page assignment, not only “chunk ids exist.”

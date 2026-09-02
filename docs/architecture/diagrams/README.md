@@ -1,12 +1,12 @@
 # Step 4 — Architecture Diagrams
 
 **Project:** Cited RAG Bot  
-**Status:** Draft for architecture review  
-**Version:** 0.1
+**Status:** Accepted for implementation (ADR-011 freeze)  
+**Version:** 1.1
 
 ## Purpose
 
-This folder is the visual architecture reference for Project 04. The diagrams are derived from the PRD, Step 2 ADR proposals, and Step 3 HLD.
+This folder is the visual architecture reference for Project 04. The diagrams are derived from the PRD, accepted ADRs (including ADR-011), and HLD.
 
 The diagrams intentionally separate different architectural views instead of forcing the entire system into one oversized diagram.
 

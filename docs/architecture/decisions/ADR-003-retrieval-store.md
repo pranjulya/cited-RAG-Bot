@@ -1,6 +1,6 @@
 # ADR-003 — Retrieval Store
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Decision:** Use Qdrant as the V1 retrieval store for dense and sparse representations, while PostgreSQL remains the durable metadata/provenance system of record.
 
 ## Context
@@ -11,15 +11,19 @@ The PRD requires dense semantic retrieval, sparse lexical retrieval, hybrid fusi
 
 Use a `RetrievalStore` abstraction with Qdrant as the initial implementation.
 
-Each indexed point must carry stable provenance references such as:
+Each indexed point uses the chunk UUID as `point_id` and named vectors `dense` and `sparse` on the same point.
+
+Payload must carry:
 
 - collection_id
 - document_id
-- document_version
-- page_number
-- chunk_id
+- document_version_id
+- page_start
+- page_end
+- chunk_order
+- index_version
 
-The full authoritative chunk/provenance record remains in PostgreSQL.
+Queries must filter `collection_id` and `document_version_id IN (active READY versions)` inside Qdrant. The full authoritative chunk/provenance record remains in PostgreSQL. Schema details are locked in ADR-011.
 
 ## Why This Direction
 
@@ -51,4 +55,4 @@ Cons: adds consistency and operational complexity too early.
 
 ## Validation Required
 
-Before Accepted, confirm the chosen sparse representation and filtering strategy satisfy the golden retrieval dataset.
+Phase 07 locks the V1 `SparseEncoder` adapter (default FastEmbed BM42) behind the port. Golden retrieval evaluation compares dense-only, sparse-only, and hybrid after the schema exists. Schema and filter rules are not left to coding-time invention (ADR-011).

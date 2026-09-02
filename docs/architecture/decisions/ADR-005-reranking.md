@@ -1,6 +1,6 @@
 # ADR-005 — Reranking
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Decision:** Add a replaceable reranking stage after hybrid retrieval and before context construction.
 
 ## Context
@@ -34,9 +34,9 @@ Context Builder
 - Hosted and local rerankers can be swapped through adapters.
 - Context selection must use the reranked order, not raw retrieval scores.
 
-## Failure Behavior To Decide
+## Failure Behavior
 
-Architecture review must choose whether reranker failure results in controlled fallback to fused ranking or a failed query. Any fallback must be observable.
+Locked in ADR-011: production reranker timeout/failure returns `RERANKER_ERROR`. Do not silently fall back to fused ranking. Evaluation may disable reranking through `EvaluationRunConfig`.
 
 ## Validation Required
 

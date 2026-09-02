@@ -8,9 +8,10 @@ Before any implementation:
 
 1. read `AGENTS.md`;
 2. read `Implementation.md`;
-3. read the current phase file under `implementation/`;
-4. read the architecture documents referenced by that phase;
-5. confirm the phase prerequisites and scope.
+3. read `docs/architecture/decisions/ADR-011-v1-locked-policies.md`;
+4. read the current phase file under `implementation/`;
+5. read the architecture documents referenced by that phase;
+6. confirm the phase prerequisites and scope. Do not re-open ADR-011 locks.
 
 ## Working Style
 

@@ -6,7 +6,7 @@
 Implement the versioned golden dataset and reusable evaluation runners defined in Step 5.
 
 ## Prerequisites
-Phases 09–15 COMPLETE.
+Phase 15 COMPLETE for full answer/citation/no-answer layers. Retrieval-only runners may start after Phase 09 using `EvaluationRunConfig`. Parser/chunk provenance checks belong to Phases 04–05 fixtures and are included in the harness, not postponed until 19 to be designed.
 
 ## References
 `docs/evaluation/evaluation-strategy.md`, ADR-010, PRD evaluation requirements.

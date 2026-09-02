@@ -18,10 +18,10 @@ Background workers, Redis-backed queues, idempotency, retry policy, poison jobs,
 Queue port, Redis-backed adapter, ingestion worker entry point, job payload contract, lifecycle transition service, retry/failure classification.
 
 ## Implementation Tasks
-1. Define minimal ingestion job payload using stable IDs rather than raw PDF bytes.
-2. Enqueue after upload metadata/source storage succeed.
-3. Worker claims job and transitions version `UPLOADED → PROCESSING` safely.
-4. Propagate correlation/job IDs into logs/traces.
+1. Define minimal ingestion job payload using `document_version_id` rather than raw PDF bytes. V1 adapter: arq.
+2. Enqueue after upload metadata/source storage succeed; version becomes `QUEUED`.
+3. Worker claims a processing lease and transitions `QUEUED → PROCESSING`. Do **not** mark `READY` in this phase. Stub later stages as no-ops/checkpoints.
+4. Propagate correlation/job IDs into logs/traces. Do not log raw PDF bytes.
 5. Add bounded retry for transient infrastructure errors.
 6. Mark permanent failures `FAILED` with classified reason.
 7. Ensure repeated delivery does not duplicate downstream work.

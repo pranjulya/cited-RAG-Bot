@@ -6,7 +6,7 @@
 Make the complete system reproducible locally and verifiable in CI with clear dependency readiness and deployment configuration.
 
 ## Prerequisites
-Phases 00–21 COMPLETE.
+Phase 00 already has lint/type/unit CI and an API image. This phase completes compose topology, integration CI, and deployment docs after the system exists. Do not wait until Phase 21 to have any CI — that is Phase 00. Full-stack verification may follow Phases 15+; production-failure matrix is Phase 21.
 
 ## References
 HLD deployment/runtime diagram, Phase 00 foundation, `Implementation.md`.

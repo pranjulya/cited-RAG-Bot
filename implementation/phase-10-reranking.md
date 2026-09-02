@@ -22,7 +22,7 @@ Reranker port, default adapter, timeout policy, reranked candidate model, pre/po
 2. Accept query plus fused candidate texts/IDs.
 3. Return ordered shortlist with rerank score and original retrieval metadata.
 4. Configure candidate input and output limits.
-5. Add timeout/degraded behavior as an explicit policy.
+5. Production timeout/failure returns `RERANKER_ERROR`. Evaluation may disable rerank via `EvaluationRunConfig`. Do not silently return fused order.
 6. Store enough metadata for before/after evaluation.
 
 ## Tests

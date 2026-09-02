@@ -1,7 +1,7 @@
 # Step 10 — Phase 00 Implementation Readiness
 
 **Project:** Cited RAG Bot  
-**Status:** APPROVED FOR PHASE 00  
+**Status:** APPROVED FOR PHASE 00 (read ADR-011 before coding)  
 **Scope:** Pre-coding readiness only
 
 ## Purpose
@@ -18,7 +18,7 @@ Every implementation agent must read, in this order:
 4. `docs/architecture/architecture-review.md`
 5. `docs/architecture/HLD.md`
 6. `docs/architecture/LLD.md`
-7. relevant accepted ADRs
+7. `docs/architecture/decisions/ADR-011-v1-locked-policies.md` and other accepted ADRs
 8. `AGENTS.md`
 9. `CLAUDE.md` when using Claude Code
 

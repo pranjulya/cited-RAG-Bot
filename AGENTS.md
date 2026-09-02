@@ -9,10 +9,11 @@ This file defines repository-wide rules for Codex and other coding agents workin
 Before changing code:
 
 1. `Implementation.md`
-2. `implementation/README.md`
-3. the current `implementation/phase-XX-*.md`
-4. `docs/architecture/architecture-review.md`
-5. relevant PRD/HLD/LLD/ADR/evaluation documents
+2. `docs/architecture/decisions/ADR-011-v1-locked-policies.md`
+3. `implementation/README.md`
+4. the current `implementation/phase-XX-*.md`
+5. `docs/architecture/architecture-review.md`
+6. relevant PRD/HLD/LLD/ADR/evaluation documents
 
 ## Execution Rules
 
