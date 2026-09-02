@@ -1,0 +1,79 @@
+# AGENTS.md
+
+## Purpose
+
+This file defines repository-wide rules for Codex and other coding agents working on Cited RAG Bot.
+
+## Mandatory Reading Order
+
+Before changing code:
+
+1. `Implementation.md`
+2. `implementation/README.md`
+3. the current `implementation/phase-XX-*.md`
+4. `docs/architecture/architecture-review.md`
+5. relevant PRD/HLD/LLD/ADR/evaluation documents
+
+## Execution Rules
+
+1. Work on one implementation phase at a time.
+2. Confirm prerequisites before starting a phase.
+3. State expected files and tests before implementation.
+4. Do not implement future phases opportunistically.
+5. Do not silently change architecture.
+6. Architecture changes require ADR review/update first.
+7. Use tests to drive deterministic behavior where practical.
+8. Keep provider SDKs behind adapters.
+9. Keep API routes thin.
+10. Preserve collection/document/version/page/chunk provenance wherever the current phase touches evidence.
+11. Never invent or weaken collection scoping.
+12. Never log secrets or sensitive document content by default.
+13. Do not add unnecessary infrastructure or abstractions.
+14. Update the current phase status only when its stated gate is actually satisfied.
+15. Update Learning documentation for concepts introduced by the phase.
+
+## Phase Status
+
+Allowed phase statuses:
+
+```text
+NOT_STARTED
+IN_PROGRESS
+IMPLEMENTED
+TESTED
+REVIEWED
+COMPLETE
+```
+
+`COMPLETE` means implementation, automated tests, review, documentation, and learning notes all satisfy the phase Definition of Done.
+
+## Testing Expectations
+
+Use the test level appropriate to the change:
+
+- unit tests for deterministic logic;
+- contract tests for adapters;
+- integration tests for databases, queues, storage, retrieval systems, and provider boundaries;
+- end-to-end tests for complete user flows;
+- evaluation tests for RAG quality.
+
+Do not substitute mocked tests for integration behavior that the current phase explicitly requires.
+
+## Architecture Invariants
+
+- V1 is PDF-only.
+- Queries are collection-scoped.
+- PostgreSQL is authoritative durable metadata/provenance state.
+- Retrieval indexes are derived state.
+- Ingestion is asynchronous.
+- Dense and sparse retrieval are both mandatory for READY documents.
+- Hybrid retrieval uses explicit fusion.
+- Generation may use only approved evidence.
+- Citation identities are application-owned.
+- Citations must be validated before returning them.
+- Retrieved PDF text is untrusted data.
+- Unsupported questions must support controlled insufficient-evidence behavior.
+
+## Completion Rule
+
+Before claiming a phase complete, run and report the exact verification required by that phase. Evidence before completion claims.
