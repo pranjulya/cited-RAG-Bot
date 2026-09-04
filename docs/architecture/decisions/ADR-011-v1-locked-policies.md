@@ -27,7 +27,7 @@ src/cited_rag/
 └── config/
 ```
 
-Phase 00 creates `main.py`, `config.py`, and `api/health.py` inside this package. Later phases fill the LLD modules under the same root. Do not use a top-level `src/api` tree.
+Phase 00 creates `main.py`, `config.py`, and `api/health.py` inside this package. Later phases fill the LLD modules under the same root (`config/settings.py` and `api/routes/` may be added then). Do not use a top-level `src/api` tree. Do not create a second package root.
 
 ### 2. Lifecycle
 
@@ -55,7 +55,9 @@ PRD FR-03 status names are a product subset. The implementation state machine ab
 - `POST /v1/collections/{collection_id}/documents` without `document_id`:
   - if an active (non-deleted) document in that collection already has this `content_hash`, return that document/version (idempotent); do not create a second searchable copy;
   - otherwise create a new document and version `1`.
-- `POST /v1/collections/{collection_id}/documents/{document_id}/versions` creates version `N+1` of an existing document.
+- `POST /v1/collections/{collection_id}/documents/{document_id}/versions` creates version `N+1` of an existing document **only when the bytes are new** for that collection.
+- If the uploaded `content_hash` already exists on a non-deleted version in the same collection, do not create `N+1`. Return the existing document/version. Same bytes never produce a second copy inside one collection.
+- If that existing version is `FAILED`, do not create a new document. Retry is `FAILED → QUEUED` (re-enqueue), not a second upload identity.
 - `active_version_id` points at the version currently intended for retrieval.
 - Only the **active READY** version of a document is searchable.
 - A previous READY version remains in PostgreSQL for audit/reprocess but is excluded from retrieval once a newer version becomes the active READY version.

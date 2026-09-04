@@ -60,9 +60,10 @@ flowchart TD
 ```text
 Question
    ↓
-Collection-scoped validation
+Collection-scoped validation + active READY version filter
    ↓
 Dense retrieval + Sparse retrieval
+(both filter collection_id and active READY version ids)
    ↓
 RRF fusion
    ↓

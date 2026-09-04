@@ -86,9 +86,9 @@ The implementation must preserve these rules:
 
 ---
 
-## 4. Proposed Technology Direction
+## 4. Accepted Technology Direction
 
-The current architecture proposes:
+The current architecture uses:
 
 ```text
 API                  FastAPI / Python
@@ -289,11 +289,11 @@ Implement safe deletion/tombstoning after index phases (not blocked on the query
 
 ### Phase 17 — Observability
 
-Add structured logging, request/ingestion tracing, stage latency metrics, candidate counts, citation-validation metrics, provider telemetry, and failure classification without leaking sensitive content.
+Standardize structured logging, tracing, and metrics. Phases 03–15 already emit stage spans for the capability they add; this phase completes naming, redaction, and dashboards. Do not treat this as the first telemetry.
 
 ### Phase 18 — Security Hardening
 
-Implement/authenticate the portfolio deployment boundary, collection authorization, resource limits, MIME/file validation hardening, secret handling, untrusted-document protections, cross-collection leakage tests, and abuse controls.
+Harden the API-key and collection-ownership controls introduced in Phases 00/02. Add resource limits, MIME/file validation hardening, secret handling, untrusted-document protections, cross-collection leakage tests, and abuse controls. Do not introduce authentication here for the first time.
 
 ### Phase 19 — Evaluation Harness
 
@@ -331,16 +331,16 @@ Phase 03 Async Ingestion
 Phase 04 Parsing
        ↓
 Phase 05 Chunking
+       ↓
+Phase 06 Dense index
+(named vectors created)
       /         \
      v           v
-Phase 06        Phase 07
-Dense index     Sparse index + retrieve
-(named vectors  + READY finalize
- created)
+Phase 08        Phase 07
+Dense retrieve  Sparse index + retrieve
+(from 06)       + READY finalize
      \           /
       v         v
-Phase 08 Dense Retrieval
-       ↓
 Phase 09 Hybrid Retrieval + RRF
        ↓
 Phase 10 Reranking
@@ -358,8 +358,10 @@ Phase 15 End-to-End Query API
 Phase 16 Deletion Consistency
   depends on 02, 03, 06, 07
   (query-race tests after 15)
-       ↓
+
 Phase 17 Observability
+  depends on 03, 15
+  (standardizes spans those phases already emit)
        ↓
 Phase 18 Security
        ↓

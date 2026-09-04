@@ -3,7 +3,7 @@
 **Status:** NOT_STARTED
 
 ## Goal
-Make ingestion and query failures diagnosable without leaking sensitive raw document/query content.
+Standardize ingestion and query telemetry so failures are diagnosable without leaking sensitive raw document/query content. Phases 03–15 already emit stage spans for the capability they add; this phase names, redacts, and completes that instrumentation. It is not the first telemetry.
 
 ## Prerequisites
 Phases 03 and 15 COMPLETE.
@@ -19,7 +19,7 @@ Logging configuration, tracing instrumentation, metric definitions, provider/sta
 
 ## Tasks
 1. Propagate request/job correlation IDs.
-2. Create spans for parse, chunk, embed, retrieve, fuse, rerank, context, generate, citation validate.
+2. Standardize spans already emitted by Phases 03–15 (parse, chunk, embed, retrieve, fuse, rerank, context, generate, citation validate). Fill any missing stage; do not wait until this phase to start tracing.
 3. Record stage latency and candidate counts.
 4. Record provider/model/token metadata where safe.
 5. Emit counters for ingestion failures, no-answer, citation validation failures, provider failures.

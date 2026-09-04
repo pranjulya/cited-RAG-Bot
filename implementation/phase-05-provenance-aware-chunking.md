@@ -21,7 +21,7 @@ Chunker port, configurable implementation, chunk metadata builder, deterministic
 1. Define `Chunk` contract with collection/document/version/page/chunk/order/text.
 2. Implement configurable token/character aware splitting.
 3. Preserve one page or explicit page range for every chunk.
-4. Generate deterministic chunk IDs from stable provenance inputs.
+4. Generate deterministic UUID chunk IDs (UUIDv5 from stable provenance). Qdrant `point_id` is that UUID, never a free-form hash string (ADR-011).
 5. Persist chunk metadata/text.
 6. Record chunking configuration for reproducibility.
 
