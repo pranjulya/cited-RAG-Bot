@@ -5,3 +5,7 @@ Concept notes for Cited RAG Bot. Each implementation phase adds notes for the id
 ## Phase 00
 
 See `Learning/00-application-foundation.md`.
+
+## Phase 01
+
+See `Learning/01-domain-persistence.md`.

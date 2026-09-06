@@ -1,6 +1,6 @@
 # Phase 01 — Core Domain Model and Persistence Foundation
 
-**Status:** NOT_STARTED
+**Status:** TESTED
 
 ## Goal
 Define durable domain entities and PostgreSQL persistence without yet implementing upload or retrieval behavior.

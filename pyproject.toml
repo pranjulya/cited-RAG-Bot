@@ -11,8 +11,11 @@ requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Cited RAG Bot" }]
 dependencies = [
+    "alembic>=1.14.0",
+    "asyncpg>=0.30.0",
     "fastapi>=0.115.0",
     "pydantic-settings>=2.6.0",
+    "sqlalchemy[asyncio]>=2.0.36",
     "uvicorn[standard]>=0.32.0",
 ]
 
@@ -21,6 +24,7 @@ dev = [
     "httpx>=0.27.0",
     "mypy>=1.13.0",
     "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
     "ruff>=0.8.0",
 ]
 
@@ -30,12 +34,17 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "postgres: tests that need PostgreSQL and CITED_RAG_DATABASE_URL",
+]
 
 [tool.ruff]
 target-version = "py312"
 line-length = 100
 src = ["src", "tests"]
-extend-exclude = ["docs", "implementation", "Learning", ".venv"]
+extend-exclude = ["docs", "implementation", "Learning", ".venv", "alembic/script.py.mako"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
