@@ -33,6 +33,15 @@ Before changing code:
 14. Update the current phase status only when its stated gate is actually satisfied.
 15. Update Learning documentation for concepts introduced by the phase.
 
+## Git Workflow
+
+Never commit, push, or merge directly to `main`.
+
+1. Create a new branch from the latest `main` for every implementation phase, feature, and bug fix.
+2. Do not combine unrelated phases or bug fixes on the same branch.
+3. Open a pull request into `main`. Merge only after review. Do not fast-forward or push commits onto `main` from an agent session unless the user explicitly asks to merge a reviewed PR.
+4. Suggested names: `phase-00-foundation`, `phase-01-domain-persistence`, `fix/<short-name>`.
+
 ## Phase Status
 
 Allowed phase statuses:

@@ -1,6 +1,6 @@
 # Project 04 — Phase Implementation Guide
 
-**Status:** PLANNING COMPLETE, ADR-011 FROZEN, IMPLEMENTATION NOT STARTED
+**Status:** PLANNING COMPLETE, ADR-011 FROZEN, PHASE 00 TESTED
 
 This folder is the execution layer for `Implementation.md`. Each phase is intentionally small enough to implement, test, review, learn, and complete before moving to the next dependency.
 
@@ -12,12 +12,14 @@ Before any phase:
 2. Read the phase file.
 3. Read referenced PRD/HLD/LLD/ADR/evaluation docs.
 4. Verify prerequisites.
-5. Write or identify failing tests first.
-6. Implement only the current phase.
-7. Run the phase verification suite.
-8. Update Learning documentation.
-9. Review architecture/security implications.
-10. Change phase status only when its Definition of Done is satisfied.
+5. Create a branch from latest `main` (never commit to `main`; see `AGENTS.md` Git Workflow).
+6. Write or identify failing tests first.
+7. Implement only the current phase.
+8. Run the phase verification suite.
+9. Update Learning documentation.
+10. Review architecture/security implications.
+11. Change phase status only when its Definition of Done is satisfied.
+12. Open a pull request into `main`.
 
 ## Status Model
 

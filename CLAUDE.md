@@ -15,6 +15,7 @@ Before any implementation:
 
 ## Working Style
 
+- Follow the Git Workflow in `AGENTS.md`: never commit, push, or merge directly to `main`; one branch per implementation or bug fix; land through a pull request.
 - Implement one phase at a time.
 - Do not edit future-phase functionality while working on the current phase.
 - Prefer small, reviewable changes.
