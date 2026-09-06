@@ -42,12 +42,12 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 02 merged (`ca33df9`). Correctness fixes in progress on `fix/transaction-deletion-provenance`. Phase 03 PR #6 is **not** to merge until this lands and Phase 03 is rebased. |
+| Last completed work | Phase 02 merged (`ca33df9`). Correctness PR **[#7](https://github.com/pranjulya/cited-RAG-Bot/pull/7)** open. Phase 03 **[#6](https://github.com/pranjulya/cited-RAG-Bot/pull/6) must not merge** until #7 lands and #6 is rebased. |
 | Phase file status | Phase 02 `TESTED` on `main` |
 | Branch | `fix/transaction-deletion-provenance` |
-| PR | (open after push) |
+| PR | [#7](https://github.com/pranjulya/cited-RAG-Bot/pull/7) — open, `fix/transaction-deletion-provenance` → `main` |
 | `main` | `ca33df9` — Phase 02. **Do not push or merge to `main` except via PR.** |
-| Next action | Land correctness PR, rebase [PR #6](https://github.com/pranjulya/cited-RAG-Bot/pull/6), then Phase 03 queue/lease fixes. |
+| Next action | 1) Review/merge [PR #7](https://github.com/pranjulya/cited-RAG-Bot/pull/7). 2) Rebase Phase 03 and fix queue/lease races. |
 | Blockers | Do not merge Phase 03 yet. |
 
 Phase 02 is on `main`. Do **not** merge Phase 03 until the correctness PR is merged and Phase 03 is rebased.
