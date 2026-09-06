@@ -3,7 +3,7 @@
 **Status:** NOT_STARTED
 
 ## Goal
-Exercise the failure modes identified in the PRD and master plan so degraded behavior is intentional, visible, and safe.
+Exercise the failure modes identified in the PRD and master plan so failure behavior is classified, visible, and safe. Production V1 has no silent single-retriever degraded mode.
 
 ## Prerequisites
 Phases 15–20 COMPLETE.
@@ -25,7 +25,7 @@ Scenario matrix, automated/integration failure tests, expected-behavior document
 5. Test context overflow and unknown evidence IDs.
 6. Test prompt injection and cross-collection leakage attempts.
 7. Test deletion races and orphan-artifact reconciliation.
-8. Verify every scenario maps to a classified error, retry, degraded mode, no-answer, or safe failure.
+8. Verify every scenario maps to a classified error, retry, no-answer, or safe failure. Do not treat one-retriever answers as an allowed production degraded mode.
 
 ## Tests
 Each scenario must have an automated test where practical and a documented manual/integration procedure where infrastructure fault injection is required.

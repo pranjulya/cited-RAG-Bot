@@ -410,7 +410,7 @@ Returns current version and ingestion state. Authorize via `document.collection_
 
 ### POST /v1/collections/{collection_id}/documents/{document_id}/versions
 
-Creates version `N+1` of an existing document. While the new version is processing, the previous **active READY** version remains searchable. `active_version_id` switches when the new version reaches `READY`.
+Creates version `N+1` of an existing document **only when the bytes are new** for that collection (ADR-011). Same `content_hash` as a non-deleted version in the collection is idempotent: return the existing document/version, including when that version is `FAILED` (retry is `FAILED → QUEUED`, not a new identity). While a new version is processing, the previous **active READY** version remains searchable. `active_version_id` switches when the new version reaches `READY`.
 
 ### DELETE /v1/documents/{document_id}
 
@@ -507,7 +507,7 @@ READY ──delete──> DELETING ──> DELETED
 14. mark version `READY`;
 15. emit telemetry.
 
-If steps 10–13 fail, the version remains non-ready. Recovery may re-upsert deterministic chunk IDs rather than duplicate records.
+If steps 10–13 fail, the version remains non-ready. Recovery may re-upsert the same chunk UUIDs rather than duplicate records.
 
 ---
 
@@ -738,9 +738,9 @@ evaluation_results
 ### Important constraints
 
 - unique `(document_id, version_number)`;
-- unique `(collection_id, content_hash)` among non-deleted versions (same PDF may exist in two collections);
+- unique `(collection_id, content_hash)` among non-deleted versions (same PDF may exist in two collections; same bytes in one collection never create a second version);
 - unique `(document_version_id, page_number)`;
-- unique chunk ID/content identity strategy;
+- chunk `id` is a deterministic UUID (UUIDv5 from provenance); that UUID is the Qdrant `point_id`;
 - foreign keys preserve document → version → page/chunk provenance;
 - soft-delete/tombstone policy where required for asynchronous cleanup.
 
@@ -883,7 +883,7 @@ ingestion.persist
 ingestion.finalize
 ```
 
-Metrics should include stage latency, counts, failure classification, no-answer count, degraded-query count, candidate counts, and citation-validation failures.
+Metrics should include stage latency, counts, failure classification, no-answer count, classified query-error count, candidate counts, and citation-validation failures. Do not emit a production “degraded-query” counter that implies `ALLOW_SINGLE_RETRIEVER`. Evaluation ablations are recorded on `EvaluationRunConfig`, not as online degraded mode.
 
 Request/document IDs belong in structured logs/traces, not high-cardinality metric labels.
 
@@ -987,11 +987,11 @@ sequenceDiagram
     participant LLM
     participant Cite
 
-    API->>Auth: verify collection access
+    API->>Auth: verify collection access + active READY version ids
     par
-        API->>Dense: retrieve(question, collection)
+        API->>Dense: retrieve(question, collection, active READY version ids)
     and
-        API->>Sparse: retrieve(question, collection)
+        API->>Sparse: retrieve(question, collection, active READY version ids)
     end
     Dense-->>API: candidates
     Sparse-->>API: candidates

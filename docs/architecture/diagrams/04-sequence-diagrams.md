@@ -52,13 +52,13 @@ sequenceDiagram
     participant Citation
 
     Client->>API: Query(collection_id, question)
-    API->>PG: Authorize collection + find READY documents
+    API->>PG: Authorize collection + load active READY version ids
 
     par Dense retrieval
-        API->>Dense: retrieve(question, collection)
+        API->>Dense: retrieve(question, collection, active READY version ids)
         Dense-->>API: candidates
     and Sparse retrieval
-        API->>Sparse: retrieve(question, collection)
+        API->>Sparse: retrieve(question, collection, active READY version ids)
         Sparse-->>API: candidates
     end
 
@@ -106,4 +106,4 @@ sequenceDiagram
 
 ## Design Rule
 
-Provider retries, retrieval degradation, generation repair, and ingestion retry behavior must be made explicit in LLD. These diagrams describe the successful logical path and the major controlled branches, not hidden retry loops.
+Provider retries, fail-closed retrieval/reranker errors, citation validation failure (`CITATION_VALIDATION_FAILED`, no V1 repair), and ingestion retry (`FAILED → QUEUED`) are specified in LLD and ADR-011. These diagrams describe the successful logical path and the major controlled branches, not hidden retry loops.

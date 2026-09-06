@@ -212,10 +212,11 @@ Document lifecycle:
 ```text
 UPLOADED -> QUEUED -> PROCESSING -> READY
                                \-> FAILED
+FAILED -> QUEUED                 # explicit retry
 READY -> DELETING -> DELETED
 ```
 
-A document must never participate in retrieval before the version reaches `READY`.
+Only the **active READY** version of a document is searchable. `FAILED`, `DELETING`, and in-progress versions are never searchable.
 
 ---
 
@@ -230,13 +231,13 @@ Responsibilities:
 3. parse by page;
 4. normalize extracted content;
 5. chunk text while preserving provenance;
-6. generate dense embeddings and sparse representations;
-7. write retrieval artifacts;
-8. persist durable metadata;
-9. atomically transition document version to `READY` only after required indexing succeeds;
+6. persist durable page/chunk metadata in PostgreSQL;
+7. generate dense embeddings and sparse representations;
+8. write retrieval artifacts (named vectors on the chunk UUID);
+9. atomically transition the document version to `READY` only after required indexing succeeds;
 10. classify and persist failure state when ingestion cannot complete.
 
-The initial proposed parser is Docling behind a `DocumentParser` abstraction.
+The V1 parser is Docling behind a `DocumentParser` abstraction. Do not upsert Qdrant before durable page/chunk rows exist (ADR-011).
 
 ---
 
@@ -364,7 +365,7 @@ The harness must support:
 - no-answer evaluation;
 - configuration/model comparisons against a versioned golden dataset.
 
-Exact evaluation design is Step 5 and must be completed before LLD is frozen.
+Evaluation design is in `docs/evaluation/evaluation-strategy.md`.
 
 ---
 
@@ -408,7 +409,7 @@ sequenceDiagram
 
 `READY` is a semantic promise: all mandatory retrieval artifacts required by V1 must be available. Partial indexing must never result in `READY`.
 
-Recovery strategy for partial writes will be detailed in LLD.
+Partial writes stay non-READY. Recovery re-upserts the same chunk UUIDs (LLD §7, ADR-011).
 
 ---
 
@@ -428,13 +429,13 @@ sequenceDiagram
     participant Citation
 
     Client->>API: Query(collection_id, question)
-    API->>PG: Validate collection access + READY documents
+    API->>PG: Authorize collection + load active READY version ids
 
     par Dense Retrieval
-        API->>Dense: retrieve(question, collection)
+        API->>Dense: retrieve(question, collection, active READY version ids)
         Dense-->>API: dense candidates
     and Sparse Retrieval
-        API->>Sparse: retrieve(question, collection)
+        API->>Sparse: retrieve(question, collection, active READY version ids)
         Sparse-->>API: sparse candidates
     end
 
@@ -571,7 +572,7 @@ High-cardinality IDs belong in traces/logs, not uncontrolled metric labels.
 - no relevant evidence -> controlled no-answer;
 - reranker unavailable -> `RERANKER_ERROR` in production; evaluation may disable rerank via run config;
 - generation provider unavailable -> controlled provider error, no fabricated answer;
-- citation validation failure -> fail/repair according to LLD policy; never return unvalidated citations.
+- citation validation failure -> `CITATION_VALIDATION_FAILED`; V1 does not repair, strip, or return a partial `ANSWERED` result. Never return unvalidated citations.
 
 ### Retrieval component failure
 
@@ -655,6 +656,7 @@ POST   /v1/collections
 GET    /v1/collections/{collection_id}
 
 POST   /v1/collections/{collection_id}/documents
+POST   /v1/collections/{collection_id}/documents/{document_id}/versions
 GET    /v1/documents/{document_id}
 DELETE /v1/documents/{document_id}
 
@@ -674,8 +676,8 @@ These rules must survive implementation choices:
 
 1. A citation cannot exist without a real evidence mapping.
 2. A chunk cannot lose its source document version/page provenance.
-3. A document cannot be queryable before required indexes are complete.
-4. Retrieval must always be scoped by collection/access boundary.
+3. Only the active READY document version is searchable.
+4. Retrieval must always be scoped by collection **and** `document_version_id IN (active READY versions)`. Collection-only filters are a defect.
 5. Generation receives only approved context.
 6. PDF text cannot override system/application instructions.
 7. Provider SDKs cannot leak into core domain interfaces.

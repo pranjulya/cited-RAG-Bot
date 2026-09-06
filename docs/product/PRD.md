@@ -196,7 +196,7 @@ The parser shall preserve PDF page boundaries.
 
 Extracted content must remain associated with the original PDF page number even after normalization and chunking.
 
-Parser choice will be made through an ADR after evaluating layout fidelity, tables, performance, dependency weight, and operational complexity.
+The V1 parser is Docling behind a `DocumentParser` interface (ADR-001). Page-number fidelity is proven in Phase 04.
 
 ---
 
@@ -266,7 +266,7 @@ The system must measure whether reranking improves retrieval quality instead of 
 
 Only selected evidence may be passed to the generation model.
 
-The context builder shall preserve citation/provenance identifiers alongside the evidence.
+The context builder keeps document/page/chunk provenance in a **server-side** map. The model sees only evidence IDs (`E1`, `E2`, …) and chunk text.
 
 It must enforce configurable limits such as context token budget and maximum evidence count.
 
@@ -300,12 +300,12 @@ The public API does not expose `chunk_id`. Internal mapping remains `evidence_id
 
 ### FR-13 — Citation Validation
 
-Before returning the response, the system shall validate that:
+The model cites only request-scoped evidence IDs. Before returning the response, the system shall validate that:
 
-- cited document IDs exist;
-- cited pages belong to those documents;
-- cited chunks were present in the retrieved/approved evidence set;
-- citations are not fabricated by the generation model.
+- each cited evidence ID was approved for this request;
+- mapped document/version/page provenance exists in PostgreSQL;
+- the mapped chunk was in the approved evidence set;
+- unknown or unapproved IDs fail with `CITATION_VALIDATION_FAILED` (V1 does not repair).
 
 V1 should distinguish citation validity from deeper semantic citation correctness. The latter is evaluated through the evaluation harness.
 
@@ -404,7 +404,7 @@ For insufficient evidence:
 }
 ```
 
-Exact wording and metadata exposure will be finalized later.
+Exact field names follow the LLD query contract. Public citations never include `chunk_id`.
 
 ---
 

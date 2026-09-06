@@ -24,7 +24,7 @@ Collection/document endpoints, upload service, `ObjectStorage` port, local stora
 4. Stream upload rather than reading unbounded files into memory.
 5. Compute content hash while storing.
 6. Apply ADR-011 duplicate policy: same hash in the same collection returns the existing document; new bytes create version 1.
-7. Create document/version records, enqueue in Phase 03; until the queue exists, persist `UPLOADED` then document the `QUEUED` transition as Phase 03. Upload `202` status is `QUEUED` once enqueue exists.
+7. Create document/version records. The public upload `202` status is `QUEUED` (ADR-011). Until Phase 03 enqueue exists, persist `UPLOADED` internally; do not ship `UPLOADED` as the product `202` contract. Enqueue then `QUEUED` land in Phase 03. Same-hash uploads follow ADR-011 (idempotent return; `FAILED` retries via `FAILED → QUEUED`, not a second document).
 8. Store object key by collection/document/version.
 9. `GET`/`DELETE /v1/documents/{document_id}` authorize via `document.collection_id` and return 404 for unauthorized.
 10. Add status retrieval endpoint.

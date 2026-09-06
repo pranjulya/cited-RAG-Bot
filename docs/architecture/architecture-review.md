@@ -19,9 +19,9 @@ This is not a code review. No application code exists yet.
 
 **Decision: PASS WITH IMPLEMENTATION GUARDRAILS**
 
-No architectural contradiction was found that requires redesign before Phase 00.
+No architectural contradiction remains that requires redesign before Phase 00. Residual wording after the ADR-011 freeze was aligned in a follow-up docs pass. Treat ADR-011 as authoritative if any older sentence still disagrees. See §13.
 
-The main pre-coding blocker was governance rather than design: the ADR index still marked all core decisions as `Proposed` even though HLD, LLD, and implementation planning depended on them. Step 9 resolves that by freezing the accepted architecture directions in `docs/architecture/decisions/README.md`.
+The original Step 9 blocker was governance rather than design: the ADR index marked decisions `Accepted` while some ADR bodies and HLD/LLD lists still read as unfinished. ADR-011 closed that.
 
 Some technology parameters remain intentionally configurable and evaluation-driven. They are not architecture blockers.
 
@@ -346,3 +346,5 @@ Those contradictions are closed in `docs/architecture/decisions/ADR-011-v1-locke
 - deletion after 02/03/06/07; CI/Learning from Phase 00.
 
 Do not re-open LLD §27 items in a phase file.
+
+A residual wording pass after the freeze aligned leftover HLD/Implementation/PRD/diagram sentences (citation repair, ingest write order, Phase 06→07 order, Phase 18 auth, versions route, same-hash version uploads) with this ADR. If a sentence still disagrees, ADR-011 wins.
