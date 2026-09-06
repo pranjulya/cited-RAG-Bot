@@ -28,7 +28,7 @@ uvicorn cited_rag.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 - Liveness: `GET /health` → `{"status":"ok"}` (unauthenticated)
-- Readiness: `GET /ready` → `{"status":"not_configured"}` (HTTP 200, unauthenticated)
+- Readiness: `GET /ready` → `{"status":"ok"}` when Postgres and local storage work; HTTP 503 otherwise (unauthenticated)
 - Authenticated `/v1/*` routes use `Authorization: Bearer <api_key>`
 - `POST /v1/collections` → `201`
 - `POST /v1/collections/{collection_id}/documents` (multipart PDF) → `202` `{"status":"QUEUED"}`
@@ -53,7 +53,7 @@ pytest tests/unit
 CITED_RAG_DATABASE_URL=postgresql+asyncpg://cited_rag:cited_rag@localhost:5432/cited_rag pytest tests/integration
 ```
 
-Persistence tests skip unless `CITED_RAG_DATABASE_URL` is set. `/ready` remains `{"status":"not_configured"}` in this phase.
+Persistence tests skip unless `CITED_RAG_DATABASE_URL` is set. Compose runs `alembic upgrade head` before the API starts.
 
 ## Docker
 

@@ -50,6 +50,11 @@ class Settings(BaseSettings):
                 "CITED_RAG_API_KEY must be set to a non-placeholder value when "
                 "CITED_RAG_ENVIRONMENT=production"
             )
+        db = self.database_url.get_secret_value() if self.database_url is not None else ""
+        if not db.strip():
+            raise ValueError(
+                "CITED_RAG_DATABASE_URL must be set when CITED_RAG_ENVIRONMENT=production"
+            )
         return self
 
 

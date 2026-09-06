@@ -39,8 +39,20 @@ def test_production_disables_debug(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CITED_RAG_ENVIRONMENT", "production")
     monkeypatch.setenv("CITED_RAG_API_KEY", "not-a-placeholder")
     monkeypatch.setenv("CITED_RAG_DEBUG", "true")
+    monkeypatch.setenv(
+        "CITED_RAG_DATABASE_URL",
+        "postgresql+asyncpg://cited_rag:cited_rag@localhost:5432/cited_rag",
+    )
     get_settings.cache_clear()
     settings = Settings(_env_file=None)
     assert settings.debug is False
     assert settings.api_key is not None
     assert "not-a-placeholder" not in repr(settings)
+
+
+def test_production_requires_database_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CITED_RAG_ENVIRONMENT", "production")
+    monkeypatch.setenv("CITED_RAG_API_KEY", "not-a-placeholder")
+    get_settings.cache_clear()
+    with pytest.raises(ValidationError, match="CITED_RAG_DATABASE_URL"):
+        Settings(_env_file=None)

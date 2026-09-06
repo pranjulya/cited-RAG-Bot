@@ -6,8 +6,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     CITED_RAG_ENVIRONMENT=development
 
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md alembic.ini ./
 COPY src ./src
+COPY alembic ./alembic
 
 RUN pip install --no-cache-dir .
 

@@ -42,6 +42,11 @@ def test_create_and_get_collection(client: TestClient) -> None:
     assert response.status_code == 200
     assert response.json()["name"] == "handbooks"
     assert response.json()["status"] == "ACTIVE"
+    ready = client.get("/ready")
+    assert ready.status_code == 200
+    assert ready.json() == {"status": "ok"}
+    blank = client.post("/v1/collections", json={"name": "   "}, headers=AUTH)
+    assert blank.status_code == 422
 
 
 def test_valid_pdf_upload_returns_queued_and_is_not_searchable(client: TestClient) -> None:

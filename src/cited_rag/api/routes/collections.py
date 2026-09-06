@@ -3,7 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from cited_rag.adapters.persistence.postgres.uow import PostgresUnitOfWork
 from cited_rag.api.deps import get_principal, get_uow
@@ -15,6 +15,14 @@ router = APIRouter()
 
 class CreateCollectionRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255)
+
+    @field_validator("name")
+    @classmethod
+    def strip_name(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("name must not be blank")
+        return stripped
 
 
 class CollectionResponse(BaseModel):

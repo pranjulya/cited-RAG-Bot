@@ -15,6 +15,13 @@ from cited_rag.ports.object_storage import ObjectStorage
 _bearer = HTTPBearer(auto_error=False)
 
 
+def _bearer_matches(provided: str, expected: str) -> bool:
+    try:
+        return hmac.compare_digest(provided.encode("utf-8"), expected.encode("utf-8"))
+    except (TypeError, UnicodeError):
+        return False
+
+
 def get_settings_dep(request: Request) -> Settings:
     return request.app.state.settings  # type: ignore[no-any-return]
 
@@ -29,9 +36,13 @@ async def require_api_key(
         credentials is None
         or credentials.scheme.lower() != "bearer"
         or not expected
-        or not hmac.compare_digest(provided, expected)
+        or not _bearer_matches(provided, expected)
     ):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="unauthorized")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="unauthorized",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 async def get_uow(

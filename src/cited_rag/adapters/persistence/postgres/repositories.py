@@ -83,6 +83,13 @@ class PostgresDocumentRepository:
         row = await self._session.get(DocumentRow, document_id)
         return document_from_row(row) if row is not None else None
 
+    async def get_for_update(self, document_id: UUID) -> Document | None:
+        result = await self._session.scalars(
+            select(DocumentRow).where(DocumentRow.id == document_id).with_for_update()
+        )
+        row = result.first()
+        return document_from_row(row) if row is not None else None
+
     async def set_active_version(self, document_id: UUID, version_id: UUID | None) -> None:
         await self._session.execute(
             update(DocumentRow)
@@ -165,6 +172,23 @@ class PostgresDocumentVersionRepository:
         if loaded is None:
             raise OptimisticConcurrencyError()
         return loaded
+
+    async def mark_deleting(self, version_id: UUID) -> None:
+        """Park a non-READY version in DELETING before object cleanup."""
+        await self._session.execute(
+            update(DocumentVersionRow)
+            .where(
+                DocumentVersionRow.id == version_id,
+                DocumentVersionRow.ingestion_status.not_in(
+                    (
+                        DocumentVersionStatus.READY.value,
+                        DocumentVersionStatus.DELETING.value,
+                        DocumentVersionStatus.DELETED.value,
+                    )
+                ),
+            )
+            .values(ingestion_status=DocumentVersionStatus.DELETING.value)
+        )
 
     async def tombstone(self, version_id: UUID) -> None:
         """Mark a non-READY version DELETED so its content hash can be reused."""
@@ -250,8 +274,9 @@ class PostgresQueryRunRepository:
 
 
 async def _add(session: AsyncSession, row: object) -> None:
-    session.add(row)
     try:
-        await session.flush()
+        async with session.begin_nested():
+            session.add(row)
+            await session.flush()
     except IntegrityError as exc:
         raise_domain_integrity_error(exc)

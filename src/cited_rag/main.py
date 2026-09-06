@@ -6,6 +6,7 @@ import logging
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
@@ -18,6 +19,7 @@ from cited_rag.api.routes.documents import router as documents_router
 from cited_rag.config import Settings, get_settings
 
 logger = logging.getLogger("cited_rag")
+_correlation_id: ContextVar[str] = ContextVar("correlation_id", default="-")
 
 
 def _configure_logging(settings: Settings) -> None:
@@ -35,8 +37,7 @@ def _configure_logging(settings: Settings) -> None:
 
 class _CorrelationIdFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
-        if not hasattr(record, "correlation_id"):
-            record.correlation_id = "-"
+        record.correlation_id = _correlation_id.get()
         return True
 
 
@@ -74,7 +75,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         header_name = resolved.correlation_id_header
         correlation_id = request.headers.get(header_name) or str(uuid.uuid4())
         request.state.correlation_id = correlation_id
-        response = await call_next(request)
+        token = _correlation_id.set(correlation_id)
+        try:
+            response = await call_next(request)
+        finally:
+            _correlation_id.reset(token)
         response.headers[header_name] = correlation_id
         return response
 
