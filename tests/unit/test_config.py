@@ -11,6 +11,7 @@ def test_default_settings_do_not_require_production_secrets() -> None:
     settings = Settings(_env_file=None)
     assert settings.environment in {"development", "test", "production"}
     assert settings.debug is False
+    assert settings.database_url is None
 
 
 def test_unknown_setting_fails_clearly() -> None:

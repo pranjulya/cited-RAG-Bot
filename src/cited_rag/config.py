@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     debug: bool = False
     correlation_id_header: str = Field(default="X-Correlation-ID")
+    database_url: SecretStr | None = None
 
     @field_validator("debug")
     @classmethod

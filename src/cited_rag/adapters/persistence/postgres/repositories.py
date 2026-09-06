@@ -1,0 +1,218 @@
+from __future__ import annotations
+
+from uuid import UUID
+
+from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from cited_rag.adapters.persistence.postgres.errors import raise_domain_integrity_error
+from cited_rag.adapters.persistence.postgres.mapping import (
+    chunk_from_row,
+    chunk_to_row,
+    collection_from_row,
+    collection_to_row,
+    document_from_row,
+    document_to_row,
+    job_from_row,
+    job_to_row,
+    page_from_row,
+    page_to_row,
+    principal_from_row,
+    principal_to_row,
+    query_run_from_row,
+    query_run_to_row,
+    version_from_row,
+    version_to_row,
+)
+from cited_rag.adapters.persistence.postgres.models import (
+    ApiPrincipalRow,
+    ChunkRow,
+    CollectionRow,
+    DocumentRow,
+    DocumentVersionRow,
+    IngestionJobRow,
+    PageRow,
+    QueryRunRow,
+)
+from cited_rag.domain.clock import utc_now
+from cited_rag.domain.enums import DocumentVersionStatus
+from cited_rag.domain.exceptions import OptimisticConcurrencyError
+from cited_rag.domain.models.chunk import Chunk
+from cited_rag.domain.models.collection import Collection
+from cited_rag.domain.models.document import Document, DocumentVersion
+from cited_rag.domain.models.ingestion import IngestionJob
+from cited_rag.domain.models.page import Page
+from cited_rag.domain.models.principal import ApiPrincipal
+from cited_rag.domain.models.query import QueryRun
+from cited_rag.domain.policies import assert_lifecycle_transition
+
+
+class PostgresPrincipalRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, principal: ApiPrincipal) -> None:
+        await _add(self._session, principal_to_row(principal))
+
+    async def get(self, principal_id: UUID) -> ApiPrincipal | None:
+        row = await self._session.get(ApiPrincipalRow, principal_id)
+        return principal_from_row(row) if row is not None else None
+
+
+class PostgresCollectionRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, collection: Collection) -> None:
+        await _add(self._session, collection_to_row(collection))
+
+    async def get(self, collection_id: UUID) -> Collection | None:
+        row = await self._session.get(CollectionRow, collection_id)
+        return collection_from_row(row) if row is not None else None
+
+
+class PostgresDocumentRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, document: Document) -> None:
+        await _add(self._session, document_to_row(document))
+
+    async def get(self, document_id: UUID) -> Document | None:
+        row = await self._session.get(DocumentRow, document_id)
+        return document_from_row(row) if row is not None else None
+
+    async def set_active_version(self, document_id: UUID, version_id: UUID | None) -> None:
+        await self._session.execute(
+            update(DocumentRow)
+            .where(DocumentRow.id == document_id)
+            .values(active_version_id=version_id)
+        )
+
+
+class PostgresDocumentVersionRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, version: DocumentVersion) -> None:
+        await _add(self._session, version_to_row(version))
+
+    async def get(self, version_id: UUID) -> DocumentVersion | None:
+        row = await self._session.get(DocumentVersionRow, version_id)
+        return version_from_row(row) if row is not None else None
+
+    async def list_by_document(self, document_id: UUID) -> list[DocumentVersion]:
+        result = await self._session.scalars(
+            select(DocumentVersionRow)
+            .where(DocumentVersionRow.document_id == document_id)
+            .order_by(DocumentVersionRow.version_number)
+        )
+        return [version_from_row(row) for row in result.all()]
+
+    async def transition(
+        self,
+        version_id: UUID,
+        from_status: DocumentVersionStatus,
+        to_status: DocumentVersionStatus,
+        *,
+        failure_code: str | None = None,
+        failure_message: str | None = None,
+        page_count: int | None = None,
+    ) -> DocumentVersion:
+        assert_lifecycle_transition(from_status, to_status)
+        values: dict[str, object] = {"ingestion_status": to_status.value}
+        if to_status is DocumentVersionStatus.READY:
+            values["ready_at"] = utc_now()
+        if to_status is DocumentVersionStatus.FAILED:
+            values["failure_code"] = failure_code
+            values["failure_message"] = failure_message
+        if page_count is not None:
+            values["page_count"] = page_count
+        result = await self._session.execute(
+            update(DocumentVersionRow)
+            .where(
+                DocumentVersionRow.id == version_id,
+                DocumentVersionRow.ingestion_status == from_status.value,
+            )
+            .values(**values)
+        )
+        if int(getattr(result, "rowcount", 0)) != 1:
+            raise OptimisticConcurrencyError()
+        loaded = await self.get(version_id)
+        if loaded is None:
+            raise OptimisticConcurrencyError()
+        return loaded
+
+
+class PostgresPageRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, page: Page) -> None:
+        await _add(self._session, page_to_row(page))
+
+    async def list_by_version(self, document_version_id: UUID) -> list[Page]:
+        result = await self._session.scalars(
+            select(PageRow)
+            .where(PageRow.document_version_id == document_version_id)
+            .order_by(PageRow.page_number)
+        )
+        return [page_from_row(row) for row in result.all()]
+
+
+class PostgresChunkRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, chunk: Chunk) -> None:
+        await _add(self._session, chunk_to_row(chunk))
+
+    async def get(self, chunk_id: UUID) -> Chunk | None:
+        row = await self._session.get(ChunkRow, chunk_id)
+        return chunk_from_row(row) if row is not None else None
+
+    async def list_by_version(self, document_version_id: UUID) -> list[Chunk]:
+        result = await self._session.scalars(
+            select(ChunkRow)
+            .where(ChunkRow.document_version_id == document_version_id)
+            .order_by(ChunkRow.chunk_order)
+        )
+        return [chunk_from_row(row) for row in result.all()]
+
+
+class PostgresIngestionJobRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, job: IngestionJob) -> None:
+        await _add(self._session, job_to_row(job))
+
+    async def get_by_version(self, document_version_id: UUID) -> IngestionJob | None:
+        result = await self._session.scalars(
+            select(IngestionJobRow).where(
+                IngestionJobRow.document_version_id == document_version_id
+            )
+        )
+        row = result.first()
+        return job_from_row(row) if row is not None else None
+
+
+class PostgresQueryRunRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, query_run: QueryRun) -> None:
+        await _add(self._session, query_run_to_row(query_run))
+
+    async def get(self, query_run_id: UUID) -> QueryRun | None:
+        row = await self._session.get(QueryRunRow, query_run_id)
+        return query_run_from_row(row) if row is not None else None
+
+
+async def _add(session: AsyncSession, row: object) -> None:
+    session.add(row)
+    try:
+        await session.flush()
+    except IntegrityError as exc:
+        raise_domain_integrity_error(exc)

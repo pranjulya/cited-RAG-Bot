@@ -42,16 +42,16 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 00 implemented and verified locally; **PR #2 is open** |
+| Last completed work | Phase 01 implemented and verified locally; **PR #3 is open**. Phase 00 is merged (`facdec7`). |
 | Phase file status | `TESTED` (not `COMPLETE` — needs human review after merge) |
-| Branch | `phase-00-foundation` (tracks `origin/phase-00-foundation`) |
-| Commits on branch | `3ef8e71` docs: require a branch and PR for every change; `2d86621` feat: add Phase 00 FastAPI application foundation |
-| PR | [#2](https://github.com/pranjulya/cited-RAG-Bot/pull/2) — open, `phase-00-foundation` → `main` |
-| `main` | `d8725fb` — architecture freeze + residual wording. **Do not push or merge to `main` except via PR.** |
-| Next action | 1) Review and merge [PR #2](https://github.com/pranjulya/cited-RAG-Bot/pull/2). 2) Start Phase 01 on a **new** branch from updated `main`. |
-| Blockers | Docker daemon was not running, so the API image was not built. GitHub `workflow` scope was added later; CI file is on the branch. |
+| Branch | `phase-01-domain-persistence` (tracks `origin/phase-01-domain-persistence`) |
+| Commits on branch | `14eeb4f` feat: add Phase 01 domain model and PostgreSQL persistence |
+| PR | [#3](https://github.com/pranjulya/cited-RAG-Bot/pull/3) — open, `phase-01-domain-persistence` → `main` |
+| `main` | `facdec7` — Phase 00 foundation. **Do not push or merge to `main` except via PR.** |
+| Next action | 1) Review and merge [PR #3](https://github.com/pranjulya/cited-RAG-Bot/pull/3). 2) Start Phase 02 on a **new** branch from updated `main`. |
+| Blockers | Docker daemon was not running; persistence tests used local Homebrew PostgreSQL. Compose Postgres image was not started. |
 
-Do **not** start Phase 01 until Phase 00 is merged to `main`.
+Do **not** start Phase 02 until Phase 01 is merged to `main`.
 
 ---
 
@@ -68,6 +68,60 @@ Do **not** start Phase 01 until Phase 00 is merged to `main`.
 ---
 
 ## Phase records
+
+### Phase 01 — Core Domain Model and Persistence Foundation
+
+- **Date:** 2026-09-06
+- **Branch:** `phase-01-domain-persistence`
+- **PR:** [#3](https://github.com/pranjulya/cited-RAG-Bot/pull/3) (`phase-01-domain-persistence` → `main`, OPEN)
+- **Status in phase file:** `TESTED`
+- **Goal:** Durable domain entities and PostgreSQL persistence for the collection → document → version → page → chunk chain. No upload, no retrieval API.
+
+- **Files added/changed:**
+  - `src/cited_rag/domain/` — enums, lifecycle policy, UUIDv5 chunk ids, frozen entities including `RetrievedCandidate`
+  - `src/cited_rag/ports/repositories.py` — repository + unit-of-work ports
+  - `src/cited_rag/adapters/persistence/postgres/` — SQLAlchemy mappings, repositories, `PostgresUnitOfWork`
+  - `alembic.ini`, `alembic/env.py`, `alembic/versions/0001_core_metadata.py`
+  - `pyproject.toml` — SQLAlchemy, asyncpg, Alembic, pytest-asyncio
+  - `docker-compose.yml` — Postgres 16; API `CITED_RAG_DATABASE_URL`
+  - `.github/workflows/ci.yml` — `integration-postgres` job
+  - tests: lifecycle, chunk identity, retrieved candidate, DB unavailable, persistence round-trips
+  - `Learning/01-domain-persistence.md`, README, phase status → `TESTED`
+
+- **Public contracts / commands:**
+  - Settings: optional `CITED_RAG_DATABASE_URL` (`SecretStr`; asyncpg URL)
+  - `/ready` still `{"status":"not_configured"}`
+  - Migrate: `alembic upgrade head` (requires `CITED_RAG_DATABASE_URL`)
+  - Lifecycle: `UPLOADED → QUEUED → PROCESSING → READY|FAILED`; `FAILED → QUEUED`; `READY → DELETING → DELETED`
+  - Unique `(collection_id, content_hash)` among versions with `ingestion_status <> 'DELETED'`
+  - Chunk id = UUIDv5 from version, page range, order, content hash
+  - Verify: `ruff check . && ruff format --check . && mypy src && pytest tests/unit` and `pytest tests/integration` with `CITED_RAG_DATABASE_URL`
+
+- **Decisions made in this phase (not already in ADR-011):**
+  - `DocumentVersion.collection_id` is denormalized so the hash unique index does not join `documents`.
+  - ORM rows are separate from frozen domain dataclasses; mapping lives in `mapping.py`.
+  - Evaluation tables are not created (Phase 19). `query_stage_events` is not created; `query_runs` is the audit row.
+  - API-key hashes are not stored; `api_principals` is an identity for `Collection.owner_id` (auth is Phase 02).
+  - App factory still does not open a DB connection on startup.
+
+- **Verification run (exact commands + results):**
+  - `.venv/bin/ruff check .` — passed
+  - `.venv/bin/ruff format --check .` — passed
+  - `.venv/bin/mypy src` — passed
+  - `.venv/bin/pytest tests/unit` — **33 passed**
+  - `CITED_RAG_DATABASE_URL=postgresql+asyncpg://…/cited_rag_test pytest tests/integration` — **11 passed** (includes Alembic downgrade+upgrade in session setup)
+  - `git push -u origin phase-01-domain-persistence` — succeeded
+  - PR #3 opened
+
+- **Not verified / known gaps:**
+  - Docker Compose Postgres/API image not run (Docker daemon not running)
+  - GitHub Actions `integration-postgres` not observed green at handoff time
+  - Phase status is `TESTED`, not `COMPLETE` (review + merge still required)
+
+- **Follow-ups for the next phase:**
+  - Review and merge [PR #3](https://github.com/pranjulya/cited-RAG-Bot/pull/3). Do not start Phase 02 on this branch.
+  - Phase 02: PDF upload, object storage, lifecycle, API-key collection auth (`implementation/phase-02-upload-storage-lifecycle.md`). New branch from merged `main`.
+  - `/ready` stays `not_configured` until a later phase adds real checks.
 
 ### Phase 00 — Repository and Application Foundation
 
