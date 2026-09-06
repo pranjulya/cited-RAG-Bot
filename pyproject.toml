@@ -12,8 +12,10 @@ license = { text = "MIT" }
 authors = [{ name = "Cited RAG Bot" }]
 dependencies = [
     "alembic>=1.14.0",
+    "arq>=0.26.0",
     "asyncpg>=0.30.0",
     "fastapi>=0.115.0",
+    "redis>=5.0.0",
     "pydantic-settings>=2.6.0",
     "python-multipart>=0.0.12",
     "sqlalchemy[asyncio]>=2.0.36",
@@ -39,6 +41,7 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 markers = [
     "postgres: tests that need PostgreSQL and CITED_RAG_DATABASE_URL",
+    "redis: tests that need Redis and CITED_RAG_REDIS_URL",
 ]
 
 [tool.ruff]

@@ -260,6 +260,18 @@ class PostgresIngestionJobRepository:
         row = result.first()
         return job_from_row(row) if row is not None else None
 
+    async def save(self, job: IngestionJob) -> None:
+        row = await self._session.get(IngestionJobRow, job.id)
+        if row is None:
+            await self.add(job)
+            return
+        row.status = job.status.value
+        row.attempt_count = job.attempt_count
+        row.last_error = job.last_error
+        row.correlation_id = job.correlation_id
+        row.updated_at = job.updated_at
+        await self._session.flush()
+
 
 class PostgresQueryRunRepository:
     def __init__(self, session: AsyncSession) -> None:

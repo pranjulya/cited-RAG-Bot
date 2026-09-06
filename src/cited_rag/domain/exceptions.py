@@ -45,3 +45,18 @@ class PayloadTooLargeError(DomainError):
 class StorageError(DomainError):
     def __init__(self, message: str = "object storage operation failed") -> None:
         super().__init__(message)
+
+
+class QueueError(DomainError):
+    def __init__(self, message: str = "ingestion queue operation failed") -> None:
+        super().__init__(message)
+
+
+class TransientIngestionError(DomainError):
+    def __init__(self, message: str = "transient ingestion failure") -> None:
+        super().__init__(message)
+
+
+class PermanentIngestionError(DomainError):
+    def __init__(self, message: str = "permanent ingestion failure") -> None:
+        super().__init__(message)
