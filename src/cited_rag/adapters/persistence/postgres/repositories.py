@@ -90,6 +90,13 @@ class PostgresDocumentRepository:
             .values(active_version_id=version_id)
         )
 
+    async def mark_deleted(self, document_id: UUID) -> None:
+        await self._session.execute(
+            update(DocumentRow)
+            .where(DocumentRow.id == document_id)
+            .values(deleted_at=utc_now(), active_version_id=None)
+        )
+
 
 class PostgresDocumentVersionRepository:
     def __init__(self, session: AsyncSession) -> None:
@@ -109,6 +116,21 @@ class PostgresDocumentVersionRepository:
             .order_by(DocumentVersionRow.version_number)
         )
         return [version_from_row(row) for row in result.all()]
+
+    async def get_by_content_hash(
+        self, collection_id: UUID, content_hash: str
+    ) -> DocumentVersion | None:
+        result = await self._session.scalars(
+            select(DocumentVersionRow)
+            .where(
+                DocumentVersionRow.collection_id == collection_id,
+                DocumentVersionRow.content_hash == content_hash,
+                DocumentVersionRow.ingestion_status != DocumentVersionStatus.DELETED.value,
+            )
+            .order_by(DocumentVersionRow.created_at)
+        )
+        row = result.first()
+        return version_from_row(row) if row is not None else None
 
     async def transition(
         self,
@@ -143,6 +165,23 @@ class PostgresDocumentVersionRepository:
         if loaded is None:
             raise OptimisticConcurrencyError()
         return loaded
+
+    async def tombstone(self, version_id: UUID) -> None:
+        """Mark a non-READY version DELETED so its content hash can be reused."""
+        await self._session.execute(
+            update(DocumentVersionRow)
+            .where(
+                DocumentVersionRow.id == version_id,
+                DocumentVersionRow.ingestion_status.not_in(
+                    (
+                        DocumentVersionStatus.READY.value,
+                        DocumentVersionStatus.DELETING.value,
+                        DocumentVersionStatus.DELETED.value,
+                    )
+                ),
+            )
+            .values(ingestion_status=DocumentVersionStatus.DELETED.value)
+        )
 
 
 class PostgresPageRepository:

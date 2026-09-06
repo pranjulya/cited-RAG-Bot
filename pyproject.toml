@@ -15,6 +15,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "fastapi>=0.115.0",
     "pydantic-settings>=2.6.0",
+    "python-multipart>=0.0.12",
     "sqlalchemy[asyncio]>=2.0.36",
     "uvicorn[standard]>=0.32.0",
 ]
@@ -48,6 +49,9 @@ extend-exclude = ["docs", "implementation", "Learning", ".venv", "alembic/script
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/cited_rag/api/**/*.py" = ["B008"]
 
 [tool.mypy]
 python_version = "3.12"

@@ -32,6 +32,8 @@ class DocumentRepository(Protocol):
 
     async def set_active_version(self, document_id: UUID, version_id: UUID | None) -> None: ...
 
+    async def mark_deleted(self, document_id: UUID) -> None: ...
+
 
 class DocumentVersionRepository(Protocol):
     async def add(self, version: DocumentVersion) -> None: ...
@@ -39,6 +41,10 @@ class DocumentVersionRepository(Protocol):
     async def get(self, version_id: UUID) -> DocumentVersion | None: ...
 
     async def list_by_document(self, document_id: UUID) -> list[DocumentVersion]: ...
+
+    async def get_by_content_hash(
+        self, collection_id: UUID, content_hash: str
+    ) -> DocumentVersion | None: ...
 
     async def transition(
         self,
@@ -50,6 +56,8 @@ class DocumentVersionRepository(Protocol):
         failure_message: str | None = None,
         page_count: int | None = None,
     ) -> DocumentVersion: ...
+
+    async def tombstone(self, version_id: UUID) -> None: ...
 
 
 class PageRepository(Protocol):

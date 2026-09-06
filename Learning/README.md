@@ -9,3 +9,7 @@ See `Learning/00-application-foundation.md`.
 ## Phase 01
 
 See `Learning/01-domain-persistence.md`.
+
+## Phase 02
+
+See `Learning/02-upload-storage-lifecycle.md`.

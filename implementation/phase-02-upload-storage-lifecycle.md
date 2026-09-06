@@ -1,6 +1,6 @@
 # Phase 02 — PDF Upload, Object Storage, and Document Lifecycle
 
-**Status:** NOT_STARTED
+**Status:** TESTED
 
 ## Goal
 Accept PDF uploads into a collection, persist source files through a storage abstraction, create document/version metadata, and expose lifecycle status.

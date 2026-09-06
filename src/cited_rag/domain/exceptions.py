@@ -25,3 +25,23 @@ class DuplicateContentHashError(DomainError):
 class OptimisticConcurrencyError(DomainError):
     def __init__(self, message: str = "lifecycle update did not match expected status") -> None:
         super().__init__(message)
+
+
+class InvalidPdfError(DomainError):
+    def __init__(self, message: str = "file is not an accepted PDF") -> None:
+        super().__init__(message)
+
+
+class EmptyUploadError(DomainError):
+    def __init__(self, message: str = "uploaded file is empty") -> None:
+        super().__init__(message)
+
+
+class PayloadTooLargeError(DomainError):
+    def __init__(self, message: str = "uploaded file exceeds the configured size limit") -> None:
+        super().__init__(message)
+
+
+class StorageError(DomainError):
+    def __init__(self, message: str = "object storage operation failed") -> None:
+        super().__init__(message)
