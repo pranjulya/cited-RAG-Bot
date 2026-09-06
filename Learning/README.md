@@ -1,0 +1,7 @@
+# Learning
+
+Concept notes for Cited RAG Bot. Each implementation phase adds notes for the ideas it introduces. Phase 23 indexes this folder; it does not create it from scratch.
+
+## Phase 00
+
+See `Learning/00-application-foundation.md`.
