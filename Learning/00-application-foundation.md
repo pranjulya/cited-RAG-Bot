@@ -14,6 +14,10 @@
 
 All settings load from `CITED_RAG_` environment variables through `cited_rag.config.Settings`. Adapters must not hardcode model names, keys, or hostnames. Production forces `debug=false` and rejects a missing or placeholder API key. Secrets use `SecretStr` so they do not appear in `repr`.
 
+## Logging filters belong on handlers
+
+The log format includes `correlation_id`. A filter that sets a default must be attached to **handlers**, not only the root logger. Logger filters run when a record is created on that logger. They are skipped when child loggers (`cited_rag`, `uvicorn.error`) propagate to the root handler. Attaching the filter to the handler is what makes Docker/uvicorn startup logs format without `ValueError: Formatting field not found in record: 'correlation_id'`.
+
 ## Why keep RAG out of the API layer?
 
 Routes stay thin. Health handlers return a dict. Retrieval, ingestion, and citations will live in application/domain modules. Putting RAG in `api/` would mix HTTP with business rules and make tests depend on FastAPI.
