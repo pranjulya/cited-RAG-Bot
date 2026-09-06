@@ -8,12 +8,13 @@ This file defines repository-wide rules for Codex and other coding agents workin
 
 Before changing code:
 
-1. `Implementation.md`
-2. `docs/architecture/decisions/ADR-011-v1-locked-policies.md`
-3. `implementation/README.md`
-4. the current `implementation/phase-XX-*.md`
-5. `docs/architecture/architecture-review.md`
-6. relevant PRD/HLD/LLD/ADR/evaluation documents
+1. `MEMORY.md` (cold-start handoff; **Current state** first)
+2. `Implementation.md`
+3. `docs/architecture/decisions/ADR-011-v1-locked-policies.md`
+4. `implementation/README.md`
+5. the current `implementation/phase-XX-*.md`
+6. `docs/architecture/architecture-review.md`
+7. relevant PRD/HLD/LLD/ADR/evaluation documents
 
 ## Execution Rules
 
@@ -32,6 +33,16 @@ Before changing code:
 13. Do not add unnecessary infrastructure or abstractions.
 14. Update the current phase status only when its stated gate is actually satisfied.
 15. Update Learning documentation for concepts introduced by the phase.
+16. After a phase is verified and its pull request is opened, update `MEMORY.md` (Current state + a full phase record) and push it on the phase branch **before** the chat is cleared. Do not dump transcripts or secrets. The next session must read `MEMORY.md` first and must not start the next phase until Current state says the previous PR is merged, unless Current state records an explicit exception.
+
+## Git Workflow
+
+Never commit, push, or merge directly to `main`.
+
+1. Create a new branch from the latest `main` for every implementation phase, feature, and bug fix.
+2. Do not combine unrelated phases or bug fixes on the same branch.
+3. Open a pull request into `main`. Merge only after review. Do not fast-forward or push commits onto `main` from an agent session unless the user explicitly asks to merge a reviewed PR.
+4. Suggested names: `phase-00-foundation`, `phase-01-domain-persistence`, `fix/<short-name>`.
 
 ## Phase Status
 

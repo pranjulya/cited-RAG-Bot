@@ -1,0 +1,10 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      CITED_RAG_ENVIRONMENT: development
+      CITED_RAG_API_KEY: replace-me
+      CITED_RAG_LOG_LEVEL: INFO
+      CITED_RAG_DEBUG: "false"
