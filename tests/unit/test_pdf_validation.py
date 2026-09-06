@@ -62,6 +62,17 @@ def test_oversized_file_rejected() -> None:
         )
 
 
+def test_filename_too_long_rejected() -> None:
+    with pytest.raises(InvalidPdfError, match="too long"):
+        validate_pdf_envelope(
+            filename=("a" * 513) + ".pdf",
+            content_type="application/pdf",
+            size_bytes=len(MINIMAL_PDF),
+            head=MINIMAL_PDF[:8],
+            max_bytes=1024,
+        )
+
+
 def test_mismatched_mime_rejected() -> None:
     with pytest.raises(InvalidPdfError):
         validate_pdf_envelope(

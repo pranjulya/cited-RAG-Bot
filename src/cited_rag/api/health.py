@@ -1,15 +1,17 @@
-"""Liveness and Phase 00 readiness skeleton."""
+"""Liveness and readiness."""
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Literal, TypedDict
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Request, status
+from sqlalchemy import text
 
 router = APIRouter()
 
 HealthStatus = Literal["ok"]
-ReadyStatus = Literal["not_configured"]
+ReadyStatus = Literal["ok"]
 
 
 class HealthResponse(TypedDict):
@@ -27,6 +29,33 @@ def health() -> HealthResponse:
 
 
 @router.get("/ready")
-def ready() -> ReadyResponse:
-    """Phase 00 readiness skeleton. HTTP 200 with this body until later phases add checks."""
-    return {"status": "not_configured"}
+async def ready(request: Request) -> ReadyResponse:
+    """Readiness: PostgreSQL and local storage are usable."""
+    factory = getattr(request.app.state, "session_factory", None)
+    if factory is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"status": "not_ready", "reason": "database"},
+        )
+    try:
+        async with factory() as session:
+            await session.execute(text("SELECT 1"))
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"status": "not_ready", "reason": "database"},
+        ) from exc
+
+    settings = request.app.state.settings
+    storage_root = Path(settings.local_storage_path)
+    try:
+        storage_root.mkdir(parents=True, exist_ok=True)
+        probe = storage_root / ".ready"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink(missing_ok=True)
+    except OSError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"status": "not_ready", "reason": "storage"},
+        ) from exc
+    return {"status": "ok"}

@@ -8,6 +8,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
@@ -62,17 +63,22 @@ class CollectionRow(Base):
 
 class DocumentRow(Base):
     __tablename__ = "documents"
+    __table_args__ = (
+        UniqueConstraint("id", "collection_id", name="uq_documents_id_collection"),
+        ForeignKeyConstraint(
+            ["id", "active_version_id"],
+            ["document_versions.document_id", "document_versions.id"],
+            name="fk_documents_active_version_same_document",
+            use_alter=True,
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     collection_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("collections.id"), nullable=False
     )
     logical_name: Mapped[str] = mapped_column(String(512), nullable=False)
-    active_version_id: Mapped[UUID | None] = mapped_column(
-        PGUUID(as_uuid=True),
-        ForeignKey("document_versions.id", use_alter=True, name="fk_documents_active_version"),
-        nullable=True,
-    )
+    active_version_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -81,6 +87,18 @@ class DocumentVersionRow(Base):
     __tablename__ = "document_versions"
     __table_args__ = (
         UniqueConstraint("document_id", "version_number", name="uq_document_versions_number"),
+        UniqueConstraint("id", "document_id", name="uq_document_versions_id_document"),
+        UniqueConstraint(
+            "id",
+            "document_id",
+            "collection_id",
+            name="uq_document_versions_id_document_collection",
+        ),
+        ForeignKeyConstraint(
+            ["document_id", "collection_id"],
+            ["documents.id", "documents.collection_id"],
+            name="fk_document_versions_document_collection",
+        ),
         CheckConstraint(
             _in_enum("ingestion_status", [status.value for status in DocumentVersionStatus]),
             name="ck_document_versions_status",
@@ -136,6 +154,15 @@ class ChunkRow(Base):
     __table_args__ = (
         UniqueConstraint("document_version_id", "chunk_order", name="uq_chunks_version_order"),
         Index("ix_chunks_collection_id", "collection_id"),
+        ForeignKeyConstraint(
+            ["document_version_id", "document_id", "collection_id"],
+            [
+                "document_versions.id",
+                "document_versions.document_id",
+                "document_versions.collection_id",
+            ],
+            name="fk_chunks_version_document_collection",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)

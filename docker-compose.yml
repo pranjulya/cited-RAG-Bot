@@ -13,6 +13,16 @@ services:
       timeout: 5s
       retries: 10
 
+  migrate:
+    build: .
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      CITED_RAG_ENVIRONMENT: development
+      CITED_RAG_DATABASE_URL: postgresql+asyncpg://cited_rag:cited_rag@postgres:5432/cited_rag
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   api:
     build: .
     ports:
@@ -30,6 +40,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   api-objects:

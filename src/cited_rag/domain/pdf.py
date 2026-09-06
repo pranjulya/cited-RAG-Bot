@@ -4,6 +4,7 @@ from cited_rag.domain.exceptions import EmptyUploadError, InvalidPdfError, Paylo
 
 PDF_MAGIC = b"%PDF"
 ALLOWED_PDF_CONTENT_TYPES = frozenset({"application/pdf", "application/octet-stream"})
+MAX_FILENAME_LENGTH = 512
 
 
 def validate_pdf_envelope(
@@ -18,7 +19,10 @@ def validate_pdf_envelope(
         raise EmptyUploadError()
     if size_bytes > max_bytes:
         raise PayloadTooLargeError()
-    name = (filename or "").lower()
+    raw_name = filename or ""
+    if len(raw_name) > MAX_FILENAME_LENGTH:
+        raise InvalidPdfError("filename too long")
+    name = raw_name.lower()
     if not name.endswith(".pdf"):
         raise InvalidPdfError("filename must end with .pdf")
     if content_type:

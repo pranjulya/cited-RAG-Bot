@@ -42,16 +42,15 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 02 implemented and verified locally; **PR #5 is open**. Phase 01 is merged (`93ebf43`). Logging filter fix is merged (`ebe6fea` / PR #4). |
-| Phase file status | `TESTED` (not `COMPLETE` — needs human review after merge) |
-| Branch | `phase-02-upload-storage-lifecycle` (tracks `origin/phase-02-upload-storage-lifecycle`) |
-| Commits on branch | `8655412` feat: add Phase 02 PDF upload, local storage, and lifecycle API |
-| PR | [#5](https://github.com/pranjulya/cited-RAG-Bot/pull/5) — open, `phase-02-upload-storage-lifecycle` → `main` |
-| `main` | `ebe6fea` — Phase 01 + correlation_id logging fix. **Do not push or merge to `main` except via PR.** |
-| Next action | 1) Review and merge [PR #5](https://github.com/pranjulya/cited-RAG-Bot/pull/5). 2) Start Phase 03 on a **new** branch from updated `main`. |
-| Blockers | Docker daemon was not running; persistence/upload tests used local Homebrew PostgreSQL. |
+| Last completed work | Phase 02 merged (`ca33df9`). Correctness fixes in progress on `fix/transaction-deletion-provenance`. Phase 03 PR #6 is **not** to merge until this lands and Phase 03 is rebased. |
+| Phase file status | Phase 02 `TESTED` on `main` |
+| Branch | `fix/transaction-deletion-provenance` |
+| PR | (open after push) |
+| `main` | `ca33df9` — Phase 02. **Do not push or merge to `main` except via PR.** |
+| Next action | Land correctness PR, rebase [PR #6](https://github.com/pranjulya/cited-RAG-Bot/pull/6), then Phase 03 queue/lease fixes. |
+| Blockers | Do not merge Phase 03 yet. |
 
-Do **not** start Phase 03 until Phase 02 is merged to `main`.
+Phase 02 is on `main`. Do **not** merge Phase 03 until the correctness PR is merged and Phase 03 is rebased.
 
 ---
 

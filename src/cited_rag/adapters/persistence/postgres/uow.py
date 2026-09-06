@@ -62,8 +62,6 @@ class PostgresUnitOfWork:
         try:
             if exc_type is not None:
                 await self.session.rollback()
-            else:
-                await self.commit()
         finally:
             await self.session.close()
             self.session = None

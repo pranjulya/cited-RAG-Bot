@@ -37,6 +37,7 @@ async def _principal_and_collection(
     async with _uow(session_factory) as uow:
         await uow.principals.add(principal)
         await uow.collections.add(collection)
+        await uow.commit()
     return principal, collection
 
 
@@ -59,6 +60,7 @@ async def test_document_belongs_to_collection(uow_factory: async_sessionmaker) -
     document = Document(collection_id=collection.id, logical_name="policy.pdf")
     async with _uow(uow_factory) as uow:
         await uow.documents.add(document)
+        await uow.commit()
     async with _uow(uow_factory) as uow:
         loaded = await uow.documents.get(document.id)
     assert loaded is not None
@@ -86,6 +88,7 @@ async def test_document_version_lifecycle_persistence(
     async with _uow(uow_factory) as uow:
         await uow.documents.add(document)
         await uow.versions.add(version)
+        await uow.commit()
 
     async with _uow(uow_factory) as uow:
         await uow.versions.transition(
@@ -98,6 +101,7 @@ async def test_document_version_lifecycle_persistence(
             version.id, DocumentVersionStatus.PROCESSING, DocumentVersionStatus.READY
         )
         await uow.documents.set_active_version(document.id, version.id)
+        await uow.commit()
 
     async with _uow(uow_factory) as uow:
         loaded = await uow.versions.get(version.id)
@@ -155,6 +159,7 @@ async def test_page_and_chunk_provenance_survives_round_trip(
         await uow.pages.add(page)
         await uow.chunks.add(chunk)
         await uow.ingestion_jobs.add(job)
+        await uow.commit()
 
     async with _uow(uow_factory) as uow:
         pages = await uow.pages.list_by_version(version.id)
@@ -183,6 +188,7 @@ async def test_duplicate_identifiers_rejected(uow_factory: async_sessionmaker) -
     principal = ApiPrincipal(name="dup-owner")
     async with _uow(uow_factory) as uow:
         await uow.principals.add(principal)
+        await uow.commit()
     with pytest.raises(DuplicateIdentityError):
         async with _uow(uow_factory) as uow:
             await uow.principals.add(principal)
@@ -220,6 +226,7 @@ async def test_duplicate_content_hash_rejected_within_collection(
         await uow.documents.add(first_doc)
         await uow.versions.add(v1)
         await uow.documents.add(second_doc)
+        await uow.commit()
     with pytest.raises(DuplicateContentHashError):
         async with _uow(uow_factory) as uow:
             await uow.versions.add(v2)
@@ -233,6 +240,7 @@ async def test_same_content_hash_allowed_in_different_collections(
     collection_b = Collection(name="other", owner_id=principal.id)
     async with _uow(uow_factory) as uow:
         await uow.collections.add(collection_b)
+        await uow.commit()
     shared_hash = "cross-collection-hash"
     doc_a = Document(collection_id=collection_a.id, logical_name="a.pdf")
     doc_b = Document(collection_id=collection_b.id, logical_name="a.pdf")
@@ -263,6 +271,7 @@ async def test_same_content_hash_allowed_in_different_collections(
                 storage_uri="local://a.pdf",
             )
         )
+        await uow.commit()
 
 
 @pytest.mark.asyncio
@@ -302,6 +311,7 @@ async def test_invalid_lifecycle_transition_does_not_change_status(
     async with _uow(uow_factory) as uow:
         await uow.documents.add(document)
         await uow.versions.add(version)
+        await uow.commit()
     with pytest.raises(InvalidLifecycleTransitionError):
         async with _uow(uow_factory) as uow:
             await uow.versions.transition(
@@ -325,9 +335,36 @@ async def test_query_run_audit_round_trip(uow_factory: async_sessionmaker) -> No
     )
     async with _uow(uow_factory) as uow:
         await uow.query_runs.add(query_run)
+        await uow.commit()
     async with _uow(uow_factory) as uow:
         loaded = await uow.query_runs.get(query_run.id)
     assert loaded is not None
     assert loaded.collection_id == collection.id
     assert loaded.question == "What is the policy?"
     assert loaded.correlation_id == "q-1"
+
+
+@pytest.mark.asyncio
+async def test_version_collection_must_match_document(
+    uow_factory: async_sessionmaker,
+) -> None:
+    principal, collection_a = await _principal_and_collection(uow_factory)
+    collection_b = Collection(name="other", owner_id=principal.id)
+    async with _uow(uow_factory) as uow:
+        await uow.collections.add(collection_b)
+        await uow.commit()
+    document = Document(collection_id=collection_a.id, logical_name="policy.pdf")
+    version = DocumentVersion(
+        document_id=document.id,
+        collection_id=collection_b.id,
+        version_number=1,
+        content_hash="mismatched-collection",
+        original_filename="policy.pdf",
+        mime_type="application/pdf",
+        size_bytes=1,
+        storage_uri="local://policy.pdf",
+    )
+    async with _uow(uow_factory) as uow:
+        await uow.documents.add(document)
+        with pytest.raises(DuplicateIdentityError):
+            await uow.versions.add(version)

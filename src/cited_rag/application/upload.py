@@ -58,6 +58,7 @@ async def ensure_principal(uow: UnitOfWork) -> ApiPrincipal:
 async def create_collection(uow: UnitOfWork, *, name: str, owner_id: UUID) -> Collection:
     collection = Collection(name=name.strip(), owner_id=owner_id)
     await uow.collections.add(collection)
+    await uow.commit()
     return collection
 
 
@@ -112,6 +113,7 @@ async def upload_new_version(
         duplicate = await _existing_hash(uow, collection.id, spool.content_hash)
         if duplicate is not None:
             return duplicate
+        await uow.documents.get_for_update(document.id)
         versions = await uow.versions.list_by_document(document.id)
         next_number = max((item.version_number for item in versions), default=0) + 1
         version = DocumentVersion(
@@ -139,28 +141,36 @@ async def delete_document(
 ) -> None:
     versions = await uow.versions.list_by_document(document.id)
     for version in versions:
-        key = source_pdf_key(
-            collection_id=version.collection_id,
-            document_id=version.document_id,
-            version_id=version.id,
-        )
-        await storage.delete(key)
         if version.ingestion_status is DocumentVersionStatus.DELETED:
             continue
         if version.ingestion_status is DocumentVersionStatus.READY:
             await uow.versions.transition(
                 version.id, DocumentVersionStatus.READY, DocumentVersionStatus.DELETING
             )
+        elif version.ingestion_status is not DocumentVersionStatus.DELETING:
+            await uow.versions.mark_deleting(version.id)
+    await uow.commit()
+
+    for version in versions:
+        if version.ingestion_status is DocumentVersionStatus.DELETED:
+            continue
+        key = source_pdf_key(
+            collection_id=version.collection_id,
+            document_id=version.document_id,
+            version_id=version.id,
+        )
+        await storage.delete(key)
+
+    for version in versions:
+        current = await uow.versions.get(version.id)
+        if current is None:
+            continue
+        if current.ingestion_status is DocumentVersionStatus.DELETING:
             await uow.versions.transition(
                 version.id, DocumentVersionStatus.DELETING, DocumentVersionStatus.DELETED
             )
-        elif version.ingestion_status is DocumentVersionStatus.DELETING:
-            await uow.versions.transition(
-                version.id, DocumentVersionStatus.DELETING, DocumentVersionStatus.DELETED
-            )
-        else:
-            await uow.versions.tombstone(version.id)
     await uow.documents.mark_deleted(document.id)
+    await uow.commit()
 
 
 async def _existing_hash(
@@ -191,14 +201,18 @@ async def _persist_new_version(
         document_id=version.document_id,
         version_id=version.id,
     )
+    owned = False
     try:
         uri = await storage.put(key, _file_chunks(spool.path))
         stored = replace(version, storage_uri=uri)
         if document is not None:
             await uow.documents.add(document)
         await uow.versions.add(stored)
+        await uow.commit()
+        owned = True
     except Exception:
-        await storage.delete(key)
+        if not owned:
+            await storage.delete(key)
         duplicate = await _existing_hash(uow, collection.id, spool.content_hash)
         if duplicate is not None:
             return duplicate

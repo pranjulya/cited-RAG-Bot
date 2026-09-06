@@ -12,11 +12,11 @@ def test_health_returns_200() -> None:
     assert response.json() == {"status": "ok"}
 
 
-def test_ready_returns_phase_00_contract() -> None:
+def test_ready_is_unavailable_without_database() -> None:
     client = TestClient(create_app())
     response = client.get("/ready")
-    assert response.status_code == 200
-    assert response.json() == {"status": "not_configured"}
+    assert response.status_code == 503
+    assert response.json()["detail"]["status"] == "not_ready"
 
 
 def test_correlation_id_is_echoed() -> None:
