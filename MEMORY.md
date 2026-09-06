@@ -42,16 +42,16 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 01 implemented and verified locally; **PR #3 is open**. Phase 00 is merged (`facdec7`). |
+| Last completed work | Phase 02 implemented and verified locally; **PR #5 is open**. Phase 01 is merged (`93ebf43`). Logging filter fix is merged (`ebe6fea` / PR #4). |
 | Phase file status | `TESTED` (not `COMPLETE` — needs human review after merge) |
-| Branch | `phase-01-domain-persistence` (tracks `origin/phase-01-domain-persistence`) |
-| Commits on branch | `14eeb4f` feat: add Phase 01 domain model and PostgreSQL persistence |
-| PR | [#3](https://github.com/pranjulya/cited-RAG-Bot/pull/3) — open, `phase-01-domain-persistence` → `main` |
-| `main` | `facdec7` — Phase 00 foundation. **Do not push or merge to `main` except via PR.** |
-| Next action | 1) Review and merge [PR #3](https://github.com/pranjulya/cited-RAG-Bot/pull/3). 2) Start Phase 02 on a **new** branch from updated `main`. |
-| Blockers | Docker daemon was not running; persistence tests used local Homebrew PostgreSQL. Compose Postgres image was not started. |
+| Branch | `phase-02-upload-storage-lifecycle` (tracks `origin/phase-02-upload-storage-lifecycle`) |
+| Commits on branch | `8655412` feat: add Phase 02 PDF upload, local storage, and lifecycle API |
+| PR | [#5](https://github.com/pranjulya/cited-RAG-Bot/pull/5) — open, `phase-02-upload-storage-lifecycle` → `main` |
+| `main` | `ebe6fea` — Phase 01 + correlation_id logging fix. **Do not push or merge to `main` except via PR.** |
+| Next action | 1) Review and merge [PR #5](https://github.com/pranjulya/cited-RAG-Bot/pull/5). 2) Start Phase 03 on a **new** branch from updated `main`. |
+| Blockers | Docker daemon was not running; persistence/upload tests used local Homebrew PostgreSQL. |
 
-Do **not** start Phase 02 until Phase 01 is merged to `main`.
+Do **not** start Phase 03 until Phase 02 is merged to `main`.
 
 ---
 
@@ -68,6 +68,56 @@ Do **not** start Phase 02 until Phase 01 is merged to `main`.
 ---
 
 ## Phase records
+
+### Phase 02 — PDF Upload, Object Storage, and Document Lifecycle
+
+- **Date:** 2026-09-06
+- **Branch:** `phase-02-upload-storage-lifecycle`
+- **PR:** [#5](https://github.com/pranjulya/cited-RAG-Bot/pull/5) (`phase-02-upload-storage-lifecycle` → `main`, OPEN)
+- **Status in phase file:** `TESTED`
+- **Goal:** Accept PDF uploads into a collection, persist source files locally, create document/version metadata, API-key collection authorization. Not searchable.
+
+- **Files added/changed:**
+  - `src/cited_rag/api/deps.py`, `api/routes/collections.py`, `api/routes/documents.py`
+  - `src/cited_rag/application/upload.py` — spool, hash, idempotency, compensation delete
+  - `src/cited_rag/ports/object_storage.py`, `adapters/storage/local.py`
+  - `src/cited_rag/domain/pdf.py` — extension, MIME, `%PDF` magic, size, empty
+  - Settings: `local_storage_path`, `max_upload_bytes`
+  - Tests: validation, local storage, auth 401, upload integration
+  - `Learning/02-upload-storage-lifecycle.md`
+
+- **Public contracts / commands:**
+  - Header: `Authorization: Bearer <CITED_RAG_API_KEY>`
+  - `POST /v1/collections` → `201`
+  - `GET /v1/collections/{collection_id}` → `200` or `404`
+  - `POST /v1/collections/{id}/documents` multipart `file` → `202` `{"document_id","document_version_id","status":"QUEUED"}`
+  - Persist version `UPLOADED`; public status maps `UPLOADED` → `QUEUED`
+  - Same hash in one collection is idempotent; same hash in two collections is allowed
+  - `GET`/`DELETE /v1/documents/{id}` → `404` if missing or unauthorized
+  - Object key: `collections/{collection_id}/documents/{document_id}/versions/{version_id}/source.pdf`
+  - List-all-collections / list-documents-in-collection omitted
+  - `/ready` still `not_configured`
+
+- **Decisions made in this phase (not already in ADR-011):**
+  - One V1 API principal (`uuid5` of a fixed name), not a stored key hash (Phase 18 can harden)
+  - Non-READY versions are tombstoned to `DELETED` on document delete so the content-hash unique index can be reused; READY uses `READY → DELETING → DELETED`
+  - `application/octet-stream` accepted if filename is `.pdf` and magic is `%PDF`
+
+- **Verification run (exact commands + results):**
+  - ruff / mypy — passed
+  - `pytest tests/unit` — **45 passed**
+  - `pytest tests/integration` — **20 passed** (local Homebrew Postgres)
+
+- **Not verified / known gaps:**
+  - Docker Compose API+Postgres not run (daemon not running)
+  - S3 adapter not implemented (Phase later / production-style)
+  - No ingestion worker (Phase 03)
+  - Phase status `TESTED`, not `COMPLETE`
+
+- **Follow-ups for the next phase:**
+  - Review and merge [PR #5](https://github.com/pranjulya/cited-RAG-Bot/pull/5)
+  - Phase 03: arq/Redis worker, `QUEUED → PROCESSING`, never `READY`
+  - New branch from merged `main`
 
 ### Phase 01 — Core Domain Model and Persistence Foundation
 
