@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     debug: bool = False
     correlation_id_header: str = Field(default="X-Correlation-ID")
     database_url: SecretStr | None = None
+    local_storage_path: str = Field(default="./data/objects")
+    max_upload_bytes: int = Field(default=20 * 1024 * 1024, gt=0)
 
     @field_validator("debug")
     @classmethod

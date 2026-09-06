@@ -1,4 +1,4 @@
-"""FastAPI application factory. No RAG behavior in Phase 00."""
+"""FastAPI application factory."""
 
 from __future__ import annotations
 
@@ -6,10 +6,15 @@ import logging
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
 
+from cited_rag.adapters.persistence.postgres.session import create_engine, create_session_factory
+from cited_rag.adapters.storage.local import LocalObjectStorage
 from cited_rag.api.health import router as health_router
+from cited_rag.api.routes.collections import router as collections_router
+from cited_rag.api.routes.documents import router as documents_router
 from cited_rag.config import Settings, get_settings
 
 logger = logging.getLogger("cited_rag")
@@ -36,10 +41,18 @@ class _CorrelationIdFilter(logging.Filter):
 
 
 @asynccontextmanager
-async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
+async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
+    settings: Settings = app.state.settings
+    engine = None
+    if settings.database_url is not None:
+        engine = create_engine(settings.database_url.get_secret_value())
+        app.state.session_factory = create_session_factory(engine)
+    app.state.storage = LocalObjectStorage(Path(settings.local_storage_path))
     logger.info("application starting")
     yield
     logger.info("application stopping")
+    if engine is not None:
+        await engine.dispose()
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -66,6 +79,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return response
 
     app.include_router(health_router)
+    app.include_router(collections_router)
+    app.include_router(documents_router)
     return app
 
 

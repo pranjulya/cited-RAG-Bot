@@ -14,20 +14,30 @@ from cited_rag.adapters.persistence.postgres.repositories import (
     PostgresPrincipalRepository,
     PostgresQueryRunRepository,
 )
+from cited_rag.ports.repositories import (
+    ChunkRepository,
+    CollectionRepository,
+    DocumentRepository,
+    DocumentVersionRepository,
+    IngestionJobRepository,
+    PageRepository,
+    PrincipalRepository,
+    QueryRunRepository,
+)
 
 
 class PostgresUnitOfWork:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self._session_factory = session_factory
         self.session: AsyncSession | None = None
-        self.principals: PostgresPrincipalRepository
-        self.collections: PostgresCollectionRepository
-        self.documents: PostgresDocumentRepository
-        self.versions: PostgresDocumentVersionRepository
-        self.pages: PostgresPageRepository
-        self.chunks: PostgresChunkRepository
-        self.ingestion_jobs: PostgresIngestionJobRepository
-        self.query_runs: PostgresQueryRunRepository
+        self.principals: PrincipalRepository
+        self.collections: CollectionRepository
+        self.documents: DocumentRepository
+        self.versions: DocumentVersionRepository
+        self.pages: PageRepository
+        self.chunks: ChunkRepository
+        self.ingestion_jobs: IngestionJobRepository
+        self.query_runs: QueryRunRepository
 
     async def __aenter__(self) -> PostgresUnitOfWork:
         self.session = self._session_factory()

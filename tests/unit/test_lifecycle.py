@@ -4,7 +4,7 @@ import pytest
 
 from cited_rag.domain.enums import DocumentVersionStatus
 from cited_rag.domain.exceptions import InvalidLifecycleTransitionError
-from cited_rag.domain.policies import assert_lifecycle_transition
+from cited_rag.domain.policies import assert_lifecycle_transition, public_ingestion_status
 
 
 @pytest.mark.parametrize(
@@ -48,3 +48,8 @@ def test_invalid_lifecycle_transitions_are_rejected(
 ) -> None:
     with pytest.raises(InvalidLifecycleTransitionError):
         assert_lifecycle_transition(current, target)
+
+
+def test_public_upload_status_is_queued_not_uploaded() -> None:
+    assert public_ingestion_status(DocumentVersionStatus.UPLOADED) == "QUEUED"
+    assert public_ingestion_status(DocumentVersionStatus.FAILED) == "FAILED"

@@ -21,3 +21,10 @@ def assert_lifecycle_transition(
 ) -> None:
     if target not in ALLOWED_TRANSITIONS[current]:
         raise InvalidLifecycleTransitionError(current.value, target.value)
+
+
+def public_ingestion_status(status: DocumentVersionStatus) -> str:
+    """Phase 02 persists UPLOADED until Phase 03 enqueues; the product 202/GET status is QUEUED."""
+    if status is DocumentVersionStatus.UPLOADED:
+        return DocumentVersionStatus.QUEUED.value
+    return status.value
