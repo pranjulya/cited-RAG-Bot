@@ -20,7 +20,12 @@ def _configure_logging(settings: Settings) -> None:
         level=getattr(logging, settings.log_level.upper(), logging.INFO),
         format="%(asctime)s %(levelname)s %(name)s correlation_id=%(correlation_id)s %(message)s",
     )
-    logging.getLogger().addFilter(_CorrelationIdFilter())
+    # Logger filters are not applied to records that propagate from child loggers.
+    # The formatter requires correlation_id, so the filter must live on handlers.
+    correlation_filter = _CorrelationIdFilter()
+    for handler in logging.getLogger().handlers:
+        if not any(isinstance(item, _CorrelationIdFilter) for item in handler.filters):
+            handler.addFilter(correlation_filter)
 
 
 class _CorrelationIdFilter(logging.Filter):
