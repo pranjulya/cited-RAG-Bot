@@ -58,4 +58,24 @@ async def ready(request: Request) -> ReadyResponse:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"status": "not_ready", "reason": "storage"},
         ) from exc
+
+    redis_url = getattr(settings, "redis_url", None)
+    if redis_url:
+        try:
+            from redis.asyncio import Redis
+
+            client = Redis.from_url(redis_url)
+            try:
+                await client.ping()
+            finally:
+                aclose = getattr(client, "aclose", None)
+                if aclose is not None:
+                    await aclose()
+                else:
+                    await client.close()
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={"status": "not_ready", "reason": "redis"},
+            ) from exc
     return {"status": "ok"}

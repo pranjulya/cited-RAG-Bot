@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import replace
-from datetime import timedelta
 from uuid import UUID
 
 from cited_rag.domain.clock import utc_now
@@ -31,11 +30,7 @@ async def process_ingestion_job(
     lease_seconds: int = DEFAULT_LEASE_SECONDS,
     pipeline: object | None = None,
 ) -> str:
-    """Claim a version, run Phase 03 stub stages, never mark READY.
-
-    `pipeline` is an optional callable `async (uow, version) -> None` used by tests
-    to inject transient/permanent failures. Production uses the no-op stub.
-    """
+    """Claim a version, run Phase 03 stub stages, never mark READY."""
     extra = {"correlation_id": correlation_id or "-"}
     version = await uow.versions.get(document_version_id)
     if version is None:
@@ -49,30 +44,32 @@ async def process_ingestion_job(
         logger.info("skip ingestion for terminal version", extra=extra)
         return "skipped"
 
-    job = await uow.ingestion_jobs.get_by_version(document_version_id)
-    now = utc_now()
-    if job is None:
-        job = IngestionJob(
-            document_version_id=document_version_id,
-            correlation_id=correlation_id,
+    if version.ingestion_status is DocumentVersionStatus.FAILED:
+        logger.info("failed version needs explicit retry enqueue", extra=extra)
+        return "skipped"
+
+    existing = await uow.ingestion_jobs.get_by_version(document_version_id)
+    if existing is None:
+        await uow.ingestion_jobs.add(
+            IngestionJob(document_version_id=document_version_id, correlation_id=correlation_id)
         )
-        await uow.ingestion_jobs.add(job)
 
     if (
-        job.status is IngestionJobStatus.RUNNING
-        and job.updated_at + timedelta(seconds=lease_seconds) > now
-    ):
-        logger.info("lease held; skip duplicate delivery", extra=extra)
-        return "leased"
-
-    if job.status is IngestionJobStatus.SUCCEEDED and (
-        version.ingestion_status is DocumentVersionStatus.PROCESSING
+        existing is not None
+        and existing.status is IngestionJobStatus.SUCCEEDED
+        and version.ingestion_status is DocumentVersionStatus.PROCESSING
     ):
         logger.info("already processed; skip duplicate delivery", extra=extra)
         return "duplicate"
 
-    if job.attempt_count >= max_attempts:
-        await _fail_permanent(uow, version.id, job, "retry_exhausted")
+    claimed = await uow.ingestion_jobs.claim(document_version_id, lease_seconds=lease_seconds)
+    if claimed is None:
+        logger.info("lease held or not claimable; skip duplicate delivery", extra=extra)
+        return "leased"
+
+    if claimed.attempt_count > max_attempts:
+        await _fail_permanent(uow, version.id, claimed, "retry_exhausted")
+        await uow.commit()
         return "failed"
 
     if version.ingestion_status is DocumentVersionStatus.UPLOADED:
@@ -85,30 +82,18 @@ async def process_ingestion_job(
                 version.id, DocumentVersionStatus.QUEUED, DocumentVersionStatus.PROCESSING
             )
         except (InvalidLifecycleTransitionError, OptimisticConcurrencyError):
+            await uow.ingestion_jobs.save(
+                replace(claimed, status=IngestionJobStatus.PENDING, updated_at=utc_now())
+            )
+            await uow.commit()
             logger.info("lost claim race", extra=extra)
             return "lost_race"
     elif version.ingestion_status is not DocumentVersionStatus.PROCESSING:
-        if version.ingestion_status is DocumentVersionStatus.FAILED:
-            logger.info("failed version needs explicit retry enqueue", extra=extra)
-            return "skipped"
         raise PermanentIngestionError(
             f"illegal status for worker: {version.ingestion_status.value}"
         )
 
-    claimed = replace(
-        job,
-        status=IngestionJobStatus.RUNNING,
-        attempt_count=job.attempt_count + 1,
-        correlation_id=correlation_id or job.correlation_id,
-        updated_at=now,
-        last_error=None,
-    )
-    await uow.ingestion_jobs.save(claimed)
-    logger.info(
-        "ingestion claimed attempt=%s",
-        claimed.attempt_count,
-        extra=extra,
-    )
+    logger.info("ingestion claimed attempt=%s", claimed.attempt_count, extra=extra)
 
     try:
         if pipeline is not None:
@@ -119,16 +104,20 @@ async def process_ingestion_job(
         await uow.ingestion_jobs.save(
             replace(
                 claimed,
+                status=IngestionJobStatus.PENDING,
                 last_error=str(exc),
                 updated_at=utc_now(),
             )
         )
         if claimed.attempt_count >= max_attempts:
             await _fail_permanent(uow, version.id, claimed, "retry_exhausted")
+            await uow.commit()
             return "failed"
+        await uow.commit()
         return "retry"
     except PermanentIngestionError as exc:
         await _fail_permanent(uow, version.id, claimed, str(exc))
+        await uow.commit()
         return "failed"
 
     await uow.ingestion_jobs.save(
@@ -139,6 +128,7 @@ async def process_ingestion_job(
             updated_at=utc_now(),
         )
     )
+    await uow.commit()
     logger.info("phase 03 stub complete; version remains PROCESSING", extra=extra)
     return "processed"
 

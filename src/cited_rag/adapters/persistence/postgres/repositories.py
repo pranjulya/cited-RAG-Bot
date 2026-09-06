@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,7 +37,7 @@ from cited_rag.adapters.persistence.postgres.models import (
     QueryRunRow,
 )
 from cited_rag.domain.clock import utc_now
-from cited_rag.domain.enums import DocumentVersionStatus
+from cited_rag.domain.enums import DocumentVersionStatus, IngestionJobStatus
 from cited_rag.domain.exceptions import OptimisticConcurrencyError
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.collection import Collection
@@ -271,6 +272,32 @@ class PostgresIngestionJobRepository:
         row.correlation_id = job.correlation_id
         row.updated_at = job.updated_at
         await self._session.flush()
+
+    async def claim(self, document_version_id: UUID, *, lease_seconds: int) -> IngestionJob | None:
+        now = utc_now()
+        cutoff = now - timedelta(seconds=lease_seconds)
+        result = await self._session.scalars(
+            update(IngestionJobRow)
+            .where(
+                IngestionJobRow.document_version_id == document_version_id,
+                or_(
+                    IngestionJobRow.status == IngestionJobStatus.PENDING.value,
+                    and_(
+                        IngestionJobRow.status == IngestionJobStatus.RUNNING.value,
+                        IngestionJobRow.updated_at <= cutoff,
+                    ),
+                ),
+            )
+            .values(
+                status=IngestionJobStatus.RUNNING.value,
+                attempt_count=IngestionJobRow.attempt_count + 1,
+                updated_at=now,
+                last_error=None,
+            )
+            .returning(IngestionJobRow)
+        )
+        row = result.first()
+        return job_from_row(row) if row is not None else None
 
 
 class PostgresQueryRunRepository:

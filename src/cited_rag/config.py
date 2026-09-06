@@ -58,6 +58,10 @@ class Settings(BaseSettings):
             raise ValueError(
                 "CITED_RAG_DATABASE_URL must be set when CITED_RAG_ENVIRONMENT=production"
             )
+        if not (self.redis_url or "").strip():
+            raise ValueError(
+                "CITED_RAG_REDIS_URL must be set when CITED_RAG_ENVIRONMENT=production"
+            )
         return self
 
 

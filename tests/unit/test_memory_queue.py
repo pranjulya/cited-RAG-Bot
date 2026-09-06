@@ -9,13 +9,13 @@ from cited_rag.domain.exceptions import QueueError
 
 
 @pytest.mark.asyncio
-async def test_memory_queue_is_idempotent_by_version_id() -> None:
+async def test_memory_queue_records_each_wakeup() -> None:
     queue = MemoryJobQueue()
     version_id = uuid4()
-    first = await queue.enqueue_ingestion(version_id, "c1")
-    second = await queue.enqueue_ingestion(version_id, "c2")
-    assert first == second == str(version_id)
-    assert len(queue.jobs) == 1
+    first = await queue.enqueue_ingestion(version_id, "c1", attempt=0)
+    second = await queue.enqueue_ingestion(version_id, "c2", attempt=1)
+    assert first != second
+    assert len(queue.jobs) == 2
 
 
 @pytest.mark.asyncio

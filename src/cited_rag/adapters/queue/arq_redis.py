@@ -23,20 +23,29 @@ class ArqJobQueue:
         return cls(pool)
 
     async def enqueue_ingestion(
-        self, document_version_id: UUID, correlation_id: str | None = None
+        self,
+        document_version_id: UUID,
+        correlation_id: str | None = None,
+        *,
+        attempt: int | None = None,
     ) -> str:
+        job_id = f"{document_version_id}:{0 if attempt is None else attempt}"
         try:
             job = await self._pool.enqueue_job(
                 INGEST_FUNCTION_NAME,
                 str(document_version_id),
                 correlation_id,
-                _job_id=str(document_version_id),
+                _job_id=job_id,
             )
         except Exception as exc:
             raise QueueError("failed to enqueue ingestion job") from exc
         if job is None:
-            return str(document_version_id)
+            raise QueueError(f"ingestion job id already exists: {job_id}")
         return job.job_id
 
     async def close(self) -> None:
+        aclose = getattr(self._pool, "aclose", None)
+        if aclose is not None:
+            await aclose()
+            return
         await self._pool.close()

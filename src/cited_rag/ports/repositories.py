@@ -85,6 +85,10 @@ class IngestionJobRepository(Protocol):
 
     async def save(self, job: IngestionJob) -> None: ...
 
+    async def claim(
+        self, document_version_id: UUID, *, lease_seconds: int
+    ) -> IngestionJob | None: ...
+
 
 class QueryRunRepository(Protocol):
     async def add(self, query_run: QueryRun) -> None: ...

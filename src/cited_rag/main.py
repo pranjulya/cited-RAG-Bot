@@ -52,10 +52,12 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.session_factory = create_session_factory(engine)
     app.state.storage = LocalObjectStorage(Path(settings.local_storage_path))
     queue: MemoryJobQueue | ArqJobQueue
-    if settings.redis_url:
+    if settings.environment == "test" and not settings.redis_url:
+        queue = MemoryJobQueue()
+    elif settings.redis_url:
         queue = await ArqJobQueue.from_url(settings.redis_url)
     else:
-        queue = MemoryJobQueue()
+        raise RuntimeError("CITED_RAG_REDIS_URL is required outside tests")
     app.state.queue = queue
     logger.info("application starting")
     yield

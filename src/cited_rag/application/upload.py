@@ -9,7 +9,7 @@ from uuid import UUID, uuid5
 
 from fastapi import UploadFile
 
-from cited_rag.domain.enums import DocumentVersionStatus
+from cited_rag.domain.enums import DocumentVersionStatus, IngestionJobStatus
 from cited_rag.domain.exceptions import (
     DuplicateIdentityError,
     EmptyUploadError,
@@ -212,9 +212,9 @@ async def _existing_hash(
         await uow.versions.transition(
             existing.id, DocumentVersionStatus.FAILED, DocumentVersionStatus.QUEUED
         )
-        await _ensure_pending_job(uow, existing.id, correlation_id)
+        job = await _ensure_pending_job(uow, existing.id, correlation_id)
         await uow.commit()
-        await queue.enqueue_ingestion(existing.id, correlation_id, attempt=None)
+        await queue.enqueue_ingestion(existing.id, correlation_id, attempt=job.attempt_count)
         return UploadResult(
             document_id=existing.document_id,
             document_version_id=existing.id,
@@ -292,12 +292,20 @@ async def _persist_new_version(
 
 async def _ensure_pending_job(
     uow: UnitOfWork, version_id: UUID, correlation_id: str | None
-) -> None:
+) -> IngestionJob:
     existing = await uow.ingestion_jobs.get_by_version(version_id)
     if existing is None:
-        await uow.ingestion_jobs.add(
-            IngestionJob(document_version_id=version_id, correlation_id=correlation_id)
-        )
+        job = IngestionJob(document_version_id=version_id, correlation_id=correlation_id)
+        await uow.ingestion_jobs.add(job)
+        return job
+    reset = replace(
+        existing,
+        status=IngestionJobStatus.PENDING,
+        last_error=None,
+        correlation_id=correlation_id or existing.correlation_id,
+    )
+    await uow.ingestion_jobs.save(reset)
+    return reset
 
 
 @dataclass(frozen=True, slots=True)
