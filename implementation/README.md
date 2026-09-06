@@ -8,18 +8,20 @@ This folder is the execution layer for `Implementation.md`. Each phase is intent
 
 Before any phase:
 
-1. Read `Implementation.md`.
-2. Read the phase file.
-3. Read referenced PRD/HLD/LLD/ADR/evaluation docs.
-4. Verify prerequisites.
-5. Create a branch from latest `main` (never commit to `main`; see `AGENTS.md` Git Workflow).
-6. Write or identify failing tests first.
-7. Implement only the current phase.
-8. Run the phase verification suite.
-9. Update Learning documentation.
-10. Review architecture/security implications.
-11. Change phase status only when its Definition of Done is satisfied.
-12. Open a pull request into `main`.
+1. Read `MEMORY.md` (Current state). Do not start the next phase if the previous PR is still unmerged unless Current state says otherwise.
+2. Read `Implementation.md`.
+3. Read the phase file.
+4. Read referenced PRD/HLD/LLD/ADR/evaluation docs.
+5. Verify prerequisites.
+6. Create a branch from latest `main` (never commit to `main`; see `AGENTS.md` Git Workflow).
+7. Write or identify failing tests first.
+8. Implement only the current phase.
+9. Run the phase verification suite.
+10. Update Learning documentation.
+11. Review architecture/security implications.
+12. Change phase status only when its Definition of Done is satisfied.
+13. Open a pull request into `main`.
+14. Update `MEMORY.md` (Current state + phase record) and push on the phase branch. Then the chat may be cleared.
 
 ## Status Model
 
