@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 00 implemented and verified locally; **PR not opened yet** |
+| Last completed work | Phase 00 implemented and verified locally; **PR #2 is open** |
 | Phase file status | `TESTED` (not `COMPLETE` — needs human review after merge) |
 | Branch | `phase-00-foundation` (tracks `origin/phase-00-foundation`) |
 | Commits on branch | `3ef8e71` docs: require a branch and PR for every change; `2d86621` feat: add Phase 00 FastAPI application foundation |
-| PR | Not created. Open from https://github.com/pranjulya/cited-RAG-Bot/pull/new/phase-00-foundation |
+| PR | [#2](https://github.com/pranjulya/cited-RAG-Bot/pull/2) — open, `phase-00-foundation` → `main` |
 | `main` | `d8725fb` — architecture freeze + residual wording. **Do not push or merge to `main` except via PR.** |
-| Next action | 1) Open/merge the Phase 00 PR. 2) Start Phase 01 on a **new** branch from updated `main`. |
+| Next action | 1) Review and merge [PR #2](https://github.com/pranjulya/cited-RAG-Bot/pull/2). 2) Start Phase 01 on a **new** branch from updated `main`. |
 | Blockers | Docker daemon was not running, so the API image was not built. GitHub `workflow` scope was added later; CI file is on the branch. |
 
 Do **not** start Phase 01 until Phase 00 is merged to `main`.
@@ -73,7 +73,7 @@ Do **not** start Phase 01 until Phase 00 is merged to `main`.
 
 - **Date:** 2026-09-06
 - **Branch:** `phase-00-foundation`
-- **PR:** not opened yet — https://github.com/pranjulya/cited-RAG-Bot/pull/new/phase-00-foundation
+- **PR:** [#2](https://github.com/pranjulya/cited-RAG-Bot/pull/2) (`phase-00-foundation` → `main`, OPEN)
 - **Status in phase file:** `TESTED`
 - **Goal:** Minimal FastAPI/Python foundation for later phases. No RAG, no Postgres, no Qdrant, no Redis, no parsing.
 
@@ -119,15 +119,15 @@ Do **not** start Phase 01 until Phase 00 is merged to `main`.
 - **Not verified / known gaps:**
   - Docker image build/start not run (Docker daemon not running)
   - Phase status is `TESTED`, not `COMPLETE` (review + merge still required)
-  - No Phase 00 GitHub PR yet
+  - Phase 00 PR is open (#2); not merged yet
   - Starlette TestClient/httpx deprecation warnings appeared; ignored for this phase
 
 - **Follow-ups for the next phase:**
-  - Open the Phase 00 PR, review, merge to `main`. Do not start Phase 01 on this branch.
+  - Review and merge [PR #2](https://github.com/pranjulya/cited-RAG-Bot/pull/2). Do not start Phase 01 on this branch.
   - Phase 01: domain model + PostgreSQL persistence (`implementation/phase-01-domain-persistence.md`). New branch e.g. `phase-01-domain-persistence` from merged `main`.
   - Add Postgres to compose/CI only in the phase that needs it.
   - After Phase 00 merge, `/ready` stays `not_configured` until a later phase adds real checks.
-  - After the Phase 00 PR is opened, update this file’s **Current state** and the PR field above, then `/clear` is safe.
+  - After PR #2 is merged, `/clear` is safe; the next session starts Phase 01 from `main`.
 
 ---
 
