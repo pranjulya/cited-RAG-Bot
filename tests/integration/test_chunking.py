@@ -10,11 +10,14 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from tests.pdf_fixtures import TWO_PAGE_PDF, make_text_pdf
 
 from cited_rag.adapters.chunking.page_window import PageWindowChunker
+from cited_rag.adapters.embedding.hashing import HashEmbeddingProvider
 from cited_rag.adapters.parser.pypdf import PypdfDocumentParser
 from cited_rag.adapters.persistence.postgres.uow import PostgresUnitOfWork
+from cited_rag.adapters.retrieval.memory import MemoryRetrievalStore
 from cited_rag.application.ingestion import process_ingestion_job
 from cited_rag.config import Settings
 from cited_rag.domain.chunking import ChunkingConfig
+from cited_rag.domain.embedding import EmbeddingConfig
 from cited_rag.domain.enums import DocumentVersionStatus
 from cited_rag.main import create_app
 
@@ -73,6 +76,9 @@ async def _process(
             storage=client.app.state.storage,
             parser=PypdfDocumentParser(),
             chunker=PageWindowChunker(ChunkingConfig(target_chars=target, overlap_chars=overlap)),
+            embedding_provider=HashEmbeddingProvider(dimension=8),
+            retrieval_store=MemoryRetrievalStore(),
+            embedding_config=EmbeddingConfig(dimension=8, batch_size=8),
         )
 
 
@@ -134,3 +140,22 @@ async def test_parse_path_requires_configured_chunker(
     assert outcome == "failed"
     assert version is not None
     assert version.failure_message == "ingestion chunker is not configured"
+
+
+@pytest.mark.asyncio
+async def test_parse_path_requires_configured_dense_indexer(
+    client: TestClient, uow_factory: async_sessionmaker
+) -> None:
+    version_id = _upload(client, TWO_PAGE_PDF)
+    async with _uow(uow_factory) as uow:
+        outcome = await process_ingestion_job(
+            uow,
+            document_version_id=version_id,
+            storage=client.app.state.storage,
+            parser=PypdfDocumentParser(),
+            chunker=PageWindowChunker(),
+        )
+        version = await uow.versions.get(version_id)
+    assert outcome == "failed"
+    assert version is not None
+    assert version.failure_message == "ingestion dense indexer is not configured"

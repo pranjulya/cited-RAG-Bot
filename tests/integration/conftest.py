@@ -11,6 +11,14 @@ from cited_rag.adapters.persistence.postgres.session import create_engine
 
 
 @pytest.fixture(scope="session")
+def qdrant_url() -> str:
+    url = os.environ.get("CITED_RAG_QDRANT_URL")
+    if not url:
+        pytest.skip("CITED_RAG_QDRANT_URL is required for dense index tests")
+    return url
+
+
+@pytest.fixture(scope="session")
 def database_url() -> str:
     url = os.environ.get("CITED_RAG_DATABASE_URL")
     if not url:

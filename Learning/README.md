@@ -25,3 +25,7 @@ See `Learning/04-pdf-parsing-provenance.md`.
 ## Phase 05
 
 See `Learning/05-provenance-aware-chunking.md`.
+
+## Phase 06
+
+See `Learning/06-dense-indexing.md`.

@@ -1,6 +1,6 @@
 # Phase 06 — Embedding and Dense Indexing
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Generate dense embeddings for chunks and index them in the retrieval store with collection-scoped provenance filters.

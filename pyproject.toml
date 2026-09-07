@@ -20,6 +20,7 @@ dependencies = [
     "python-multipart>=0.0.12",
     "sqlalchemy[asyncio]>=2.0.36",
     "pypdf>=5.0.0",
+    "qdrant-client>=1.12.0",
     "uvicorn[standard]>=0.32.0",
 ]
 
@@ -47,6 +48,7 @@ markers = [
     "postgres: tests that need PostgreSQL and CITED_RAG_DATABASE_URL",
     "redis: tests that need Redis and CITED_RAG_REDIS_URL",
     "docling: tests that import the optional Docling extra",
+    "qdrant: tests that need Qdrant and CITED_RAG_QDRANT_URL",
 ]
 
 [tool.ruff]
@@ -67,5 +69,5 @@ strict = true
 packages = ["cited_rag"]
 
 [[tool.mypy.overrides]]
-module = ["docling", "docling.*"]
+module = ["docling", "docling.*", "qdrant_client", "qdrant_client.*"]
 ignore_missing_imports = true
