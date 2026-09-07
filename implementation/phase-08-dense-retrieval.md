@@ -1,6 +1,6 @@
 # Phase 08 — Dense Retrieval
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Implement collection-scoped semantic retrieval over dense embeddings and expose deterministic candidates for downstream hybrid fusion.

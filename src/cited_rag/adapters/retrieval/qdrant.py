@@ -168,6 +168,31 @@ class QdrantRetrievalStore:
         except Exception as exc:
             raise TransientIngestionError("retrieval store unavailable") from exc
 
+    async def search_dense(
+        self,
+        vector: Sequence[float],
+        *,
+        collection_id: UUID,
+        document_version_ids: Sequence[UUID],
+        top_k: int,
+    ) -> list[SearchHit]:
+        if not document_version_ids or top_k < 1:
+            return []
+        try:
+            result = await self._client.query_points(
+                collection_name=self.collection_name,
+                query=list(vector),
+                using=DENSE_VECTOR_NAME,
+                query_filter=_version_filter(collection_id, document_version_ids),
+                limit=top_k,
+                with_payload=True,
+            )
+        except UnexpectedResponse as exc:
+            raise TransientIngestionError("retrieval store unavailable") from exc
+        except Exception as exc:
+            raise TransientIngestionError("retrieval store unavailable") from exc
+        return _hits_from_query(result)
+
     async def search_sparse(
         self,
         vector: SparseVector,
@@ -178,24 +203,12 @@ class QdrantRetrievalStore:
     ) -> list[SearchHit]:
         if not document_version_ids or top_k < 1:
             return []
-        query_filter = Filter(
-            must=[
-                FieldCondition(
-                    key="collection_id",
-                    match=MatchValue(value=str(collection_id)),
-                ),
-                FieldCondition(
-                    key="document_version_id",
-                    match=MatchAny(any=[str(version_id) for version_id in document_version_ids]),
-                ),
-            ]
-        )
         try:
             result = await self._client.query_points(
                 collection_name=self.collection_name,
                 query=QdrantSparseVector(indices=list(vector.indices), values=list(vector.values)),
                 using=SPARSE_VECTOR_NAME,
-                query_filter=query_filter,
+                query_filter=_version_filter(collection_id, document_version_ids),
                 limit=top_k,
                 with_payload=True,
             )
@@ -208,7 +221,7 @@ class QdrantRetrievalStore:
     async def scroll_collection(
         self, *, collection_id: UUID, limit: int = 10
     ) -> list[IndexedPoint]:
-        """Dummy filtered read for index tests. Product dense retrieval is Phase 08."""
+        """Filtered scroll for index tests. Product search uses search_dense/search_sparse."""
         try:
             points, _offset = await self._client.scroll(
                 collection_name=self.collection_name,
@@ -301,6 +314,21 @@ def _wrong_payload_index_fields(info: Any) -> list[str]:
         if expected.value.lower() not in actual_value and str(expected).lower() not in actual_value:
             wrong.append(field)
     return wrong
+
+
+def _version_filter(collection_id: UUID, document_version_ids: Sequence[UUID]) -> Filter:
+    return Filter(
+        must=[
+            FieldCondition(
+                key="collection_id",
+                match=MatchValue(value=str(collection_id)),
+            ),
+            FieldCondition(
+                key="document_version_id",
+                match=MatchAny(any=[str(version_id) for version_id in document_version_ids]),
+            ),
+        ]
+    )
 
 
 def _hits_from_query(result: Any) -> list[SearchHit]:

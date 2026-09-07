@@ -91,3 +91,9 @@ class EmptyExtractionError(PdfParseError):
 class IngestionIntegrityError(PermanentIngestionError):
     def __init__(self, message: str = "ingestion provenance is inconsistent") -> None:
         super().__init__(message, failure_code="INGESTION_FAILED")
+
+
+class DenseRetrievalError(DomainError):
+    def __init__(self, message: str = "dense retrieval failed") -> None:
+        self.failure_code = "DENSE_RETRIEVAL_ERROR"
+        super().__init__(message)
