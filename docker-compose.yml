@@ -46,6 +46,7 @@ services:
       CITED_RAG_LOCAL_STORAGE_PATH: /data/objects
       CITED_RAG_MAX_UPLOAD_BYTES: "20971520"
       CITED_RAG_REDIS_URL: redis://redis:6379/0
+      CITED_RAG_PARSER_BACKEND: pypdf
     volumes:
       - api-objects:/data/objects
     depends_on:
@@ -66,6 +67,7 @@ services:
       CITED_RAG_DATABASE_URL: postgresql+asyncpg://cited_rag:cited_rag@postgres:5432/cited_rag
       CITED_RAG_LOCAL_STORAGE_PATH: /data/objects
       CITED_RAG_REDIS_URL: redis://redis:6379/0
+      CITED_RAG_PARSER_BACKEND: pypdf
     volumes:
       - api-objects:/data/objects
     depends_on:

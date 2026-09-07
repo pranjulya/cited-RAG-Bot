@@ -1,6 +1,6 @@
 # Phase 04 — PDF Parsing and Page Provenance
 
-**Status:** NOT_STARTED
+**Status:** TESTED
 
 ## Goal
 Parse retained PDFs into ordered page-aware content while preserving exact source-page identity and classifying unsupported/failed extraction cases.

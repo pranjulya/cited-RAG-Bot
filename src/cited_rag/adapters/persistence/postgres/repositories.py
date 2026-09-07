@@ -208,6 +208,13 @@ class PostgresDocumentVersionRepository:
             .values(ingestion_status=DocumentVersionStatus.DELETED.value)
         )
 
+    async def set_page_count(self, version_id: UUID, page_count: int) -> None:
+        await self._session.execute(
+            update(DocumentVersionRow)
+            .where(DocumentVersionRow.id == version_id)
+            .values(page_count=page_count)
+        )
+
 
 class PostgresPageRepository:
     def __init__(self, session: AsyncSession) -> None:

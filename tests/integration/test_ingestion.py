@@ -21,6 +21,10 @@ MINIMAL_PDF = b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"
 AUTH = {"Authorization": "Bearer test-placeholder-key"}
 
 
+async def _noop(_uow: object, _version: object) -> None:
+    return None
+
+
 @pytest.fixture
 def client(migrated_database: str, tmp_path: Path) -> Iterator[TestClient]:
     settings = Settings(
@@ -59,7 +63,7 @@ async def test_enqueue_and_worker_claims_processing(
 ) -> None:
     version_id = _upload(client)
     async with _uow(uow_factory) as uow:
-        outcome = await process_ingestion_job(uow, document_version_id=version_id)
+        outcome = await process_ingestion_job(uow, document_version_id=version_id, pipeline=_noop)
         version = await uow.versions.get(version_id)
         job = await uow.ingestion_jobs.get_by_version(version_id)
     assert outcome == "processed"
@@ -75,9 +79,9 @@ async def test_duplicate_delivery_is_idempotent(
 ) -> None:
     version_id = _upload(client)
     async with _uow(uow_factory) as uow:
-        first = await process_ingestion_job(uow, document_version_id=version_id)
+        first = await process_ingestion_job(uow, document_version_id=version_id, pipeline=_noop)
     async with _uow(uow_factory) as uow:
-        second = await process_ingestion_job(uow, document_version_id=version_id)
+        second = await process_ingestion_job(uow, document_version_id=version_id, pipeline=_noop)
         version = await uow.versions.get(version_id)
     assert first == "processed"
     assert second == "duplicate"
@@ -179,7 +183,7 @@ async def test_illegal_status_is_skipped_for_ready(
 ) -> None:
     version_id = _upload(client)
     async with _uow(uow_factory) as uow:
-        await process_ingestion_job(uow, document_version_id=version_id)
+        await process_ingestion_job(uow, document_version_id=version_id, pipeline=_noop)
         version = await uow.versions.get(version_id)
         assert version is not None
         await uow.versions.transition(
@@ -209,7 +213,9 @@ async def test_crash_restart_reclaims_expired_lease(
         )
     assert crashed == "retry"
     async with _uow(uow_factory) as uow:
-        outcome = await process_ingestion_job(uow, document_version_id=version_id, lease_seconds=0)
+        outcome = await process_ingestion_job(
+            uow, document_version_id=version_id, lease_seconds=0, pipeline=_noop
+        )
         version = await uow.versions.get(version_id)
         job = await uow.ingestion_jobs.get_by_version(version_id)
     assert outcome == "processed"

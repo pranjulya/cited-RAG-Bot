@@ -7,7 +7,7 @@ import pytest
 
 from cited_rag.adapters.storage.local import LocalObjectStorage
 from cited_rag.domain.exceptions import StorageError
-from cited_rag.ports.object_storage import source_pdf_key
+from cited_rag.ports.object_storage import key_from_storage_uri, source_pdf_key
 
 
 async def _chunks(*parts: bytes) -> AsyncIterator[bytes]:
@@ -40,3 +40,14 @@ def test_source_pdf_key_layout() -> None:
         "documents/22222222-2222-2222-2222-222222222222/"
         "versions/33333333-3333-3333-3333-333333333333/source.pdf"
     )
+
+
+def test_key_from_local_storage_uri() -> None:
+    key = (
+        "collections/11111111-1111-1111-1111-111111111111/"
+        "documents/22222222-2222-2222-2222-222222222222/"
+        "versions/33333333-3333-3333-3333-333333333333/source.pdf"
+    )
+    assert key_from_storage_uri(f"local://{key}") == key
+    with pytest.raises(ValueError):
+        key_from_storage_uri("s3://bucket/key")

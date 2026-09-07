@@ -9,6 +9,15 @@ def source_pdf_key(*, collection_id: UUID, document_id: UUID, version_id: UUID) 
     return f"collections/{collection_id}/documents/{document_id}/versions/{version_id}/source.pdf"
 
 
+def key_from_storage_uri(uri: str) -> str:
+    prefix = "local://"
+    if uri.startswith(prefix):
+        key = uri[len(prefix) :]
+        if key:
+            return key
+    raise ValueError("unsupported or empty storage uri")
+
+
 class ObjectStorage(Protocol):
     async def put(self, key: str, chunks: AsyncIterator[bytes]) -> str:
         """Persist bytes at key. Returns a durable storage URI."""

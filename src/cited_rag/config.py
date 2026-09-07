@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     redis_url: str | None = None
     ingestion_max_attempts: int = Field(default=3, ge=1)
     ingestion_lease_seconds: int = Field(default=30, ge=1)
+    parser_backend: Literal["docling", "pypdf"] = "pypdf"
 
     @field_validator("debug")
     @classmethod
