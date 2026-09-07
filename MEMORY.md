@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 04 implemented on `phase-04-pdf-parsing-provenance`. PR **[#9](https://github.com/pranjulya/cited-RAG-Bot/pull/9)** opened. Phase 03 is on `main` (`f91e47f` / MEMORY PR #8 `c36dea8`). |
-| Phase file status | Phase 04 `TESTED` (not `COMPLETE`) |
-| Branch | `phase-04-pdf-parsing-provenance` |
-| PR | [#9](https://github.com/pranjulya/cited-RAG-Bot/pull/9) — open |
-| `main` | `c36dea8` — Phase 03 MEMORY record. **Do not push or merge to `main` except via PR.** |
-| Next action | Review/merge [PR #9](https://github.com/pranjulya/cited-RAG-Bot/pull/9) after CI. Do not start Phase 05 until it is on `main`. |
-| Blockers | Docling extra not installed in CI (pypdf backend). Live Docker worker still not run locally. |
+| Last completed work | Phase 04 **[#9](https://github.com/pranjulya/cited-RAG-Bot/pull/9)** merged (`51bd34a`). Phase 05 PR **[#10](https://github.com/pranjulya/cited-RAG-Bot/pull/10)** opened. |
+| Phase file status | Phase 05 `TESTED` (not `COMPLETE`) |
+| Branch | `phase-05-provenance-aware-chunking` |
+| PR | [#10](https://github.com/pranjulya/cited-RAG-Bot/pull/10) — open |
+| `main` | `51bd34a` — Phase 04 parsing. **Do not push or merge to `main` except via PR.** |
+| Next action | Review/merge [PR #10](https://github.com/pranjulya/cited-RAG-Bot/pull/10) after CI. Do not start Phase 06 until it is on `main`. |
+| Blockers | None for review. No embeddings/`READY` yet. |
 
 ---
 
@@ -66,11 +66,53 @@ Do not put secrets, API keys, or raw PDF text here.
 
 ## Phase records
 
+### Phase 05 — Provenance-Aware Chunking
+
+- **Date:** 2026-09-07
+- **Branch:** `phase-05-provenance-aware-chunking`
+- **PR:** [#10](https://github.com/pranjulya/cited-RAG-Bot/pull/10) (`phase-05-provenance-aware-chunking` → `main`, OPEN)
+- **Status in phase file:** `TESTED`
+- **Goal:** Split parsed pages into ordered chunks with deterministic UUIDv5 identities and explicit page ranges. Never `READY`. No embeddings.
+
+- **Files added/changed:**
+  - `ports/chunker.py`, `domain/chunking.py` (`ChunkingConfig`)
+  - `adapters/chunking/page_window.py` — single-page character windows + overlap
+  - `application/chunking.py` — persist; skip if chunks already exist
+  - Worker/ingestion pipeline: parse then chunk
+  - Settings: `chunk_target_chars`, `chunk_overlap_chars`
+  - Tests: `tests/unit/test_chunker.py`, `tests/integration/test_chunking.py`
+  - `Learning/05-provenance-aware-chunking.md`
+
+- **Public contracts / commands:**
+  - `CITED_RAG_CHUNK_TARGET_CHARS` (default 1200), `CITED_RAG_CHUNK_OVERLAP_CHARS` (default 200, must be smaller than target)
+  - Strategy name `page_char_split_v1`
+  - Chunk `page_start`/`page_end` are the source PDF page; V1 does not merge pages
+  - Chunk id = UUIDv5 from version, page range, order, content hash
+
+- **Decisions made in this phase (not already in ADR-011):**
+  - Character windows, not tokens; `token_count` is whitespace-split length
+  - Empty pages produce no chunks; zero chunks after parse is `PDF_UNSUPPORTED`
+  - Config is settings + ingest logs (no extra JSONB column)
+
+- **Verification run (exact commands + results):**
+  - ruff / mypy — passed
+  - `pytest tests/unit` — **64 passed, 1 skipped**
+  - `pytest tests/integration` — **36 passed**
+
+- **Not verified / known gaps:**
+  - Semantic/cross-page chunking not implemented
+  - Chunk config not stored on the version row (evaluation Phase 19)
+  - No dense/sparse index; version stays `PROCESSING`
+
+- **Follow-ups for the next phase:**
+  - Review/merge [PR #10](https://github.com/pranjulya/cited-RAG-Bot/pull/10)
+  - Phase 06: embedding + dense indexing. New branch from merged `main`.
+
 ### Phase 04 — PDF Parsing and Page Provenance
 
 - **Date:** 2026-09-07
 - **Branch:** `phase-04-pdf-parsing-provenance`
-- **PR:** [#9](https://github.com/pranjulya/cited-RAG-Bot/pull/9) (`phase-04-pdf-parsing-provenance` → `main`, OPEN)
+- **PR:** [#9](https://github.com/pranjulya/cited-RAG-Bot/pull/9) (`phase-04-pdf-parsing-provenance` → `main`, MERGED `51bd34a`)
 - **Status in phase file:** `TESTED`
 - **Goal:** Parse retained PDFs into ordered pages with original page numbers, persist provenance, classify corrupt/password/empty extraction. Never `READY`. No chunking.
 
