@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from tests.pdf_fixtures import CORRUPT_PDF, TWO_PAGE_PDF, make_blank_pdf, make_password_pdf
 
+from cited_rag.adapters.chunking.page_window import PageWindowChunker
 from cited_rag.adapters.parser.pypdf import PypdfDocumentParser
 from cited_rag.adapters.persistence.postgres.uow import PostgresUnitOfWork
 from cited_rag.application.ingestion import process_ingestion_job
@@ -62,6 +63,7 @@ async def _process(client: TestClient, uow_factory: async_sessionmaker, version_
             document_version_id=version_id,
             storage=storage,
             parser=parser,
+            chunker=PageWindowChunker(),
         )
 
 

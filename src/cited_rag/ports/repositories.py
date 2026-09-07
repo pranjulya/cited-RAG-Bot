@@ -65,6 +65,10 @@ class DocumentVersionRepository(Protocol):
 
     async def set_page_count(self, version_id: UUID, page_count: int) -> None: ...
 
+    async def set_chunking_config(
+        self, version_id: UUID, chunking_config: dict[str, str | int]
+    ) -> None: ...
+
 
 class PageRepository(Protocol):
     async def add(self, page: Page) -> None: ...

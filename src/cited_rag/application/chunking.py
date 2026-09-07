@@ -19,9 +19,12 @@ async def persist_chunks(
     pages: Sequence[Page],
     chunker: Chunker,
 ) -> list[Chunk]:
-    """Persist provenance-aware chunks. Never marks READY."""
+    """Persist provenance-aware chunks and the config that produced them. Never marks READY."""
+    record = chunker.config.as_record()
     existing = await uow.chunks.list_by_version(version.id)
     if existing:
+        if version.chunking_config is None:
+            await uow.versions.set_chunking_config(version.id, record)
         logger.info(
             "chunks already persisted count=%s",
             len(existing),
@@ -37,6 +40,7 @@ async def persist_chunks(
         )
     for chunk in chunks:
         await uow.chunks.add(chunk)
+    await uow.versions.set_chunking_config(version.id, record)
     logger.info(
         "chunked count=%s strategy=%s target=%s overlap=%s",
         len(chunks),

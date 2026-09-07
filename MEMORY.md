@@ -92,12 +92,12 @@ Do not put secrets, API keys, or raw PDF text here.
 - **Decisions made in this phase (not already in ADR-011):**
   - Character windows, not tokens; `token_count` is whitespace-split length
   - Empty pages produce no chunks; zero chunks after parse is `PDF_UNSUPPORTED`
-  - Config is settings + ingest logs (no extra JSONB column)
+  - `document_versions.chunking_config` JSONB stores strategy/target/overlap used for that version
 
 - **Verification run (exact commands + results):**
   - ruff / mypy — passed
-  - `pytest tests/unit` — **64 passed, 1 skipped**
-  - `pytest tests/integration` — **36 passed**
+  - `pytest tests/unit` — **65 passed, 1 skipped**
+  - `pytest tests/integration` — **37 passed**
 
 - **Not verified / known gaps:**
   - Semantic/cross-page chunking not implemented

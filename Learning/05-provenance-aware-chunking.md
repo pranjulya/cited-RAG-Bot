@@ -10,4 +10,4 @@ A heading plus one sentence and a 3,000-character paragraph are not the same uni
 
 ## Why chunk configuration belongs in evaluation metadata
 
-`CITED_RAG_CHUNK_TARGET_CHARS` and `CITED_RAG_CHUNK_OVERLAP_CHARS` change the retrieval unit. A golden set scored against one window size is not comparable to another. Strategy name `page_char_split_v1` is logged at ingest. Chunk IDs are UUIDv5 of version, page range, order, and text hash so a rerun with the same bytes and config reproduces the same identities (those IDs become Qdrant `point_id` later).
+`CITED_RAG_CHUNK_TARGET_CHARS` and `CITED_RAG_CHUNK_OVERLAP_CHARS` change the retrieval unit. A golden set scored against one window size is not comparable to another. The strategy, target, and overlap used for a version are stored on `document_versions.chunking_config` so later evaluation can reproduce that version without reading logs. Chunk IDs are UUIDv5 of version, page range, order, and text hash so a rerun with the same bytes and config reproduces the same identities (those IDs become Qdrant `point_id` later).

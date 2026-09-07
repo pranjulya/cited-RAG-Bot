@@ -18,3 +18,10 @@ class ChunkingConfig:
             raise ValueError("chunk overlap_chars must be >= 0")
         if self.overlap_chars >= self.target_chars:
             raise ValueError("chunk overlap_chars must be smaller than target_chars")
+
+    def as_record(self) -> dict[str, str | int]:
+        return {
+            "strategy": self.strategy,
+            "target_chars": self.target_chars,
+            "overlap_chars": self.overlap_chars,
+        }

@@ -4,7 +4,6 @@ import logging
 from dataclasses import replace
 from uuid import UUID
 
-from cited_rag.adapters.chunking.page_window import PageWindowChunker
 from cited_rag.application.chunking import persist_chunks
 from cited_rag.application.parsing import persist_parsed_pages
 from cited_rag.domain.clock import utc_now
@@ -108,8 +107,10 @@ async def process_ingestion_job(
         if pipeline is not None:
             await pipeline(uow, version)  # type: ignore[operator]
         elif storage is not None and parser is not None:
+            if chunker is None:
+                raise PermanentIngestionError("ingestion chunker is not configured")
             pages = await persist_parsed_pages(uow, version, storage=storage, parser=parser)
-            await persist_chunks(uow, version, pages, chunker or PageWindowChunker())
+            await persist_chunks(uow, version, pages, chunker)
         else:
             raise PermanentIngestionError("ingestion parser is not configured")
     except TransientIngestionError as exc:

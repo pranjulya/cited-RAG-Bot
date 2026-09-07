@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -23,7 +23,7 @@ def _version() -> DocumentVersion:
     )
 
 
-def _page(version_id, number: int, text: str) -> Page:
+def _page(version_id: UUID, number: int, text: str) -> Page:
     return Page(
         document_version_id=version_id,
         page_number=number,
@@ -60,14 +60,18 @@ def test_multi_page_keeps_page_identity_and_order() -> None:
 
 def test_long_page_splits_with_overlap() -> None:
     version = _version()
-    text = ("alpha " * 40).strip()
-    chunker = PageWindowChunker(ChunkingConfig(target_chars=40, overlap_chars=10))
+    # Unique digit pairs so a suffix/prefix match cannot be accidental.
+    text = "".join(f"{index:02d}" for index in range(40))
+    overlap = 8
+    chunker = PageWindowChunker(ChunkingConfig(target_chars=20, overlap_chars=overlap))
     chunks = chunker.chunk(version, [_page(version.id, 1, text)])
     assert len(chunks) >= 2
     assert all(c.page_start == 1 and c.page_end == 1 for c in chunks)
     assert all(c.text in text for c in chunks)
     assert [c.chunk_order for c in chunks] == list(range(len(chunks)))
-    assert chunks[1].text[:8] in chunks[0].text + " " + chunks[1].text
+    assert chunks[0].text != chunks[1].text
+    assert chunks[0].text[-overlap:] == chunks[1].text[:overlap]
+    assert text.startswith(chunks[0].text)
 
 
 def test_empty_pages_are_skipped() -> None:
@@ -88,6 +92,15 @@ def test_ids_are_deterministic() -> None:
     first = chunker.chunk(version, pages)
     second = chunker.chunk(version, pages)
     assert [c.id for c in first] == [c.id for c in second]
+
+
+def test_config_record_is_reproducible() -> None:
+    record = ChunkingConfig(target_chars=80, overlap_chars=16).as_record()
+    assert record == {
+        "strategy": "page_char_split_v1",
+        "target_chars": 80,
+        "overlap_chars": 16,
+    }
 
 
 def test_invalid_overlap_rejected() -> None:

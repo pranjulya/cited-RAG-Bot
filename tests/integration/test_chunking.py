@@ -94,6 +94,11 @@ async def test_ingestion_persists_chunks_without_ready(
     assert "alpha-page-one" in chunks[0].text
     assert "beta-page-two" in chunks[1].text
     assert chunks[0].id.version == 5
+    assert version.chunking_config == {
+        "strategy": "page_char_split_v1",
+        "target_chars": 1200,
+        "overlap_chars": 200,
+    }
 
 
 @pytest.mark.asyncio
@@ -111,3 +116,21 @@ async def test_long_page_chunking_is_reproducible(
     async with _uow(uow_factory) as uow:
         again = await uow.chunks.list_by_version(version_id)
     assert [c.id for c in again] == [c.id for c in first]
+
+
+@pytest.mark.asyncio
+async def test_parse_path_requires_configured_chunker(
+    client: TestClient, uow_factory: async_sessionmaker
+) -> None:
+    version_id = _upload(client, TWO_PAGE_PDF)
+    async with _uow(uow_factory) as uow:
+        outcome = await process_ingestion_job(
+            uow,
+            document_version_id=version_id,
+            storage=client.app.state.storage,
+            parser=PypdfDocumentParser(),
+        )
+        version = await uow.versions.get(version_id)
+    assert outcome == "failed"
+    assert version is not None
+    assert version.failure_message == "ingestion chunker is not configured"
