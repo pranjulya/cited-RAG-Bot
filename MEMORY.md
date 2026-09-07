@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | PR #7 merged (`92666d1`). Phase 03 **[#6](https://github.com/pranjulya/cited-RAG-Bot/pull/6)** rebased onto main with queue/lease fixes. |
-| Phase file status | Phase 03 `TESTED` (not `COMPLETE`) |
-| Branch | `phase-03-async-ingestion` |
-| PR | [#6](https://github.com/pranjulya/cited-RAG-Bot/pull/6) — open, rebased |
-| `main` | `92666d1` — transaction/deletion/provenance fixes. **Do not push or merge to `main` except via PR.** |
-| Next action | Review/merge [PR #6](https://github.com/pranjulya/cited-RAG-Bot/pull/6) after CI. |
-| Blockers | Live Docker Redis worker still not run locally (daemon). CI integration now includes Redis. |
+| Last completed work | Phase 03 **[#6](https://github.com/pranjulya/cited-RAG-Bot/pull/6)** merged to `main` (`f91e47f`, 2026-09-07). PR #7 (`92666d1`) is also on `main`. |
+| Phase file status | Phase 03 `REVIEWED` (not `COMPLETE`: live Docker upload→Redis→worker not executed locally) |
+| Branch | `main` (`f91e47f`). No open PRs. |
+| PR | [#6](https://github.com/pranjulya/cited-RAG-Bot/pull/6) MERGED |
+| `main` | `f91e47f` — Phase 03 async ingestion. **Do not push or merge to `main` except via PR.** |
+| Next action | Start Phase 04 (`implementation/phase-04-pdf-parsing-provenance.md`) on a **new branch from latest `main`**. Do not reuse `phase-03-async-ingestion`. |
+| Blockers | None for starting Phase 04. Live Compose worker still unverified locally (Docker daemon hung/`info` did not return). |
 
 ---
 
@@ -65,6 +65,55 @@ Do not put secrets, API keys, or raw PDF text here.
 ---
 
 ## Phase records
+
+### Phase 03 — Asynchronous Ingestion Worker
+
+- **Date:** 2026-09-07
+- **Branch:** `phase-03-async-ingestion`
+- **PR:** [#6](https://github.com/pranjulya/cited-RAG-Bot/pull/6) (`phase-03-async-ingestion` → `main`, MERGED `f91e47f`)
+- **Status in phase file:** `REVIEWED` (was `TESTED` at merge; not `COMPLETE`)
+- **Goal:** Move ingestion off the HTTP request: durable Postgres job + Redis/arq wake-up, `QUEUED → PROCESSING`, never `READY`. Stub later pipeline stages.
+
+- **Files added/changed:**
+  - `src/cited_rag/ports/queue.py`, `adapters/queue/arq_redis.py`, `adapters/queue/memory.py` (test-only)
+  - `src/cited_rag/application/ingestion.py`, `workers/ingestion_worker.py`
+  - `application/upload.py` — commit `QUEUED+PENDING` then Redis publish; no compensate-delete after owned storage
+  - `adapters/persistence/postgres/repositories.py` — atomic `claim` (`UPDATE … RETURNING`)
+  - Settings: `CITED_RAG_REDIS_URL`, `ingestion_max_attempts`, `ingestion_lease_seconds`; production requires DB + Redis
+  - `/ready` — DB, local storage, Redis ping when configured
+  - `docker-compose.yml` — redis, migrate, worker
+  - CI `integration-postgres` includes Redis service + `CITED_RAG_REDIS_URL`
+  - Tests: `tests/unit/test_memory_queue.py`, `tests/integration/test_ingestion.py`
+  - `Learning/03-async-ingestion.md`
+
+- **Public contracts / commands:**
+  - Upload still `202` `QUEUED`; worker owns `QUEUED → PROCESSING`
+  - Durable queue: Postgres `QUEUED` + job `PENDING`, Redis is wake-up only
+  - arq job id `{version_id}:{attempt}`; `enqueue_job() is None` is an error
+  - Worker: `arq cited_rag.workers.ingestion_worker.WorkerSettings`
+  - Transient retry: persist `PENDING`, `arq.Retry(defer=lease+1)`
+  - `MemoryJobQueue` only when `environment=test` and Redis unset
+  - `FAILED → QUEUED` retry resets job `PENDING` with a new attempt id
+
+- **Decisions made in this phase (not already in ADR-011):**
+  - Redis is not the source of truth for jobs; Postgres lease is.
+  - Single `UPDATE … WHERE pending OR expired RUNNING RETURNING` for claim.
+  - FastAPI UoW does not auto-commit; services `commit()` (from PR #7).
+  - Phase 03 pipeline is a no-op that leaves the version `PROCESSING` (not `READY`).
+
+- **Verification run (exact commands + results):**
+  - PR #6 CI: `lint-type-unit` SUCCESS, `integration-postgres` SUCCESS
+  - `main` push after merge: CI run `34109138167` SUCCESS
+  - Local (pre-merge): ruff/mypy passed; `pytest tests/unit` **50 passed**; `pytest tests/integration` **29 passed** against local `cited_rag_test`
+
+- **Not verified / known gaps:**
+  - Live Docker `upload → Redis → worker → Postgres` not executed (Docker daemon did not respond to `docker info`)
+  - Worker does not parse/chunk/index; `READY` is still forbidden
+  - Phase status not `COMPLETE` until Compose path is observed or explicitly waived
+
+- **Follow-ups for the next phase:**
+  - Phase 04: Docling parser adapter, page provenance, persist pages (`implementation/phase-04-pdf-parsing-provenance.md`)
+  - New branch from `origin/main` (`f91e47f` or later). Do not start Phase 04 on this docs branch.
 
 ### Phase 02 — PDF Upload, Object Storage, and Document Lifecycle
 

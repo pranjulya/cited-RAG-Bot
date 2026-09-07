@@ -1,6 +1,6 @@
 # Phase 03 — Asynchronous Ingestion Worker
 
-**Status:** TESTED
+**Status:** REVIEWED
 
 ## Goal
 Move long-running PDF ingestion outside HTTP request handling and make job execution idempotent, observable, and retry-safe.
