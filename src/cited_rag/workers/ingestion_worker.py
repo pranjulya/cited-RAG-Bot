@@ -9,12 +9,14 @@ from arq import Retry
 from arq.connections import RedisSettings
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
+from cited_rag.adapters.chunking import create_chunker
 from cited_rag.adapters.parser import create_document_parser
 from cited_rag.adapters.persistence.postgres.session import create_engine, create_session_factory
 from cited_rag.adapters.persistence.postgres.uow import PostgresUnitOfWork
 from cited_rag.adapters.storage.local import LocalObjectStorage
 from cited_rag.application.ingestion import process_ingestion_job
 from cited_rag.config import get_settings
+from cited_rag.ports.chunker import Chunker
 from cited_rag.ports.object_storage import ObjectStorage
 from cited_rag.ports.parser import DocumentParser
 
@@ -28,6 +30,7 @@ async def ingest_document_version(
     assert isinstance(factory, async_sessionmaker)
     storage = cast(ObjectStorage, ctx["storage"])
     parser = cast(DocumentParser, ctx["parser"])
+    chunker = cast(Chunker, ctx["chunker"])
     settings = get_settings()
     async with PostgresUnitOfWork(factory) as uow:
         outcome = await process_ingestion_job(
@@ -38,6 +41,7 @@ async def ingest_document_version(
             lease_seconds=settings.ingestion_lease_seconds,
             storage=storage,
             parser=parser,
+            chunker=chunker,
         )
     if outcome == "retry":
         raise Retry(defer=settings.ingestion_lease_seconds + 1)
@@ -53,6 +57,7 @@ async def startup(ctx: dict[str, object]) -> None:
     ctx["session_factory"] = create_session_factory(engine)
     ctx["storage"] = LocalObjectStorage(Path(settings.local_storage_path))
     ctx["parser"] = create_document_parser(settings.parser_backend)
+    ctx["chunker"] = create_chunker(settings)
 
 
 async def shutdown(ctx: dict[str, object]) -> None:

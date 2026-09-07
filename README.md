@@ -2,7 +2,7 @@
 
 PDF-only question answering with page-level citations. V1 architecture is frozen in `docs/architecture/decisions/ADR-011-v1-locked-policies.md`.
 
-Phase 04 parses uploaded PDFs into ordered pages with original page numbers. The worker still does not mark `READY`.
+Phase 05 chunks parsed pages within page boundaries. The worker still does not mark `READY`.
 
 ## Requirements
 

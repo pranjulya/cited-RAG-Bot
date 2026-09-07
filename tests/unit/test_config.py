@@ -55,6 +55,12 @@ def test_production_disables_debug(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "not-a-placeholder" not in repr(settings)
 
 
+def test_chunk_overlap_must_be_smaller_than_target() -> None:
+    get_settings.cache_clear()
+    with pytest.raises(ValidationError, match="CHUNK_OVERLAP"):
+        Settings(_env_file=None, chunk_target_chars=100, chunk_overlap_chars=100)
+
+
 def test_production_requires_database_url(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CITED_RAG_ENVIRONMENT", "production")
     monkeypatch.setenv("CITED_RAG_API_KEY", "not-a-placeholder")

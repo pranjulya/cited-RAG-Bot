@@ -21,3 +21,7 @@ See `Learning/03-async-ingestion.md`.
 ## Phase 04
 
 See `Learning/04-pdf-parsing-provenance.md`.
+
+## Phase 05
+
+See `Learning/05-provenance-aware-chunking.md`.
