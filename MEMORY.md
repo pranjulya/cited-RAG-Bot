@@ -45,7 +45,7 @@ Do not put secrets, API keys, or raw PDF text here.
 | Last completed work | Phase 06 **[#11](https://github.com/pranjulya/cited-RAG-Bot/pull/11)** merged (`2a87918`). Phase 07 sparse indexing opened. |
 | Phase file status | Phase 07 `IN_PROGRESS` (not `TESTED`) |
 | Branch | `phase-07-sparse-indexing-retrieval` |
-| PR | pending |
+| PR | [#12](https://github.com/pranjulya/cited-RAG-Bot/pull/12) — open |
 | `main` | `2a87918` — Phase 06 dense indexing. **Do not push or merge to `main` except via PR.** |
 | Next action | Confirm CI (Qdrant sparse upsert + READY) on the Phase 07 PR. Do not start Phase 08 until it is on `main`. |
 | Blockers | Local Docker/Qdrant not re-run for Phase 07. Hosted BM42 extra not exercised in unit tests. |
@@ -70,7 +70,7 @@ Do not put secrets, API keys, or raw PDF text here.
 
 - **Date:** 2026-09-08
 - **Branch:** `phase-07-sparse-indexing-retrieval`
-- **PR:** pending
+- **PR:** [#12](https://github.com/pranjulya/cited-RAG-Bot/pull/12) (`phase-07-sparse-indexing-retrieval` → `main`, OPEN)
 - **Status in phase file:** `IN_PROGRESS`
 - **Goal:** Encode sparse vectors onto the same chunk UUIDs as dense, retrieve with collection + version filters, and set `READY` only after both named vectors exist.
 
