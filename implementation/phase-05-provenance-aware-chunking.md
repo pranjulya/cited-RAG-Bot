@@ -1,6 +1,6 @@
 # Phase 05 — Provenance-Aware Chunking
 
-**Status:** NOT_STARTED
+**Status:** TESTED
 
 ## Goal
 Convert parsed page content into configurable retrieval chunks without losing source identity.

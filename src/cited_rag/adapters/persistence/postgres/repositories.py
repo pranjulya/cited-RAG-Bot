@@ -215,6 +215,15 @@ class PostgresDocumentVersionRepository:
             .values(page_count=page_count)
         )
 
+    async def set_chunking_config(
+        self, version_id: UUID, chunking_config: dict[str, str | int]
+    ) -> None:
+        await self._session.execute(
+            update(DocumentVersionRow)
+            .where(DocumentVersionRow.id == version_id)
+            .values(chunking_config=chunking_config)
+        )
+
 
 class PostgresPageRepository:
     def __init__(self, session: AsyncSession) -> None:

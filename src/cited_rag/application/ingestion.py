@@ -4,6 +4,7 @@ import logging
 from dataclasses import replace
 from uuid import UUID
 
+from cited_rag.application.chunking import persist_chunks
 from cited_rag.application.parsing import persist_parsed_pages
 from cited_rag.domain.clock import utc_now
 from cited_rag.domain.enums import DocumentVersionStatus, IngestionJobStatus
@@ -14,6 +15,7 @@ from cited_rag.domain.exceptions import (
     TransientIngestionError,
 )
 from cited_rag.domain.models.ingestion import IngestionJob
+from cited_rag.ports.chunker import Chunker
 from cited_rag.ports.object_storage import ObjectStorage
 from cited_rag.ports.parser import DocumentParser
 from cited_rag.ports.repositories import UnitOfWork
@@ -34,8 +36,9 @@ async def process_ingestion_job(
     pipeline: object | None = None,
     storage: ObjectStorage | None = None,
     parser: DocumentParser | None = None,
+    chunker: Chunker | None = None,
 ) -> str:
-    """Claim a version, parse pages, never mark READY."""
+    """Claim a version, parse pages, persist chunks, never mark READY."""
     extra = {"correlation_id": correlation_id or "-"}
     version = await uow.versions.get(document_version_id)
     if version is None:
@@ -104,7 +107,10 @@ async def process_ingestion_job(
         if pipeline is not None:
             await pipeline(uow, version)  # type: ignore[operator]
         elif storage is not None and parser is not None:
-            await persist_parsed_pages(uow, version, storage=storage, parser=parser)
+            if chunker is None:
+                raise PermanentIngestionError("ingestion chunker is not configured")
+            pages = await persist_parsed_pages(uow, version, storage=storage, parser=parser)
+            await persist_chunks(uow, version, pages, chunker)
         else:
             raise PermanentIngestionError("ingestion parser is not configured")
     except TransientIngestionError as exc:
@@ -142,7 +148,7 @@ async def process_ingestion_job(
         )
     )
     await uow.commit()
-    logger.info("parse complete; version remains PROCESSING", extra=extra)
+    logger.info("parse and chunk complete; version remains PROCESSING", extra=extra)
     return "processed"
 
 

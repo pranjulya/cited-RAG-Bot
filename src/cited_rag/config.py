@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     ingestion_max_attempts: int = Field(default=3, ge=1)
     ingestion_lease_seconds: int = Field(default=30, ge=1)
     parser_backend: Literal["docling", "pypdf"] = "pypdf"
+    chunk_target_chars: int = Field(default=1200, ge=32)
+    chunk_overlap_chars: int = Field(default=200, ge=0)
 
     @field_validator("debug")
     @classmethod
@@ -62,6 +64,14 @@ class Settings(BaseSettings):
         if not (self.redis_url or "").strip():
             raise ValueError(
                 "CITED_RAG_REDIS_URL must be set when CITED_RAG_ENVIRONMENT=production"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def chunk_overlap_smaller_than_target(self) -> Self:
+        if self.chunk_overlap_chars >= self.chunk_target_chars:
+            raise ValueError(
+                "CITED_RAG_CHUNK_OVERLAP_CHARS must be smaller than CHUNK_TARGET_CHARS"
             )
         return self
 

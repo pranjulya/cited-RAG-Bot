@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from cited_rag.domain.clock import utc_now
@@ -33,5 +34,6 @@ class DocumentVersion:
     failure_code: str | None = None
     failure_message: str | None = None
     page_count: int | None = None
+    chunking_config: dict[str, Any] | None = None
     created_at: datetime = field(default_factory=utc_now)
     ready_at: datetime | None = None
