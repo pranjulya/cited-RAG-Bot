@@ -4,6 +4,7 @@ import logging
 from dataclasses import replace
 from uuid import UUID
 
+from cited_rag.application.parsing import persist_parsed_pages
 from cited_rag.domain.clock import utc_now
 from cited_rag.domain.enums import DocumentVersionStatus, IngestionJobStatus
 from cited_rag.domain.exceptions import (
@@ -13,6 +14,8 @@ from cited_rag.domain.exceptions import (
     TransientIngestionError,
 )
 from cited_rag.domain.models.ingestion import IngestionJob
+from cited_rag.ports.object_storage import ObjectStorage
+from cited_rag.ports.parser import DocumentParser
 from cited_rag.ports.repositories import UnitOfWork
 
 logger = logging.getLogger("cited_rag.ingestion")
@@ -29,8 +32,10 @@ async def process_ingestion_job(
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     lease_seconds: int = DEFAULT_LEASE_SECONDS,
     pipeline: object | None = None,
+    storage: ObjectStorage | None = None,
+    parser: DocumentParser | None = None,
 ) -> str:
-    """Claim a version, run Phase 03 stub stages, never mark READY."""
+    """Claim a version, parse pages, never mark READY."""
     extra = {"correlation_id": correlation_id or "-"}
     version = await uow.versions.get(document_version_id)
     if version is None:
@@ -98,8 +103,10 @@ async def process_ingestion_job(
     try:
         if pipeline is not None:
             await pipeline(uow, version)  # type: ignore[operator]
+        elif storage is not None and parser is not None:
+            await persist_parsed_pages(uow, version, storage=storage, parser=parser)
         else:
-            await _phase_03_stub(version.id)
+            raise PermanentIngestionError("ingestion parser is not configured")
     except TransientIngestionError as exc:
         await uow.ingestion_jobs.save(
             replace(
@@ -116,7 +123,13 @@ async def process_ingestion_job(
         await uow.commit()
         return "retry"
     except PermanentIngestionError as exc:
-        await _fail_permanent(uow, version.id, claimed, str(exc))
+        await _fail_permanent(
+            uow,
+            version.id,
+            claimed,
+            str(exc),
+            failure_code=exc.failure_code,
+        )
         await uow.commit()
         return "failed"
 
@@ -129,20 +142,17 @@ async def process_ingestion_job(
         )
     )
     await uow.commit()
-    logger.info("phase 03 stub complete; version remains PROCESSING", extra=extra)
+    logger.info("parse complete; version remains PROCESSING", extra=extra)
     return "processed"
 
 
-async def _phase_03_stub(document_version_id: UUID) -> None:
-    logger.info(
-        "stub checkpoint document_version_id=%s",
-        document_version_id,
-        extra={"correlation_id": "-"},
-    )
-
-
 async def _fail_permanent(
-    uow: UnitOfWork, version_id: UUID, job: IngestionJob, reason: str
+    uow: UnitOfWork,
+    version_id: UUID,
+    job: IngestionJob,
+    reason: str,
+    *,
+    failure_code: str = "INGESTION_FAILED",
 ) -> None:
     current = await uow.versions.get(version_id)
     if current is not None and current.ingestion_status is DocumentVersionStatus.PROCESSING:
@@ -150,7 +160,7 @@ async def _fail_permanent(
             version_id,
             DocumentVersionStatus.PROCESSING,
             DocumentVersionStatus.FAILED,
-            failure_code="INGESTION_FAILED",
+            failure_code=failure_code,
             failure_message=reason,
         )
     await uow.ingestion_jobs.save(

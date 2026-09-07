@@ -2,13 +2,14 @@
 
 PDF-only question answering with page-level citations. V1 architecture is frozen in `docs/architecture/decisions/ADR-011-v1-locked-policies.md`.
 
-Phase 03 adds asynchronous ingestion: upload enqueues a job keyed by `document_version_id`. A worker claims `QUEUED → PROCESSING` and does not mark `READY`.
+Phase 04 parses uploaded PDFs into ordered pages with original page numbers. The worker still does not mark `READY`.
 
 ## Requirements
 
 - Python 3.12+
 - PostgreSQL 16 (local install or Docker) for persistence tests and migrations
 - Redis 7 for the arq worker (optional in tests; a memory queue is used when `CITED_RAG_REDIS_URL` is unset)
+- PDF parser backend: `pypdf` by default (`CITED_RAG_PARSER_BACKEND`). Docling is `pip install 'cited-rag[parser]'` then `CITED_RAG_PARSER_BACKEND=docling`
 - Docker (optional, for API, Postgres, Redis, and worker)
 
 ## Setup
@@ -63,7 +64,7 @@ Persistence tests skip unless `CITED_RAG_DATABASE_URL` is set. Compose runs `ale
 docker compose up --build
 ```
 
-Compose starts PostgreSQL, Redis, the API, and the ingestion worker. Qdrant is still out of scope. `/ready` remains `{"status":"not_configured"}`.
+Compose starts PostgreSQL, Redis, the API, and the ingestion worker. Qdrant is still out of scope. The worker parses pages and leaves versions `PROCESSING`.
 
 ## Layout
 

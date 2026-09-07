@@ -17,3 +17,7 @@ See `Learning/02-upload-storage-lifecycle.md`.
 ## Phase 03
 
 See `Learning/03-async-ingestion.md`.
+
+## Phase 04
+
+See `Learning/04-pdf-parsing-provenance.md`.

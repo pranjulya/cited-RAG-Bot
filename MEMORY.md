@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 03 **[#6](https://github.com/pranjulya/cited-RAG-Bot/pull/6)** merged to `main` (`f91e47f`, 2026-09-07). PR #7 (`92666d1`) is also on `main`. |
-| Phase file status | Phase 03 `REVIEWED` (not `COMPLETE`: live Docker upload→Redis→worker not executed locally) |
-| Branch | `main` (`f91e47f`). No open PRs. |
-| PR | [#6](https://github.com/pranjulya/cited-RAG-Bot/pull/6) MERGED |
-| `main` | `f91e47f` — Phase 03 async ingestion. **Do not push or merge to `main` except via PR.** |
-| Next action | Start Phase 04 (`implementation/phase-04-pdf-parsing-provenance.md`) on a **new branch from latest `main`**. Do not reuse `phase-03-async-ingestion`. |
-| Blockers | None for starting Phase 04. Live Compose worker still unverified locally (Docker daemon hung/`info` did not return). |
+| Last completed work | Phase 04 implemented on `phase-04-pdf-parsing-provenance`. PR **[#9](https://github.com/pranjulya/cited-RAG-Bot/pull/9)** opened. Phase 03 is on `main` (`f91e47f` / MEMORY PR #8 `c36dea8`). |
+| Phase file status | Phase 04 `TESTED` (not `COMPLETE`) |
+| Branch | `phase-04-pdf-parsing-provenance` |
+| PR | [#9](https://github.com/pranjulya/cited-RAG-Bot/pull/9) — open |
+| `main` | `c36dea8` — Phase 03 MEMORY record. **Do not push or merge to `main` except via PR.** |
+| Next action | Review/merge [PR #9](https://github.com/pranjulya/cited-RAG-Bot/pull/9) after CI. Do not start Phase 05 until it is on `main`. |
+| Blockers | Docling extra not installed in CI (pypdf backend). Live Docker worker still not run locally. |
 
 ---
 
@@ -65,6 +65,48 @@ Do not put secrets, API keys, or raw PDF text here.
 ---
 
 ## Phase records
+
+### Phase 04 — PDF Parsing and Page Provenance
+
+- **Date:** 2026-09-07
+- **Branch:** `phase-04-pdf-parsing-provenance`
+- **PR:** [#9](https://github.com/pranjulya/cited-RAG-Bot/pull/9) (`phase-04-pdf-parsing-provenance` → `main`, OPEN)
+- **Status in phase file:** `TESTED`
+- **Goal:** Parse retained PDFs into ordered pages with original page numbers, persist provenance, classify corrupt/password/empty extraction. Never `READY`. No chunking.
+
+- **Files added/changed:**
+  - `src/cited_rag/ports/parser.py`, `domain/parser.py` (`ParsedPage`, normalize)
+  - `adapters/parser/` — preflight, `PypdfDocumentParser`, `DoclingDocumentParser`, factory
+  - `application/parsing.py`, worker loads storage + parser
+  - Version `set_page_count`; parser exceptions + failure codes
+  - Settings: `CITED_RAG_PARSER_BACKEND` (`pypdf` default; `docling` via extra)
+  - Tests: `tests/unit/test_parser.py`, `tests/integration/test_parsing.py`, `tests/pdf_fixtures.py`
+  - `Learning/04-pdf-parsing-provenance.md`
+
+- **Public contracts / commands:**
+  - Worker parse: load source PDF → `DocumentParser.parse` → `pages` rows + `page_count`
+  - Version remains `PROCESSING` (not `READY`)
+  - Failures: `PDF_PARSE_FAILED`, `PDF_PASSWORD_PROTECTED`, `PDF_UNSUPPORTED`
+  - `pip install 'cited-rag[parser]'` then `CITED_RAG_PARSER_BACKEND=docling`
+
+- **Decisions made in this phase (not already in ADR-011):**
+  - Default backend is `pypdf` so CI/Compose do not download Docling layout models.
+  - pypdf preflight classifies password/corrupt before either backend extracts text.
+  - Empty extractable text is unsupported, not an empty page index.
+
+- **Verification run (exact commands + results):**
+  - `.venv/bin/ruff check .` / `ruff format --check` / `mypy src` — passed
+  - `.venv/bin/pytest tests/unit` — **57 passed, 1 skipped** (Docling extra)
+  - `CITED_RAG_DATABASE_URL=postgresql+asyncpg://…/cited_rag_test pytest tests/integration` — **34 passed**
+
+- **Not verified / known gaps:**
+  - Docling adapter contract test skipped unless `docling` is installed
+  - Live Docker upload→worker→pages not executed
+  - No chunking, embeddings, or `READY`
+
+- **Follow-ups for the next phase:**
+  - Review/merge [PR #9](https://github.com/pranjulya/cited-RAG-Bot/pull/9)
+  - Phase 05: provenance-aware chunking. New branch from merged `main`.
 
 ### Phase 03 — Asynchronous Ingestion Worker
 

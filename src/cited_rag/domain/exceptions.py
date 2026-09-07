@@ -58,5 +58,31 @@ class TransientIngestionError(DomainError):
 
 
 class PermanentIngestionError(DomainError):
-    def __init__(self, message: str = "permanent ingestion failure") -> None:
+    def __init__(
+        self,
+        message: str = "permanent ingestion failure",
+        *,
+        failure_code: str = "INGESTION_FAILED",
+    ) -> None:
+        self.failure_code = failure_code
         super().__init__(message)
+
+
+class PdfParseError(PermanentIngestionError):
+    def __init__(self, message: str, *, failure_code: str) -> None:
+        super().__init__(message, failure_code=failure_code)
+
+
+class CorruptPdfError(PdfParseError):
+    def __init__(self, message: str = "PDF is corrupt or unreadable") -> None:
+        super().__init__(message, failure_code="PDF_PARSE_FAILED")
+
+
+class PasswordProtectedPdfError(PdfParseError):
+    def __init__(self, message: str = "PDF is password-protected") -> None:
+        super().__init__(message, failure_code="PDF_PASSWORD_PROTECTED")
+
+
+class EmptyExtractionError(PdfParseError):
+    def __init__(self, message: str = "PDF has no extractable text") -> None:
+        super().__init__(message, failure_code="PDF_UNSUPPORTED")
