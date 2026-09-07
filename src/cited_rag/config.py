@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     database_url: SecretStr | None = None
     local_storage_path: str = Field(default="./data/objects")
     max_upload_bytes: int = Field(default=20 * 1024 * 1024, gt=0)
+    redis_url: str | None = None
+    ingestion_max_attempts: int = Field(default=3, ge=1)
+    ingestion_lease_seconds: int = Field(default=30, ge=1)
 
     @field_validator("debug")
     @classmethod
@@ -54,6 +57,10 @@ class Settings(BaseSettings):
         if not db.strip():
             raise ValueError(
                 "CITED_RAG_DATABASE_URL must be set when CITED_RAG_ENVIRONMENT=production"
+            )
+        if not (self.redis_url or "").strip():
+            raise ValueError(
+                "CITED_RAG_REDIS_URL must be set when CITED_RAG_ENVIRONMENT=production"
             )
         return self
 

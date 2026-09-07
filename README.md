@@ -2,13 +2,14 @@
 
 PDF-only question answering with page-level citations. V1 architecture is frozen in `docs/architecture/decisions/ADR-011-v1-locked-policies.md`.
 
-Phase 02 adds collection-scoped PDF upload, local object storage, API-key auth, and document lifecycle status. Documents are not searchable until later ingestion phases mark them READY.
+Phase 03 adds asynchronous ingestion: upload enqueues a job keyed by `document_version_id`. A worker claims `QUEUED → PROCESSING` and does not mark `READY`.
 
 ## Requirements
 
 - Python 3.12+
 - PostgreSQL 16 (local install or Docker) for persistence tests and migrations
-- Docker (optional, for the API image plus Postgres)
+- Redis 7 for the arq worker (optional in tests; a memory queue is used when `CITED_RAG_REDIS_URL` is unset)
+- Docker (optional, for API, Postgres, Redis, and worker)
 
 ## Setup
 
@@ -25,6 +26,7 @@ Do not commit `.env`. Placeholders in `.env.example` are not production secrets.
 
 ```bash
 uvicorn cited_rag.main:app --reload --host 0.0.0.0 --port 8000
+arq cited_rag.workers.ingestion_worker.WorkerSettings
 ```
 
 - Liveness: `GET /health` → `{"status":"ok"}` (unauthenticated)
@@ -39,7 +41,7 @@ uvicorn cited_rag.main:app --reload --host 0.0.0.0 --port 8000
 Copy `.env.example` to `.env` and set `CITED_RAG_DATABASE_URL` (async SQLAlchemy URL, `postgresql+asyncpg://…`).
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres redis
 # or use a local Postgres and create the database yourself
 alembic upgrade head
 ```
@@ -61,7 +63,7 @@ Persistence tests skip unless `CITED_RAG_DATABASE_URL` is set. Compose runs `ale
 docker compose up --build
 ```
 
-Compose now starts PostgreSQL and the API. Redis and Qdrant are still out of scope.
+Compose starts PostgreSQL, Redis, the API, and the ingestion worker. Qdrant is still out of scope. `/ready` remains `{"status":"not_configured"}`.
 
 ## Layout
 

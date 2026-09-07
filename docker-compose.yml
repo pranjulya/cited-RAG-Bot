@@ -1,4 +1,14 @@
 services:
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   postgres:
     image: postgres:16
     environment:
@@ -35,10 +45,33 @@ services:
       CITED_RAG_DATABASE_URL: postgresql+asyncpg://cited_rag:cited_rag@postgres:5432/cited_rag
       CITED_RAG_LOCAL_STORAGE_PATH: /data/objects
       CITED_RAG_MAX_UPLOAD_BYTES: "20971520"
+      CITED_RAG_REDIS_URL: redis://redis:6379/0
     volumes:
       - api-objects:/data/objects
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    build: .
+    command: ["arq", "cited_rag.workers.ingestion_worker.WorkerSettings"]
+    environment:
+      CITED_RAG_ENVIRONMENT: development
+      CITED_RAG_API_KEY: replace-me
+      CITED_RAG_LOG_LEVEL: INFO
+      CITED_RAG_DATABASE_URL: postgresql+asyncpg://cited_rag:cited_rag@postgres:5432/cited_rag
+      CITED_RAG_LOCAL_STORAGE_PATH: /data/objects
+      CITED_RAG_REDIS_URL: redis://redis:6379/0
+    volumes:
+      - api-objects:/data/objects
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully

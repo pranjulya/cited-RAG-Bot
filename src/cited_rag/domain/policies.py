@@ -24,7 +24,7 @@ def assert_lifecycle_transition(
 
 
 def public_ingestion_status(status: DocumentVersionStatus) -> str:
-    """Phase 02 persists UPLOADED until Phase 03 enqueues; the product 202/GET status is QUEUED."""
+    """UPLOADED is internal until enqueue; product APIs expose QUEUED after Phase 03."""
     if status is DocumentVersionStatus.UPLOADED:
         return DocumentVersionStatus.QUEUED.value
     return status.value

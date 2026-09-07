@@ -11,6 +11,7 @@ from cited_rag.application.upload import ensure_principal
 from cited_rag.config import Settings
 from cited_rag.domain.models.principal import ApiPrincipal
 from cited_rag.ports.object_storage import ObjectStorage
+from cited_rag.ports.queue import JobQueue
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -68,3 +69,12 @@ def get_storage(request: Request) -> ObjectStorage:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="storage_not_configured"
         )
     return storage  # type: ignore[no-any-return]
+
+
+def get_queue(request: Request) -> JobQueue:
+    queue = getattr(request.app.state, "queue", None)
+    if queue is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="queue_not_configured"
+        )
+    return queue  # type: ignore[no-any-return]

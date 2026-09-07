@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
 from pydantic import BaseModel
 
 from cited_rag.adapters.persistence.postgres.uow import PostgresUnitOfWork
-from cited_rag.api.deps import get_principal, get_settings_dep, get_storage, get_uow
+from cited_rag.api.deps import get_principal, get_queue, get_settings_dep, get_storage, get_uow
 from cited_rag.application.upload import (
     delete_document,
     owned_collection_or_none,
@@ -18,11 +18,13 @@ from cited_rag.domain.exceptions import (
     EmptyUploadError,
     InvalidPdfError,
     PayloadTooLargeError,
+    QueueError,
     StorageError,
 )
 from cited_rag.domain.models.principal import ApiPrincipal
 from cited_rag.domain.policies import public_ingestion_status
 from cited_rag.ports.object_storage import ObjectStorage
+from cited_rag.ports.queue import JobQueue
 
 router = APIRouter()
 
@@ -60,6 +62,10 @@ def _http_for_upload_error(exc: Exception) -> HTTPException:
         return HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="storage_unavailable"
         )
+    if isinstance(exc, QueueError):
+        return HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="queue_unavailable"
+        )
     return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="upload_failed")
 
 
@@ -70,9 +76,11 @@ def _http_for_upload_error(exc: Exception) -> HTTPException:
 async def post_document(
     collection_id: UUID,
     file: UploadFile,
+    request: Request,
     principal: ApiPrincipal = Depends(get_principal),
     uow: PostgresUnitOfWork = Depends(get_uow),
     storage: ObjectStorage = Depends(get_storage),
+    queue: JobQueue = Depends(get_queue),
     settings: Settings = Depends(get_settings_dep),
 ) -> UploadResponse:
     collection = owned_collection_or_none(await uow.collections.get(collection_id), principal.id)
@@ -82,11 +90,19 @@ async def post_document(
         result = await upload_new_document(
             uow,
             storage,
+            queue,
             collection=collection,
             upload=file,
             max_bytes=settings.max_upload_bytes,
+            correlation_id=getattr(request.state, "correlation_id", None),
         )
-    except (EmptyUploadError, InvalidPdfError, PayloadTooLargeError, StorageError) as exc:
+    except (
+        EmptyUploadError,
+        InvalidPdfError,
+        PayloadTooLargeError,
+        StorageError,
+        QueueError,
+    ) as exc:
         raise _http_for_upload_error(exc) from exc
     return UploadResponse(
         document_id=result.document_id,
@@ -103,9 +119,11 @@ async def post_document_version(
     collection_id: UUID,
     document_id: UUID,
     file: UploadFile,
+    request: Request,
     principal: ApiPrincipal = Depends(get_principal),
     uow: PostgresUnitOfWork = Depends(get_uow),
     storage: ObjectStorage = Depends(get_storage),
+    queue: JobQueue = Depends(get_queue),
     settings: Settings = Depends(get_settings_dep),
 ) -> UploadResponse:
     collection = owned_collection_or_none(await uow.collections.get(collection_id), principal.id)
@@ -122,12 +140,20 @@ async def post_document_version(
         result = await upload_new_version(
             uow,
             storage,
+            queue,
             collection=collection,
             document=document,
             upload=file,
             max_bytes=settings.max_upload_bytes,
+            correlation_id=getattr(request.state, "correlation_id", None),
         )
-    except (EmptyUploadError, InvalidPdfError, PayloadTooLargeError, StorageError) as exc:
+    except (
+        EmptyUploadError,
+        InvalidPdfError,
+        PayloadTooLargeError,
+        StorageError,
+        QueueError,
+    ) as exc:
         raise _http_for_upload_error(exc) from exc
     return UploadResponse(
         document_id=result.document_id,

@@ -12,6 +12,8 @@ from pathlib import Path
 from fastapi import FastAPI, Request, Response
 
 from cited_rag.adapters.persistence.postgres.session import create_engine, create_session_factory
+from cited_rag.adapters.queue.arq_redis import ArqJobQueue
+from cited_rag.adapters.queue.memory import MemoryJobQueue
 from cited_rag.adapters.storage.local import LocalObjectStorage
 from cited_rag.api.health import router as health_router
 from cited_rag.api.routes.collections import router as collections_router
@@ -49,9 +51,20 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         engine = create_engine(settings.database_url.get_secret_value())
         app.state.session_factory = create_session_factory(engine)
     app.state.storage = LocalObjectStorage(Path(settings.local_storage_path))
+    queue: MemoryJobQueue | ArqJobQueue
+    if settings.environment == "test" and not settings.redis_url:
+        queue = MemoryJobQueue()
+    elif settings.redis_url:
+        queue = await ArqJobQueue.from_url(settings.redis_url)
+    else:
+        raise RuntimeError("CITED_RAG_REDIS_URL is required outside tests")
+    app.state.queue = queue
     logger.info("application starting")
     yield
     logger.info("application stopping")
+    closer = getattr(queue, "close", None)
+    if closer is not None:
+        await closer()
     if engine is not None:
         await engine.dispose()
 

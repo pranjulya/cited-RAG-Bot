@@ -42,15 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 02 merged (`ca33df9`). Correctness PR **[#7](https://github.com/pranjulya/cited-RAG-Bot/pull/7)** open. Phase 03 **[#6](https://github.com/pranjulya/cited-RAG-Bot/pull/6) must not merge** until #7 lands and #6 is rebased. |
-| Phase file status | Phase 02 `TESTED` on `main` |
-| Branch | `fix/transaction-deletion-provenance` |
-| PR | [#7](https://github.com/pranjulya/cited-RAG-Bot/pull/7) — open, `fix/transaction-deletion-provenance` → `main` |
-| `main` | `ca33df9` — Phase 02. **Do not push or merge to `main` except via PR.** |
-| Next action | 1) Review/merge [PR #7](https://github.com/pranjulya/cited-RAG-Bot/pull/7). 2) Rebase Phase 03 and fix queue/lease races. |
-| Blockers | Do not merge Phase 03 yet. |
-
-Phase 02 is on `main`. Do **not** merge Phase 03 until the correctness PR is merged and Phase 03 is rebased.
+| Last completed work | PR #7 merged (`92666d1`). Phase 03 **[#6](https://github.com/pranjulya/cited-RAG-Bot/pull/6)** rebased onto main with queue/lease fixes. |
+| Phase file status | Phase 03 `TESTED` (not `COMPLETE`) |
+| Branch | `phase-03-async-ingestion` |
+| PR | [#6](https://github.com/pranjulya/cited-RAG-Bot/pull/6) — open, rebased |
+| `main` | `92666d1` — transaction/deletion/provenance fixes. **Do not push or merge to `main` except via PR.** |
+| Next action | Review/merge [PR #6](https://github.com/pranjulya/cited-RAG-Bot/pull/6) after CI. |
+| Blockers | Live Docker Redis worker still not run locally (daemon). CI integration now includes Redis. |
 
 ---
 
