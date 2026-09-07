@@ -2,7 +2,7 @@
 
 ## Master Implementation Plan
 
-**Status:** Accepted for implementation (ADR-011 freeze); Phase 03 TESTED  
+**Status:** Accepted for implementation (ADR-011 freeze); Phase 03 merged (`REVIEWED`); next is Phase 04  
 **Version:** 1.1  
 **Scope:** PDF-only, multi-document Cited RAG with page-level citations
 
