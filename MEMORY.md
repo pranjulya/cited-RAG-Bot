@@ -96,7 +96,7 @@ Do not put secrets, API keys, or raw PDF text here.
 
 - **Verification run (exact commands + results):**
   - ruff / mypy — passed
-  - `pytest tests/unit` — **65 passed, 1 skipped**
+  - `pytest tests/unit` — **70 passed, 1 skipped**
   - `pytest tests/integration` — **37 passed**
 
 - **Not verified / known gaps:**

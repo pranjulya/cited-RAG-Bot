@@ -25,9 +25,9 @@ def _windows(text: str, *, target: int, overlap: int) -> list[str]:
         if end < length:
             window = text[start:end]
             break_at = max(window.rfind("\n"), window.rfind(" "))
-            # A window shorter than overlap would make next_start <= start and
-            # drop overlap. Keep the hard target unless the break leaves room.
-            if break_at > overlap:
+            # Prefer a word break only when it is at least half the target and
+            # still longer than overlap (shorter windows drop overlap).
+            if break_at >= target // 2 and break_at > overlap:
                 end = start + break_at
         piece = text[start:end].strip()
         if piece:
