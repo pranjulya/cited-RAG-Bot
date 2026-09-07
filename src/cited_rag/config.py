@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     embedding_dimension: int = Field(default=32, ge=1)
     embedding_batch_size: int = Field(default=32, ge=1)
     index_version: str = "v1"
+    sparse_encoder_backend: Literal["lexical", "bm42"] = "lexical"
+    sparse_encoder_name: str = "lexical_tf_v1"
+    sparse_encoder_version: str = "v1"
 
     @field_validator("debug")
     @classmethod

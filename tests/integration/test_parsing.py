@@ -14,6 +14,7 @@ from cited_rag.adapters.embedding.hashing import HashEmbeddingProvider
 from cited_rag.adapters.parser.pypdf import PypdfDocumentParser
 from cited_rag.adapters.persistence.postgres.uow import PostgresUnitOfWork
 from cited_rag.adapters.retrieval.memory import MemoryRetrievalStore
+from cited_rag.adapters.sparse.lexical import LexicalSparseEncoder
 from cited_rag.application.ingestion import process_ingestion_job
 from cited_rag.config import Settings
 from cited_rag.domain.embedding import EmbeddingConfig
@@ -70,11 +71,12 @@ async def _process(client: TestClient, uow_factory: async_sessionmaker, version_
             embedding_provider=HashEmbeddingProvider(dimension=8),
             retrieval_store=MemoryRetrievalStore(),
             embedding_config=EmbeddingConfig(dimension=8, batch_size=8),
+            sparse_encoder=LexicalSparseEncoder(),
         )
 
 
 @pytest.mark.asyncio
-async def test_worker_persists_page_order_and_stays_processing(
+async def test_worker_persists_page_order_and_marks_ready(
     client: TestClient, uow_factory: async_sessionmaker
 ) -> None:
     version_id = _upload(client, TWO_PAGE_PDF)
@@ -84,9 +86,9 @@ async def test_worker_persists_page_order_and_stays_processing(
         version = await uow.versions.get(version_id)
         pages = await uow.pages.list_by_version(version_id)
     assert version is not None
-    assert version.ingestion_status is DocumentVersionStatus.PROCESSING
+    assert version.ingestion_status is DocumentVersionStatus.READY
     assert version.page_count == 2
-    assert version.ready_at is None
+    assert version.ready_at is not None
     assert [page.page_number for page in pages] == [1, 2]
     assert pages[0].normalized_text is not None and "alpha-page-one" in pages[0].normalized_text
     assert pages[1].normalized_text is not None and "beta-page-two" in pages[1].normalized_text

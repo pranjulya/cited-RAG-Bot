@@ -15,6 +15,7 @@ from cited_rag.adapters.embedding.hashing import HashEmbeddingProvider
 from cited_rag.adapters.parser.pypdf import PypdfDocumentParser
 from cited_rag.adapters.persistence.postgres.uow import PostgresUnitOfWork
 from cited_rag.adapters.retrieval.qdrant import QdrantRetrievalStore
+from cited_rag.adapters.sparse.lexical import LexicalSparseEncoder
 from cited_rag.application.ingestion import process_ingestion_job
 from cited_rag.config import Settings
 from cited_rag.domain.chunking import ChunkingConfig
@@ -71,7 +72,7 @@ def _upload(client: TestClient) -> UUID:
 
 
 @pytest.mark.asyncio
-async def test_ingestion_upserts_dense_points_without_ready(
+async def test_ingestion_upserts_dense_and_sparse_and_marks_ready(
     client: TestClient,
     uow_factory: async_sessionmaker,
     store: QdrantRetrievalStore,
@@ -89,13 +90,14 @@ async def test_ingestion_upserts_dense_points_without_ready(
             embedding_provider=embedder,
             retrieval_store=store,
             embedding_config=config,
+            sparse_encoder=LexicalSparseEncoder(),
         )
         version = await uow.versions.get(version_id)
         chunks = await uow.chunks.list_by_version(version_id)
     assert outcome == "processed"
     assert version is not None
-    assert version.ingestion_status is DocumentVersionStatus.PROCESSING
-    assert version.ready_at is None
+    assert version.ingestion_status is DocumentVersionStatus.READY
+    assert version.ready_at is not None
     assert store.vector_names == {DENSE_VECTOR_NAME, SPARSE_VECTOR_NAME}
     assert len(chunks) == 2
     first = await store.get_point(chunks[0].id)
@@ -105,7 +107,8 @@ async def test_ingestion_upserts_dense_points_without_ready(
     assert first.payload["document_version_id"] == str(version.id)
     assert "text" not in first.payload
     assert DENSE_VECTOR_NAME in first.vectors
-    assert SPARSE_VECTOR_NAME not in first.vectors
+    assert first.sparse is not None
+    assert first.sparse.indices
     filtered = await store.scroll_collection(collection_id=version.collection_id)
     assert {point.point_id for point in filtered} == {chunk.id for chunk in chunks}
 
@@ -119,8 +122,9 @@ async def test_ingestion_upserts_dense_points_without_ready(
             embedding_provider=embedder,
             retrieval_store=store,
             embedding_config=config,
+            sparse_encoder=LexicalSparseEncoder(),
         )
-    assert again == "duplicate"
+    assert again == "skipped"
     replayed = await store.get_point(chunks[0].id)
     assert replayed is not None
     assert replayed.point_id == chunks[0].id

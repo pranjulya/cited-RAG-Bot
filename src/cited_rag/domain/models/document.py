@@ -35,5 +35,6 @@ class DocumentVersion:
     failure_message: str | None = None
     page_count: int | None = None
     chunking_config: dict[str, Any] | None = None
+    sparse_encoder_config: dict[str, Any] | None = None
     created_at: datetime = field(default_factory=utc_now)
     ready_at: datetime | None = None

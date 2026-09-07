@@ -130,6 +130,7 @@ class DocumentVersionRow(Base):
     failure_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     page_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     chunking_config: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    sparse_encoder_config: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     ready_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

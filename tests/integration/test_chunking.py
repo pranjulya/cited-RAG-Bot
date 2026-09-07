@@ -14,6 +14,7 @@ from cited_rag.adapters.embedding.hashing import HashEmbeddingProvider
 from cited_rag.adapters.parser.pypdf import PypdfDocumentParser
 from cited_rag.adapters.persistence.postgres.uow import PostgresUnitOfWork
 from cited_rag.adapters.retrieval.memory import MemoryRetrievalStore
+from cited_rag.adapters.sparse.lexical import LexicalSparseEncoder
 from cited_rag.application.ingestion import process_ingestion_job
 from cited_rag.config import Settings
 from cited_rag.domain.chunking import ChunkingConfig
@@ -79,6 +80,7 @@ async def _process(
             embedding_provider=HashEmbeddingProvider(dimension=8),
             retrieval_store=MemoryRetrievalStore(),
             embedding_config=EmbeddingConfig(dimension=8, batch_size=8),
+            sparse_encoder=LexicalSparseEncoder(),
         )
 
 
@@ -93,8 +95,8 @@ async def test_ingestion_persists_chunks_without_ready(
         version = await uow.versions.get(version_id)
         chunks = await uow.chunks.list_by_version(version_id)
     assert version is not None
-    assert version.ingestion_status is DocumentVersionStatus.PROCESSING
-    assert version.ready_at is None
+    assert version.ingestion_status is DocumentVersionStatus.READY
+    assert version.ready_at is not None
     assert [c.page_start for c in chunks] == [1, 2]
     assert [c.chunk_order for c in chunks] == [0, 1]
     assert "alpha-page-one" in chunks[0].text
@@ -118,7 +120,7 @@ async def test_long_page_chunking_is_reproducible(
     assert len(first) >= 2
     assert all(c.page_start == c.page_end == 1 for c in first)
     second_outcome = await _process(client, uow_factory, version_id)
-    assert second_outcome == "duplicate"
+    assert second_outcome == "skipped"
     async with _uow(uow_factory) as uow:
         again = await uow.chunks.list_by_version(version_id)
     assert [c.id for c in again] == [c.id for c in first]
@@ -159,3 +161,25 @@ async def test_parse_path_requires_configured_dense_indexer(
     assert outcome == "failed"
     assert version is not None
     assert version.failure_message == "ingestion dense indexer is not configured"
+
+
+@pytest.mark.asyncio
+async def test_parse_path_requires_configured_sparse_encoder(
+    client: TestClient, uow_factory: async_sessionmaker
+) -> None:
+    version_id = _upload(client, TWO_PAGE_PDF)
+    async with _uow(uow_factory) as uow:
+        outcome = await process_ingestion_job(
+            uow,
+            document_version_id=version_id,
+            storage=client.app.state.storage,
+            parser=PypdfDocumentParser(),
+            chunker=PageWindowChunker(),
+            embedding_provider=HashEmbeddingProvider(dimension=8),
+            retrieval_store=MemoryRetrievalStore(),
+            embedding_config=EmbeddingConfig(dimension=8, batch_size=8),
+        )
+        version = await uow.versions.get(version_id)
+    assert outcome == "failed"
+    assert version is not None
+    assert version.failure_message == "ingestion sparse encoder is not configured"

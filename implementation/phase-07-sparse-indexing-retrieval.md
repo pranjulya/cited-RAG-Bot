@@ -1,6 +1,6 @@
 # Phase 07 — Sparse Indexing and Retrieval
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Add lexical/sparse retrieval for exact names, identifiers, numbers, rare terms, and phrases while preserving the same chunk identity contract as dense retrieval.

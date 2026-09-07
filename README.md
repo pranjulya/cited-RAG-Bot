@@ -2,7 +2,7 @@
 
 PDF-only question answering with page-level citations. V1 architecture is frozen in `docs/architecture/decisions/ADR-011-v1-locked-policies.md`.
 
-Phase 06 embeds chunks and upserts dense named vectors in Qdrant. Sparse slots exist on the same points but stay empty. The worker still does not mark `READY`.
+Phase 07 upserts sparse named vectors on the same chunk UUIDs and marks a version `READY` only after dense and sparse both exist.
 
 ## Requirements
 
@@ -66,7 +66,7 @@ Persistence tests skip unless `CITED_RAG_DATABASE_URL` is set. Compose runs `ale
 docker compose up --build
 ```
 
-Compose starts PostgreSQL, Redis, Qdrant, the API, and the ingestion worker. The worker parses, chunks, and dense-indexes, then leaves versions `PROCESSING`.
+Compose starts PostgreSQL, Redis, Qdrant, the API, and the ingestion worker. The worker parses, chunks, dense-indexes, sparse-indexes, then marks versions `READY`.
 
 ## Layout
 
