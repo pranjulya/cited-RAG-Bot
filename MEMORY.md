@@ -45,7 +45,7 @@ Do not put secrets, API keys, or raw PDF text here.
 | Last completed work | Phase 05 **[#10](https://github.com/pranjulya/cited-RAG-Bot/pull/10)** merged (`97dff92`). Phase 06 implementation pushed; Qdrant integration not verified locally. |
 | Phase file status | Phase 06 `IN_PROGRESS` (not `TESTED`) |
 | Branch | `phase-06-dense-indexing` |
-| PR | pending |
+| PR | [#11](https://github.com/pranjulya/cited-RAG-Bot/pull/11) — open |
 | `main` | `97dff92` — Phase 05 chunking. **Do not push or merge to `main` except via PR.** |
 | Next action | Confirm CI (including Qdrant integration) on the Phase 06 PR. Do not start Phase 07 until it is on `main`. |
 | Blockers | Local Docker/Qdrant did not come up in the implementation session. No `READY` yet. |
@@ -70,7 +70,7 @@ Do not put secrets, API keys, or raw PDF text here.
 
 - **Date:** 2026-09-07
 - **Branch:** `phase-06-dense-indexing`
-- **PR:** pending
+- **PR:** [#11](https://github.com/pranjulya/cited-RAG-Bot/pull/11) (`phase-06-dense-indexing` → `main`, OPEN)
 - **Status in phase file:** `IN_PROGRESS`
 - **Goal:** Embed persisted chunks and upsert dense named vectors on chunk UUIDs in one application Qdrant collection that already declares `sparse`. Never `READY`. No sparse values.
 
