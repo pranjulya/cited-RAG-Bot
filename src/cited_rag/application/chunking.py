@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Sequence
 
-from cited_rag.domain.exceptions import PermanentIngestionError
+from cited_rag.domain.exceptions import IngestionIntegrityError, PermanentIngestionError
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.document import DocumentVersion
 from cited_rag.domain.models.page import Page
@@ -23,8 +23,10 @@ async def persist_chunks(
     record = chunker.config.as_record()
     existing = await uow.chunks.list_by_version(version.id)
     if existing:
-        if version.chunking_config is None:
-            await uow.versions.set_chunking_config(version.id, record)
+        if version.chunking_config != record:
+            raise IngestionIntegrityError(
+                "stored chunks do not match the configured chunking strategy"
+            )
         logger.info(
             "chunks already persisted count=%s",
             len(existing),

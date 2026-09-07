@@ -101,7 +101,6 @@ Do not put secrets, API keys, or raw PDF text here.
 
 - **Not verified / known gaps:**
   - Semantic/cross-page chunking not implemented
-  - Chunk config not stored on the version row (evaluation Phase 19)
   - No dense/sparse index; version stays `PROCESSING`
 
 - **Follow-ups for the next phase:**

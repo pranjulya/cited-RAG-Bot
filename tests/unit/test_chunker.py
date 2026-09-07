@@ -94,6 +94,21 @@ def test_ids_are_deterministic() -> None:
     assert [c.id for c in first] == [c.id for c in second]
 
 
+def test_boundary_shorter_than_overlap_keeps_hard_target() -> None:
+    version = _version()
+    head = "".join(f"{index:02d}" for index in range(25))  # 50 chars
+    tail = "".join(f"{index:02d}" for index in range(25, 80))
+    text = f"{head} {tail}"  # space at index 50
+    overlap = 80
+    target = 100
+    chunker = PageWindowChunker(ChunkingConfig(target_chars=target, overlap_chars=overlap))
+    chunks = chunker.chunk(version, [_page(version.id, 1, text)])
+    assert text[50] == " "
+    assert len(chunks) >= 2
+    assert chunks[0].text == text[:target]
+    assert chunks[0].text[-overlap:] == chunks[1].text[:overlap]
+
+
 def test_config_record_is_reproducible() -> None:
     record = ChunkingConfig(target_chars=80, overlap_chars=16).as_record()
     assert record == {

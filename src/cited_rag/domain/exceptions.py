@@ -86,3 +86,8 @@ class PasswordProtectedPdfError(PdfParseError):
 class EmptyExtractionError(PdfParseError):
     def __init__(self, message: str = "PDF has no extractable text") -> None:
         super().__init__(message, failure_code="PDF_UNSUPPORTED")
+
+
+class IngestionIntegrityError(PermanentIngestionError):
+    def __init__(self, message: str = "ingestion provenance is inconsistent") -> None:
+        super().__init__(message, failure_code="INGESTION_FAILED")
