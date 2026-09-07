@@ -10,15 +10,20 @@ from arq.connections import RedisSettings
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
 from cited_rag.adapters.chunking import create_chunker
+from cited_rag.adapters.embedding import create_embedding_provider
 from cited_rag.adapters.parser import create_document_parser
 from cited_rag.adapters.persistence.postgres.session import create_engine, create_session_factory
 from cited_rag.adapters.persistence.postgres.uow import PostgresUnitOfWork
+from cited_rag.adapters.retrieval import create_retrieval_store
 from cited_rag.adapters.storage.local import LocalObjectStorage
 from cited_rag.application.ingestion import process_ingestion_job
 from cited_rag.config import get_settings
+from cited_rag.domain.embedding import EmbeddingConfig
 from cited_rag.ports.chunker import Chunker
+from cited_rag.ports.embedding import EmbeddingProvider
 from cited_rag.ports.object_storage import ObjectStorage
 from cited_rag.ports.parser import DocumentParser
+from cited_rag.ports.retrieval_store import RetrievalStore
 
 
 async def ingest_document_version(
@@ -31,6 +36,9 @@ async def ingest_document_version(
     storage = cast(ObjectStorage, ctx["storage"])
     parser = cast(DocumentParser, ctx["parser"])
     chunker = cast(Chunker, ctx["chunker"])
+    embedding_provider = cast(EmbeddingProvider, ctx["embedding_provider"])
+    retrieval_store = cast(RetrievalStore, ctx["retrieval_store"])
+    embedding_config = cast(EmbeddingConfig, ctx["embedding_config"])
     settings = get_settings()
     async with PostgresUnitOfWork(factory) as uow:
         outcome = await process_ingestion_job(
@@ -42,6 +50,9 @@ async def ingest_document_version(
             storage=storage,
             parser=parser,
             chunker=chunker,
+            embedding_provider=embedding_provider,
+            retrieval_store=retrieval_store,
+            embedding_config=embedding_config,
         )
     if outcome == "retry":
         raise Retry(defer=settings.ingestion_lease_seconds + 1)
@@ -58,9 +69,21 @@ async def startup(ctx: dict[str, object]) -> None:
     ctx["storage"] = LocalObjectStorage(Path(settings.local_storage_path))
     ctx["parser"] = create_document_parser(settings.parser_backend)
     ctx["chunker"] = create_chunker(settings)
+    ctx["embedding_provider"] = create_embedding_provider(settings)
+    ctx["retrieval_store"] = create_retrieval_store(settings)
+    ctx["embedding_config"] = EmbeddingConfig(
+        dimension=settings.embedding_dimension,
+        batch_size=settings.embedding_batch_size,
+        model=settings.embedding_model,
+        index_version=settings.index_version,
+    )
 
 
 async def shutdown(ctx: dict[str, object]) -> None:
+    store = ctx.get("retrieval_store")
+    closer = getattr(store, "close", None)
+    if closer is not None:
+        await closer()
     engine = ctx.get("engine")
     if isinstance(engine, AsyncEngine):
         await engine.dispose()

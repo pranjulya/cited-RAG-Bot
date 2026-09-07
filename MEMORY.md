@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 04 **[#9](https://github.com/pranjulya/cited-RAG-Bot/pull/9)** merged (`51bd34a`). Phase 05 PR **[#10](https://github.com/pranjulya/cited-RAG-Bot/pull/10)** opened. |
-| Phase file status | Phase 05 `TESTED` (not `COMPLETE`) |
-| Branch | `phase-05-provenance-aware-chunking` |
-| PR | [#10](https://github.com/pranjulya/cited-RAG-Bot/pull/10) — open |
-| `main` | `51bd34a` — Phase 04 parsing. **Do not push or merge to `main` except via PR.** |
-| Next action | Review/merge [PR #10](https://github.com/pranjulya/cited-RAG-Bot/pull/10) after CI. Do not start Phase 06 until it is on `main`. |
-| Blockers | None for review. No embeddings/`READY` yet. |
+| Last completed work | Phase 05 **[#10](https://github.com/pranjulya/cited-RAG-Bot/pull/10)** merged (`97dff92`). Phase 06 implementation pushed; Qdrant integration not verified locally. |
+| Phase file status | Phase 06 `IN_PROGRESS` (not `TESTED`) |
+| Branch | `phase-06-dense-indexing` |
+| PR | [#11](https://github.com/pranjulya/cited-RAG-Bot/pull/11) — open |
+| `main` | `97dff92` — Phase 05 chunking. **Do not push or merge to `main` except via PR.** |
+| Next action | Confirm CI (including Qdrant integration) on the Phase 06 PR. Do not start Phase 07 until it is on `main`. |
+| Blockers | Local Docker/Qdrant did not come up in the implementation session. No `READY` yet. |
 
 ---
 
@@ -66,11 +66,54 @@ Do not put secrets, API keys, or raw PDF text here.
 
 ## Phase records
 
+### Phase 06 — Embedding and Dense Indexing
+
+- **Date:** 2026-09-07
+- **Branch:** `phase-06-dense-indexing`
+- **PR:** [#11](https://github.com/pranjulya/cited-RAG-Bot/pull/11) (`phase-06-dense-indexing` → `main`, OPEN)
+- **Status in phase file:** `IN_PROGRESS`
+- **Goal:** Embed persisted chunks and upsert dense named vectors on chunk UUIDs in one application Qdrant collection that already declares `sparse`. Never `READY`. No sparse values.
+
+- **Files added/changed:**
+  - `ports/embedding.py`, `ports/retrieval_store.py`
+  - `domain/embedding.py`, `domain/indexing.py`
+  - `adapters/embedding/hashing.py` — deterministic test/dev backend
+  - `adapters/retrieval/qdrant.py`, `adapters/retrieval/memory.py`
+  - `application/indexing.py` — batch embed + dense upsert
+  - Worker/ingestion: parse, chunk, dense index
+  - Compose/CI: Qdrant service; `/ready` probes Qdrant when configured
+  - Tests: `tests/unit/test_embedding.py`, `tests/unit/test_dense_index.py`, `tests/integration/test_dense_indexing.py`
+  - `Learning/06-dense-indexing.md`
+
+- **Public contracts / commands:**
+  - `CITED_RAG_QDRANT_URL`, `CITED_RAG_QDRANT_COLLECTION` (default `cited_rag`)
+  - `CITED_RAG_EMBEDDING_BACKEND` (`hash`), `CITED_RAG_EMBEDDING_MODEL`, `CITED_RAG_EMBEDDING_DIMENSION` (default 32), `CITED_RAG_EMBEDDING_BATCH_SIZE`, `CITED_RAG_INDEX_VERSION`
+  - Named vectors `dense` and `sparse` on the same point; this phase writes `dense` only
+  - Point id = chunk UUID
+
+- **Decisions made in this phase (not already in ADR-011):**
+  - Default embedder is a normalized hash vector so tests/dev do not need a hosted model
+  - Authoritative chunk text stays out of Qdrant payload
+
+- **Verification run (exact commands + results):**
+  - ruff / mypy — passed
+  - `pytest tests/unit` — **82 passed, 1 skipped**
+  - `pytest tests/integration` — **not run locally** (Docker/Qdrant did not start)
+
+- **Not verified / known gaps:**
+  - Live Qdrant upsert/payload-index/idempotent replay
+  - Hosted embedding adapters
+  - Sparse vectors and `READY` (Phase 07)
+
+- **Follow-ups for the next phase:**
+  - Confirm CI integration job with Qdrant
+  - Phase 07: sparse upserts on the same points + finalize `READY`
+
 ### Phase 05 — Provenance-Aware Chunking
 
 - **Date:** 2026-09-07
 - **Branch:** `phase-05-provenance-aware-chunking`
-- **PR:** [#10](https://github.com/pranjulya/cited-RAG-Bot/pull/10) (`phase-05-provenance-aware-chunking` → `main`, OPEN)
+- **PR:** [#10](https://github.com/pranjulya/cited-RAG-Bot/pull/10) (`phase-05-provenance-aware-chunking` → `main`, MERGED `97dff92`)
 - **Status in phase file:** `TESTED`
 - **Goal:** Split parsed pages into ordered chunks with deterministic UUIDv5 identities and explicit page ranges. Never `READY`. No embeddings.
 

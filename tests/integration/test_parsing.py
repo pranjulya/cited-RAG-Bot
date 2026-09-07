@@ -10,10 +10,13 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from tests.pdf_fixtures import CORRUPT_PDF, TWO_PAGE_PDF, make_blank_pdf, make_password_pdf
 
 from cited_rag.adapters.chunking.page_window import PageWindowChunker
+from cited_rag.adapters.embedding.hashing import HashEmbeddingProvider
 from cited_rag.adapters.parser.pypdf import PypdfDocumentParser
 from cited_rag.adapters.persistence.postgres.uow import PostgresUnitOfWork
+from cited_rag.adapters.retrieval.memory import MemoryRetrievalStore
 from cited_rag.application.ingestion import process_ingestion_job
 from cited_rag.config import Settings
+from cited_rag.domain.embedding import EmbeddingConfig
 from cited_rag.domain.enums import DocumentVersionStatus, IngestionJobStatus
 from cited_rag.main import create_app
 
@@ -64,6 +67,9 @@ async def _process(client: TestClient, uow_factory: async_sessionmaker, version_
             storage=storage,
             parser=parser,
             chunker=PageWindowChunker(),
+            embedding_provider=HashEmbeddingProvider(dimension=8),
+            retrieval_store=MemoryRetrievalStore(),
+            embedding_config=EmbeddingConfig(dimension=8, batch_size=8),
         )
 
 

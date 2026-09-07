@@ -46,11 +46,16 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      qdrant:
+        image: qdrant/qdrant:v1.13.6
+        ports:
+          - 6333:6333
     env:
       CITED_RAG_ENVIRONMENT: test
       CITED_RAG_API_KEY: test-placeholder-key
       CITED_RAG_DATABASE_URL: postgresql+asyncpg://cited_rag:cited_rag@localhost:5432/cited_rag
       CITED_RAG_REDIS_URL: redis://localhost:6379/0
+      CITED_RAG_QDRANT_URL: http://localhost:6333
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -60,5 +65,12 @@ jobs:
         run: pip install -e ".[dev]"
       - name: Apply migrations
         run: alembic upgrade head
+      - name: Wait for Qdrant
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:6333/readyz && exit 0
+            sleep 1
+          done
+          exit 1
       - name: Integration tests
         run: pytest tests/integration

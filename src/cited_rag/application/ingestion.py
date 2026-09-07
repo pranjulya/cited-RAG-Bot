@@ -5,8 +5,10 @@ from dataclasses import replace
 from uuid import UUID
 
 from cited_rag.application.chunking import persist_chunks
+from cited_rag.application.indexing import persist_dense_index
 from cited_rag.application.parsing import persist_parsed_pages
 from cited_rag.domain.clock import utc_now
+from cited_rag.domain.embedding import EmbeddingConfig
 from cited_rag.domain.enums import DocumentVersionStatus, IngestionJobStatus
 from cited_rag.domain.exceptions import (
     InvalidLifecycleTransitionError,
@@ -16,9 +18,11 @@ from cited_rag.domain.exceptions import (
 )
 from cited_rag.domain.models.ingestion import IngestionJob
 from cited_rag.ports.chunker import Chunker
+from cited_rag.ports.embedding import EmbeddingProvider
 from cited_rag.ports.object_storage import ObjectStorage
 from cited_rag.ports.parser import DocumentParser
 from cited_rag.ports.repositories import UnitOfWork
+from cited_rag.ports.retrieval_store import RetrievalStore
 
 logger = logging.getLogger("cited_rag.ingestion")
 
@@ -37,8 +41,11 @@ async def process_ingestion_job(
     storage: ObjectStorage | None = None,
     parser: DocumentParser | None = None,
     chunker: Chunker | None = None,
+    embedding_provider: EmbeddingProvider | None = None,
+    retrieval_store: RetrievalStore | None = None,
+    embedding_config: EmbeddingConfig | None = None,
 ) -> str:
-    """Claim a version, parse pages, persist chunks, never mark READY."""
+    """Claim a version, parse, chunk, dense-index. Never mark READY."""
     extra = {"correlation_id": correlation_id or "-"}
     version = await uow.versions.get(document_version_id)
     if version is None:
@@ -109,8 +116,16 @@ async def process_ingestion_job(
         elif storage is not None and parser is not None:
             if chunker is None:
                 raise PermanentIngestionError("ingestion chunker is not configured")
+            if embedding_provider is None or retrieval_store is None or embedding_config is None:
+                raise PermanentIngestionError("ingestion dense indexer is not configured")
             pages = await persist_parsed_pages(uow, version, storage=storage, parser=parser)
-            await persist_chunks(uow, version, pages, chunker)
+            chunks = await persist_chunks(uow, version, pages, chunker)
+            await persist_dense_index(
+                chunks,
+                embedder=embedding_provider,
+                store=retrieval_store,
+                config=embedding_config,
+            )
         else:
             raise PermanentIngestionError("ingestion parser is not configured")
     except TransientIngestionError as exc:
@@ -148,7 +163,7 @@ async def process_ingestion_job(
         )
     )
     await uow.commit()
-    logger.info("parse and chunk complete; version remains PROCESSING", extra=extra)
+    logger.info("parse, chunk, and dense index complete; version remains PROCESSING", extra=extra)
     return "processed"
 
 
