@@ -14,7 +14,7 @@ from cited_rag.domain.exceptions import RerankerError
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.document import DocumentVersion
 from cited_rag.domain.models.evaluation import EvaluationRunConfig
-from cited_rag.domain.models.retrieval import FusedCandidate
+from cited_rag.domain.models.retrieval import FusedCandidate, RerankedEvidence
 from cited_rag.ports.reranker import Reranker
 
 
@@ -188,6 +188,51 @@ async def test_evaluation_can_disable_rerank_without_calling_provider() -> None:
     )
     assert [item.chunk_id for item in ranked] == [first.id, second.id]
     assert ranked[0].reranker_name == "disabled"
+
+
+class _UnknownChunkReranker:
+    async def rerank(
+        self,
+        query: str,
+        candidates: Sequence[FusedCandidate],
+        top_n: int,
+    ) -> list[RerankedEvidence]:
+        item = candidates[0]
+        return [
+            RerankedEvidence(
+                chunk_id=uuid4(),
+                rerank_score=1.0,
+                rerank_rank=1,
+                fused_rank=item.fused_rank,
+                rrf_score=item.rrf_score,
+                collection_id=item.collection_id,
+                document_id=item.document_id,
+                document_version_id=item.document_version_id,
+                page_start=item.page_start,
+                page_end=item.page_end,
+                text=item.text,
+                dense_rank=item.dense_rank,
+                dense_score=item.dense_score,
+                sparse_rank=item.sparse_rank,
+                sparse_score=item.sparse_score,
+                reranker_name="fake",
+                reranker_version="v1",
+            )
+        ]
+
+
+@pytest.mark.asyncio
+async def test_unknown_rerank_chunk_is_reranker_error() -> None:
+    version = _version()
+    chunk = _chunk(version, 0, "Form POLICY_42")
+    with pytest.raises(RerankerError, match="unknown chunk"):
+        await rerank_candidates(
+            "POLICY_42",
+            [_fused(chunk, fused_rank=1)],
+            reranker=_UnknownChunkReranker(),  # type: ignore[arg-type]
+            top_n=5,
+            timeout_seconds=1,
+        )
 
 
 def test_factory_builds_overlap_reranker() -> None:
