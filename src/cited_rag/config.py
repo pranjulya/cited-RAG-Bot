@@ -54,6 +54,8 @@ class Settings(BaseSettings):
     reranker_backend: Literal["overlap"] = "overlap"
     rerank_top_n: int = Field(default=10, ge=1)
     reranker_timeout_seconds: float = Field(default=5, gt=0)
+    max_evidence_items: int = Field(default=8, ge=1)
+    context_token_budget: int = Field(default=1500, ge=1)
 
     @field_validator("debug")
     @classmethod

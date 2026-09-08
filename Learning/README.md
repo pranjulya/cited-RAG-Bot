@@ -45,3 +45,7 @@ See `Learning/09-hybrid-retrieval-rrf.md`.
 ## Phase 10
 
 See `Learning/10-reranking.md`.
+
+## Phase 11
+
+See `Learning/11-context-evidence-contract.md`.
