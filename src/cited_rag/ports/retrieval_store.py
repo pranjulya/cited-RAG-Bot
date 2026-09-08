@@ -18,6 +18,15 @@ class RetrievalStore(Protocol):
 
     async def get_point(self, point_id: UUID) -> IndexedPoint | None: ...
 
+    async def search_dense(
+        self,
+        vector: Sequence[float],
+        *,
+        collection_id: UUID,
+        document_version_ids: Sequence[UUID],
+        top_k: int,
+    ) -> list[SearchHit]: ...
+
     async def search_sparse(
         self,
         vector: SparseVector,

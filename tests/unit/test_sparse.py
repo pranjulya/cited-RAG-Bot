@@ -18,7 +18,7 @@ from cited_rag.application.retrieval import retrieve_sparse
 from cited_rag.config import Settings
 from cited_rag.domain.embedding import EmbeddingConfig
 from cited_rag.domain.enums import DocumentVersionStatus, RetrievalSource
-from cited_rag.domain.exceptions import PermanentIngestionError
+from cited_rag.domain.exceptions import PermanentIngestionError, SparseRetrievalError
 from cited_rag.domain.indexing import IndexedPoint
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.document import DocumentVersion
@@ -164,6 +164,70 @@ async def test_empty_version_filter_returns_no_hits() -> None:
         top_k=5,
     )
     assert hits == []
+
+
+@pytest.mark.asyncio
+async def test_missing_authoritative_chunk_is_sparse_retrieval_error() -> None:
+    version = _version()
+    chunks = [_chunk(version, 0, "Form POLICY_42 must be signed")]
+    store = MemoryRetrievalStore()
+    await _index(version, chunks, store)
+    with pytest.raises(SparseRetrievalError, match="authoritative"):
+        await retrieve_sparse(
+            "POLICY_42",
+            encoder=LexicalSparseEncoder(),
+            store=store,
+            chunks=[],
+            collection_id=version.collection_id,
+            document_version_ids=[version.id],
+            top_k=5,
+        )
+
+
+@pytest.mark.asyncio
+async def test_malformed_hit_payload_is_sparse_retrieval_error() -> None:
+    version = _version()
+    chunks = [_chunk(version, 0, "Form POLICY_42 must be signed")]
+    store = MemoryRetrievalStore()
+    await _index(version, chunks, store)
+    point = store.points[chunks[0].id]
+    incomplete = dict(point.payload)
+    incomplete.pop("page_start")
+    store.points[chunks[0].id] = IndexedPoint(
+        point_id=point.point_id,
+        vectors=point.vectors,
+        payload=incomplete,
+        sparse=point.sparse,
+    )
+    with pytest.raises(SparseRetrievalError, match="malformed"):
+        await retrieve_sparse(
+            "POLICY_42",
+            encoder=LexicalSparseEncoder(),
+            store=store,
+            chunks=chunks,
+            collection_id=version.collection_id,
+            document_version_ids=[version.id],
+            top_k=5,
+        )
+
+
+@pytest.mark.asyncio
+async def test_store_failure_is_sparse_retrieval_error() -> None:
+    version = _version()
+    chunks = [_chunk(version, 0, "Form POLICY_42 must be signed")]
+    store = MemoryRetrievalStore()
+    await _index(version, chunks, store)
+    store.fail_search = True
+    with pytest.raises(SparseRetrievalError, match="unavailable"):
+        await retrieve_sparse(
+            "POLICY_42",
+            encoder=LexicalSparseEncoder(),
+            store=store,
+            chunks=chunks,
+            collection_id=version.collection_id,
+            document_version_ids=[version.id],
+            top_k=5,
+        )
 
 
 @pytest.mark.asyncio

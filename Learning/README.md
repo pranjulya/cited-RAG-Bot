@@ -33,3 +33,7 @@ See `Learning/06-dense-indexing.md`.
 ## Phase 07
 
 See `Learning/07-sparse-indexing-retrieval.md`.
+
+## Phase 08
+
+See `Learning/08-dense-retrieval.md`.
