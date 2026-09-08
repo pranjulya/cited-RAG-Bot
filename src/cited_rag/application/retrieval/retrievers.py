@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from uuid import UUID
 
 from cited_rag.domain.enums import RetrievalSource
@@ -20,16 +20,28 @@ from cited_rag.ports.sparse_encoder import SparseEncoder
 
 logger = logging.getLogger("cited_rag.retrieval")
 
+ChunkLoader = Callable[[Sequence[UUID]], Awaitable[Sequence[Chunk]]]
+
+
+def chunk_lookup(chunks: Sequence[Chunk]) -> ChunkLoader:
+    by_id = {chunk.id: chunk for chunk in chunks}
+
+    async def _load(ids: Sequence[UUID]) -> list[Chunk]:
+        return [by_id[chunk_id] for chunk_id in ids if chunk_id in by_id]
+
+    return _load
+
 
 async def retrieve_dense(
     query: str,
     *,
     embedder: EmbeddingProvider,
     store: RetrievalStore,
-    chunks: Sequence[Chunk],
+    chunks: Sequence[Chunk] = (),
     collection_id: UUID,
     document_version_ids: Sequence[UUID],
     top_k: int,
+    load_chunks: ChunkLoader | None = None,
 ) -> list[RetrievedCandidate]:
     """Semantic retrieval. Callers pass READY version ids for production search."""
     started = time.perf_counter()
@@ -56,9 +68,11 @@ async def retrieve_dense(
         raise DenseRetrievalError(str(exc) or "dense retrieval store failed") from exc
     except Exception as exc:
         raise DenseRetrievalError("dense retrieval failed") from exc
+    loader = load_chunks if load_chunks is not None else chunk_lookup(chunks)
+    loaded = await loader([hit.point_id for hit in hits])
     candidates = _candidates_from_hits(
         hits,
-        chunks,
+        loaded,
         RetrievalSource.DENSE,
         collection_id=collection_id,
         document_version_ids=document_version_ids,
@@ -79,10 +93,11 @@ async def retrieve_sparse(
     *,
     encoder: SparseEncoder,
     store: RetrievalStore,
-    chunks: Sequence[Chunk],
+    chunks: Sequence[Chunk] = (),
     collection_id: UUID,
     document_version_ids: Sequence[UUID],
     top_k: int,
+    load_chunks: ChunkLoader | None = None,
 ) -> list[RetrievedCandidate]:
     """Lexical retrieval. Callers pass READY version ids for production search."""
     if not document_version_ids or top_k < 1:
@@ -95,9 +110,11 @@ async def retrieve_sparse(
             document_version_ids=document_version_ids,
             top_k=top_k,
         )
+        loader = load_chunks if load_chunks is not None else chunk_lookup(chunks)
+        loaded = await loader([hit.point_id for hit in hits])
         return _candidates_from_hits(
             hits,
-            chunks,
+            loaded,
             RetrievalSource.SPARSE,
             collection_id=collection_id,
             document_version_ids=document_version_ids,

@@ -14,6 +14,7 @@ from cited_rag.application.no_answer import (
 )
 from cited_rag.application.rerank import rerank_candidates
 from cited_rag.application.retrieval import ReciprocalRankFusion, retrieve_hybrid
+from cited_rag.application.retrieval.retrievers import ChunkLoader
 from cited_rag.config import Settings
 from cited_rag.domain.enums import AnswerStatus
 from cited_rag.domain.models.chunk import Chunk
@@ -43,8 +44,9 @@ async def answer_question(
     *,
     collection_id: UUID,
     document_version_ids: Sequence[UUID],
-    chunks: Sequence[Chunk],
-    document_names: Mapping[UUID, str],
+    chunks: Sequence[Chunk] = (),
+    document_names: Mapping[UUID, str] | None = None,
+    load_chunks: ChunkLoader | None = None,
     embedder: EmbeddingProvider,
     encoder: SparseEncoder,
     store: RetrievalStore,
@@ -76,6 +78,7 @@ async def answer_question(
         fusion=ReciprocalRankFusion(k=settings.rrf_k),
         fused_top_k=settings.fused_top_k,
         evaluation=evaluation,
+        load_chunks=load_chunks,
     )
     reranked = await rerank_candidates(
         stripped,
@@ -89,7 +92,7 @@ async def answer_question(
         reranked,
         max_items=settings.max_evidence_items,
         token_budget=settings.context_token_budget,
-        document_names=document_names,
+        document_names=document_names or {},
     )
     before = decide_before_generation(
         fused=fused,

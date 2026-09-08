@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -100,20 +101,25 @@ async def post_query(
     assert reranker is not None
     assert generator is not None
     version_ids = await uow.documents.list_searchable_version_ids(collection_id)
-    chunks: list[Chunk] = []
     names: dict[UUID, str] = {}
-    for version_id in version_ids:
-        chunks.extend(await uow.chunks.list_by_version(version_id))
-        version = await uow.versions.get(version_id)
-        if version is not None:
-            names[version.document_id] = version.original_filename
+
+    async def load_chunks(chunk_ids: Sequence[UUID]) -> list[Chunk]:
+        loaded = await uow.chunks.get_many(chunk_ids)
+        for chunk in loaded:
+            if chunk.document_id in names:
+                continue
+            version = await uow.versions.get(chunk.document_version_id)
+            if version is not None:
+                names[chunk.document_id] = version.original_filename
+        return loaded
+
     try:
         outcome = await answer_question(
             question,
             collection_id=collection_id,
             document_version_ids=version_ids,
-            chunks=chunks,
             document_names=names,
+            load_chunks=load_chunks,
             embedder=embedder,
             encoder=encoder,
             store=store,
