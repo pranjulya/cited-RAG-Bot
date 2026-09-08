@@ -120,7 +120,7 @@ async def test_long_page_chunking_is_reproducible(
     assert len(first) >= 2
     assert all(c.page_start == c.page_end == 1 for c in first)
     second_outcome = await _process(client, uow_factory, version_id)
-    assert second_outcome == "skipped"
+    assert second_outcome == "duplicate"
     async with _uow(uow_factory) as uow:
         again = await uow.chunks.list_by_version(version_id)
     assert [c.id for c in again] == [c.id for c in first]

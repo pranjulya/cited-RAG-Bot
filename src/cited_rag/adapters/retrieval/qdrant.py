@@ -67,7 +67,14 @@ class QdrantRetrievalStore:
         try:
             exists = await self._client.collection_exists(self.collection_name)
             if exists:
-                await self._reject_dense_only()
+                info = await self._client.get_collection(self.collection_name)
+                assert_existing_collection_schema(info, dense_dimension=dense_dimension)
+                for field in missing_payload_index_fields(info):
+                    await self._client.create_payload_index(
+                        collection_name=self.collection_name,
+                        field_name=field,
+                        field_schema=payload_field_schema(field),
+                    )
             else:
                 dense, sparse = dense_and_sparse_params(dense_dimension)
                 await self._client.create_collection(
@@ -76,15 +83,10 @@ class QdrantRetrievalStore:
                     sparse_vectors_config=sparse,
                 )
                 for field in PAYLOAD_FIELDS:
-                    schema = (
-                        PayloadSchemaType.KEYWORD
-                        if field in _KEYWORD_PAYLOAD
-                        else PayloadSchemaType.INTEGER
-                    )
                     await self._client.create_payload_index(
                         collection_name=self.collection_name,
                         field_name=field,
-                        field_schema=schema,
+                        field_schema=payload_field_schema(field),
                     )
             self.vector_names = set(NAMED_VECTORS)
         except PermanentIngestionError:
@@ -238,18 +240,67 @@ class QdrantRetrievalStore:
             )
         return found
 
-    async def _reject_dense_only(self) -> None:
-        info = await self._client.get_collection(self.collection_name)
-        params = info.config.params
-        dense = getattr(params, "vectors", None)
-        sparse = getattr(params, "sparse_vectors", None)
-        dense_names = set(dense.keys()) if isinstance(dense, dict) else set()
-        sparse_names = set(sparse.keys()) if isinstance(sparse, dict) else set()
-        if DENSE_VECTOR_NAME not in dense_names or SPARSE_VECTOR_NAME not in sparse_names:
-            raise PermanentIngestionError(
-                "dense-only qdrant collection is not allowed",
-                failure_code="INDEX_UNAVAILABLE",
-            )
+
+def payload_field_schema(field: str) -> PayloadSchemaType:
+    if field in _KEYWORD_PAYLOAD:
+        return PayloadSchemaType.KEYWORD
+    return PayloadSchemaType.INTEGER
+
+
+def assert_existing_collection_schema(info: Any, *, dense_dimension: int) -> None:
+    params = getattr(getattr(info, "config", None), "params", None)
+    dense = getattr(params, "vectors", None)
+    sparse = getattr(params, "sparse_vectors", None)
+    dense_map = dense if isinstance(dense, dict) else {}
+    sparse_map = sparse if isinstance(sparse, dict) else {}
+    if DENSE_VECTOR_NAME not in dense_map or SPARSE_VECTOR_NAME not in sparse_map:
+        raise PermanentIngestionError(
+            "dense-only qdrant collection is not allowed",
+            failure_code="INDEX_UNAVAILABLE",
+        )
+    dense_params = dense_map[DENSE_VECTOR_NAME]
+    size = getattr(dense_params, "size", None)
+    distance = getattr(dense_params, "distance", None)
+    if size != dense_dimension:
+        raise PermanentIngestionError(
+            "qdrant dense dimension does not match configured embedding dimension",
+            failure_code="INDEX_UNAVAILABLE",
+        )
+    distance_value = getattr(distance, "value", distance)
+    if str(distance_value).lower() != "cosine":
+        raise PermanentIngestionError(
+            "qdrant dense distance must be cosine",
+            failure_code="INDEX_UNAVAILABLE",
+        )
+    wrong = _wrong_payload_index_fields(info)
+    if wrong:
+        raise PermanentIngestionError(
+            "qdrant payload index types do not match the retrieval contract",
+            failure_code="INDEX_UNAVAILABLE",
+        )
+
+
+def missing_payload_index_fields(info: Any) -> list[str]:
+    schema = getattr(info, "payload_schema", None) or {}
+    if not isinstance(schema, dict):
+        return list(PAYLOAD_FIELDS)
+    return [field for field in PAYLOAD_FIELDS if field not in schema]
+
+
+def _wrong_payload_index_fields(info: Any) -> list[str]:
+    schema = getattr(info, "payload_schema", None) or {}
+    if not isinstance(schema, dict):
+        return []
+    wrong: list[str] = []
+    for field, entry in schema.items():
+        if field not in PAYLOAD_FIELDS:
+            continue
+        expected = payload_field_schema(field)
+        actual = getattr(entry, "data_type", None)
+        actual_value = str(getattr(actual, "value", actual)).lower()
+        if expected.value.lower() not in actual_value and str(expected).lower() not in actual_value:
+            wrong.append(field)
+    return wrong
 
 
 def _hits_from_query(result: Any) -> list[SearchHit]:

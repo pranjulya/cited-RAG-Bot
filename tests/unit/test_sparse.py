@@ -6,6 +6,7 @@ import pytest
 
 from cited_rag.adapters.embedding.hashing import HashEmbeddingProvider
 from cited_rag.adapters.retrieval.memory import MemoryRetrievalStore
+from cited_rag.adapters.sparse import create_sparse_encoder
 from cited_rag.adapters.sparse.lexical import LexicalSparseEncoder
 from cited_rag.application.indexing import (
     assert_dense_and_sparse_complete,
@@ -14,9 +15,11 @@ from cited_rag.application.indexing import (
     persist_sparse_index,
 )
 from cited_rag.application.retrieval import retrieve_sparse
+from cited_rag.config import Settings
 from cited_rag.domain.embedding import EmbeddingConfig
 from cited_rag.domain.enums import DocumentVersionStatus, RetrievalSource
 from cited_rag.domain.exceptions import PermanentIngestionError
+from cited_rag.domain.indexing import IndexedPoint
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.document import DocumentVersion
 
@@ -175,7 +178,30 @@ async def test_incomplete_index_blocks_ready() -> None:
         config=EmbeddingConfig(dimension=8),
     )
     with pytest.raises(PermanentIngestionError, match="incomplete"):
-        await assert_dense_and_sparse_complete(store, chunks)
+        await assert_dense_and_sparse_complete(store, chunks, index_version="v1")
+
+
+@pytest.mark.asyncio
+async def test_payload_mismatch_blocks_ready() -> None:
+    version = _version()
+    chunks = [_chunk(version, 0, "ready text")]
+    store = MemoryRetrievalStore()
+    await _index(version, chunks, store)
+    point = store.points[chunks[0].id]
+    store.points[chunks[0].id] = IndexedPoint(
+        point_id=point.point_id,
+        vectors=point.vectors,
+        payload={**point.payload, "collection_id": str(uuid4())},
+        sparse=point.sparse,
+    )
+    with pytest.raises(PermanentIngestionError, match="payload"):
+        await assert_dense_and_sparse_complete(store, chunks, index_version="idx-1")
+
+
+def test_factory_rejects_bm42_backend_with_lexical_identity() -> None:
+    settings = Settings(_env_file=None, sparse_encoder_backend="bm42")
+    with pytest.raises(ValueError, match="must match backend"):
+        create_sparse_encoder(settings)
 
 
 class _Versions:
@@ -222,6 +248,7 @@ async def test_finalize_sets_ready_after_dense_and_sparse() -> None:
         chunks,
         store=store,
         encoder_config=LexicalSparseEncoder().config,
+        index_version="idx-1",
     )
     assert ready.ingestion_status is DocumentVersionStatus.READY
     assert documents.active == (version.document_id, version.id)

@@ -124,7 +124,7 @@ async def test_ingestion_upserts_dense_and_sparse_and_marks_ready(
             embedding_config=config,
             sparse_encoder=LexicalSparseEncoder(),
         )
-    assert again == "skipped"
+    assert again == "duplicate"
     replayed = await store.get_point(chunks[0].id)
     assert replayed is not None
     assert replayed.point_id == chunks[0].id

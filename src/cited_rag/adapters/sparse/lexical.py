@@ -30,7 +30,10 @@ class LexicalSparseEncoder:
     """Deterministic bag-of-tokens sparse vectors for tests/dev. Not BM42."""
 
     def __init__(self, config: SparseEncoderConfig | None = None) -> None:
-        self.config = config or SparseEncoderConfig()
+        identity = SparseEncoderConfig.for_backend("lexical")
+        if config is not None and config.as_record() != identity.as_record():
+            raise ValueError("lexical encoder config must be lexical_tf_v1/v1")
+        self.config = identity
 
     async def encode_documents(self, texts: list[str]) -> list[SparseVector]:
         if not texts:

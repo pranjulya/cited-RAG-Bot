@@ -53,8 +53,10 @@ async def process_ingestion_job(
     if version is None:
         raise PermanentIngestionError("document version not found")
 
+    if version.ingestion_status is DocumentVersionStatus.READY:
+        logger.info("already processed; skip duplicate delivery", extra=extra)
+        return "duplicate"
     if version.ingestion_status in {
-        DocumentVersionStatus.READY,
         DocumentVersionStatus.DELETING,
         DocumentVersionStatus.DELETED,
     }:
@@ -142,6 +144,7 @@ async def process_ingestion_job(
                 chunks,
                 store=retrieval_store,
                 encoder_config=sparse_encoder.config,
+                index_version=embedding_config.index_version,
             )
         else:
             raise PermanentIngestionError("ingestion parser is not configured")

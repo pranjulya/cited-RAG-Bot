@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from cited_rag.domain.embedding import EmbeddingConfig
 from cited_rag.domain.enums import DocumentVersionStatus
 from cited_rag.domain.exceptions import PermanentIngestionError, TransientIngestionError
-from cited_rag.domain.indexing import DENSE_VECTOR_NAME, IndexedPoint
+from cited_rag.domain.indexing import DENSE_VECTOR_NAME, PAYLOAD_FIELDS, IndexedPoint
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.document import DocumentVersion
 from cited_rag.domain.sparse import SparseEncoderConfig
@@ -143,12 +143,31 @@ async def persist_sparse_index(
     return indexed
 
 
+def _canonical_payload(payload: dict[str, str | int]) -> dict[str, str | int]:
+    canonical: dict[str, str | int] = {}
+    for key in PAYLOAD_FIELDS:
+        value = payload.get(key)
+        if value is None:
+            raise PermanentIngestionError(
+                "stored point payload does not match chunk metadata",
+                failure_code="INDEX_INCOMPLETE",
+            )
+        if key in {"page_start", "page_end", "chunk_order"}:
+            canonical[key] = int(value)
+        else:
+            canonical[key] = str(value)
+    return canonical
+
+
 async def assert_dense_and_sparse_complete(
     store: RetrievalStore,
     chunks: Sequence[Chunk],
+    *,
+    index_version: str,
 ) -> None:
     for chunk in chunks:
         point = await store.get_point(chunk.id)
+        expected = _payload(chunk, index_version=index_version)
         if (
             point is None
             or DENSE_VECTOR_NAME not in point.vectors
@@ -159,6 +178,17 @@ async def assert_dense_and_sparse_complete(
                 "dense and sparse artifacts are incomplete",
                 failure_code="INDEX_INCOMPLETE",
             )
+        try:
+            if _canonical_payload(point.payload) != expected:
+                raise PermanentIngestionError(
+                    "stored point payload does not match chunk metadata",
+                    failure_code="INDEX_INCOMPLETE",
+                )
+        except (TypeError, ValueError) as exc:
+            raise PermanentIngestionError(
+                "stored point payload does not match chunk metadata",
+                failure_code="INDEX_INCOMPLETE",
+            ) from exc
 
 
 async def finalize_ready(
@@ -168,9 +198,10 @@ async def finalize_ready(
     *,
     store: RetrievalStore,
     encoder_config: SparseEncoderConfig,
+    index_version: str,
 ) -> DocumentVersion:
-    """READY only after PostgreSQL chunks and both named vectors exist."""
-    await assert_dense_and_sparse_complete(store, chunks)
+    """READY only after PostgreSQL chunks, both named vectors, and payload match."""
+    await assert_dense_and_sparse_complete(store, chunks, index_version=index_version)
     await uow.versions.set_sparse_encoder_config(version.id, encoder_config.as_record())
     ready = await uow.versions.transition(
         version.id,

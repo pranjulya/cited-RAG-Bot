@@ -178,7 +178,7 @@ async def test_permanent_failure_marks_failed(
 
 
 @pytest.mark.asyncio
-async def test_illegal_status_is_skipped_for_ready(
+async def test_ready_redelivery_is_duplicate(
     client: TestClient, uow_factory: async_sessionmaker
 ) -> None:
     version_id = _upload(client)
@@ -193,7 +193,7 @@ async def test_illegal_status_is_skipped_for_ready(
     async with _uow(uow_factory) as uow:
         outcome = await process_ingestion_job(uow, document_version_id=version_id)
         version = await uow.versions.get(version_id)
-    assert outcome == "skipped"
+    assert outcome == "duplicate"
     assert version is not None
     assert version.ingestion_status is DocumentVersionStatus.READY
 

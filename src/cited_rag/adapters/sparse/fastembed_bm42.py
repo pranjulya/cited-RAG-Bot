@@ -6,8 +6,6 @@ from cited_rag.domain.exceptions import PermanentIngestionError, TransientIngest
 from cited_rag.domain.indexing import SparseVector
 from cited_rag.domain.sparse import SparseEncoderConfig
 
-_DEFAULT_MODEL = "Qdrant/bm42-all-minilm-l6-v2-attentions"
-
 
 class FastEmbedBm42Encoder:
     """V1 production sparse adapter. Optional extra: cited-rag[sparse]."""
@@ -19,8 +17,11 @@ class FastEmbedBm42Encoder:
             raise RuntimeError(
                 "fastembed is required for CITED_RAG_SPARSE_ENCODER_BACKEND=bm42"
             ) from exc
-        self.config = config or SparseEncoderConfig(name="fastembed-bm42", version=_DEFAULT_MODEL)
-        self._model = SparseTextEmbedding(model_name=_DEFAULT_MODEL)
+        identity = SparseEncoderConfig.for_backend("bm42")
+        if config is not None and config.as_record() != identity.as_record():
+            raise ValueError("bm42 encoder config must match the FastEmbed BM42 model identity")
+        self.config = identity
+        self._model = SparseTextEmbedding(model_name=identity.version)
 
     def _encode(self, texts: list[str]) -> list[SparseVector]:
         encoded: list[SparseVector] = []
