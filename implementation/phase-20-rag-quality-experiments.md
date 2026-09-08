@@ -1,6 +1,6 @@
 # Phase 20 — RAG Quality Experiments
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Benchmark retrieval/generation configurations and use evidence rather than intuition to choose V1 defaults.
