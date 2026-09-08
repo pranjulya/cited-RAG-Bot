@@ -1,6 +1,6 @@
 # Phase 18 — Security Hardening
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Harden the portfolio deployment against cross-collection leakage, malicious PDFs, prompt injection, abusive requests, and secret exposure.

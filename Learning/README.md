@@ -73,3 +73,7 @@ See `Learning/16-deletion-consistency.md`.
 ## Phase 17
 
 See `Learning/17-observability.md`.
+
+## Phase 18
+
+See `Learning/18-security-hardening.md`.

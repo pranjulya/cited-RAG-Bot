@@ -81,6 +81,11 @@ async def post_query(
     question = body.question.strip()
     if not question:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="empty_question")
+    if len(question) > settings.query_max_chars:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="query_too_long",
+        )
     collection = owned_collection_or_none(await uow.collections.get(collection_id), principal.id)
     if collection is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="collection_not_found")
