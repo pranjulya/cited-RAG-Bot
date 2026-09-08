@@ -22,6 +22,12 @@ def validate_citations(
 ) -> tuple[PublicCitation, ...]:
     """Fail closed on unknown or unapproved evidence IDs. Do not repair."""
     approved = evidence.by_id
+    if result.status is AnswerStatus.ANSWERED:
+        if not result.claims:
+            raise CitationValidationError("answered result has no claims")
+        for claim in result.claims:
+            if not claim.evidence_ids:
+                raise CitationValidationError("answered claim has no evidence ids")
     referenced: list[str] = []
     for claim in result.claims:
         referenced.extend(claim.evidence_ids)

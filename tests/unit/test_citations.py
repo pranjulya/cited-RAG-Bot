@@ -105,6 +105,24 @@ def test_duplicate_ids_are_normalized() -> None:
     assert len(citations) == 1
 
 
+def test_answered_claim_without_evidence_ids_fails() -> None:
+    record = _record()
+    with pytest.raises(CitationValidationError, match="no evidence ids"):
+        validate_citations(
+            GroundedGenerationResult(
+                status=AnswerStatus.ANSWERED,
+                answer="x",
+                claims=(
+                    Claim(text="supported", evidence_ids=("E1",)),
+                    Claim(text="unsupported", evidence_ids=()),
+                ),
+                model="heuristic-v1",
+            ),
+            _package(record),
+            collection_id=record.collection_id,
+        )
+
+
 def test_insufficient_evidence_with_no_claims_is_empty() -> None:
     record = _record()
     citations = validate_citations(
