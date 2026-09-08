@@ -20,6 +20,8 @@ jobs:
         run: mypy src
       - name: Unit tests
         run: pytest tests/unit
+      - name: Evaluation smoke
+        run: python -m cited_rag.evaluation
 
   integration-postgres:
     runs-on: ubuntu-latest
