@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import Mapping, Sequence
 from uuid import UUID
@@ -39,26 +40,25 @@ def build_evidence_package(
             dropped.append(candidate.chunk_id)
             continue
         evidence_id = f"E{len(kept) + 1}"
-        formatted = _format_item(evidence_id, candidate.text)
+        record = EvidenceRecord(
+            evidence_id=evidence_id,
+            chunk_id=candidate.chunk_id,
+            collection_id=candidate.collection_id,
+            document_id=candidate.document_id,
+            document_version_id=candidate.document_version_id,
+            document_name=names.get(candidate.document_id, ""),
+            page_start=candidate.page_start,
+            page_end=candidate.page_end,
+            text=candidate.text,
+        )
+        formatted = serialize_model_evidence((*kept, record))
         cost = estimate_tokens(formatted)
-        if cost > token_budget - used_tokens:
+        if cost > token_budget:
             dropped.append(candidate.chunk_id)
             continue
-        kept.append(
-            EvidenceRecord(
-                evidence_id=evidence_id,
-                chunk_id=candidate.chunk_id,
-                collection_id=candidate.collection_id,
-                document_id=candidate.document_id,
-                document_version_id=candidate.document_version_id,
-                document_name=names.get(candidate.document_id, ""),
-                page_start=candidate.page_start,
-                page_end=candidate.page_end,
-                text=candidate.text,
-            )
-        )
-        used_tokens += cost
-    context = "\n\n".join(_format_item(record.evidence_id, record.text) for record in kept)
+        kept.append(record)
+        used_tokens = cost
+    context = serialize_model_evidence(kept) if kept else serialize_model_evidence(())
     logger.info(
         "context built count=%s dropped=%s tokens=%s budget=%s",
         len(kept),
@@ -74,5 +74,7 @@ def build_evidence_package(
     )
 
 
-def _format_item(evidence_id: str, text: str) -> str:
-    return f"[{evidence_id}]\nEvidence:\n{text}"
+def serialize_model_evidence(records: Sequence[EvidenceRecord]) -> str:
+    """JSON object with escaped text. PDF content cannot mint extra E-IDs."""
+    payload = {"evidence": [{"id": record.evidence_id, "text": record.text} for record in records]}
+    return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
