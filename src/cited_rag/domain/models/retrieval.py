@@ -35,3 +35,24 @@ class FusedCandidate:
     dense_score: float | None
     sparse_rank: int | None
     sparse_score: float | None
+
+
+@dataclass(frozen=True, slots=True)
+class RerankedEvidence:
+    chunk_id: UUID
+    rerank_score: float
+    rerank_rank: int
+    fused_rank: int
+    rrf_score: float
+    collection_id: UUID
+    document_id: UUID
+    document_version_id: UUID
+    page_start: int
+    page_end: int
+    text: str
+    dense_rank: int | None
+    dense_score: float | None
+    sparse_rank: int | None
+    sparse_score: float | None
+    reranker_name: str
+    reranker_version: str

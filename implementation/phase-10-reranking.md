@@ -1,6 +1,6 @@
 # Phase 10 — Reranking
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Rerank fused retrieval candidates with a replaceable cross-encoder or hosted reranker and prove whether relevance improves.

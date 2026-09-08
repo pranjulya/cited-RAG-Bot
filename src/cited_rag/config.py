@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     retrieval_top_k: int = Field(default=20, ge=1)
     rrf_k: int = Field(default=60, ge=1)
     fused_top_k: int = Field(default=20, ge=1)
+    reranker_backend: Literal["overlap"] = "overlap"
+    rerank_top_n: int = Field(default=10, ge=1)
+    reranker_timeout_seconds: float = Field(default=5, gt=0)
 
     @field_validator("debug")
     @classmethod
