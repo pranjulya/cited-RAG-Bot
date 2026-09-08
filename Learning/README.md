@@ -69,3 +69,7 @@ See `Learning/15-end-to-end-query-api.md`.
 ## Phase 16
 
 See `Learning/16-deletion-consistency.md`.
+
+## Phase 17
+
+See `Learning/17-observability.md`.

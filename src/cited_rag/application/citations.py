@@ -9,6 +9,7 @@ from cited_rag.domain.exceptions import CitationValidationError
 from cited_rag.domain.models.citation import PublicCitation
 from cited_rag.domain.models.evidence import EvidencePackage
 from cited_rag.domain.models.generation import GroundedGenerationResult
+from cited_rag.observability.metrics import metrics
 
 logger = logging.getLogger("cited_rag.citations")
 
@@ -42,6 +43,7 @@ def validate_citations(
     for evidence_id in unique:
         record = approved.get(evidence_id)
         if record is None:
+            metrics.incr("citation.validation_failed")
             raise CitationValidationError(f"unknown or unapproved evidence id {evidence_id}")
         if record.collection_id != collection_id:
             raise CitationValidationError("evidence does not belong to the requested collection")

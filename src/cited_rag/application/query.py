@@ -21,6 +21,8 @@ from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.evaluation import EvaluationRunConfig
 from cited_rag.domain.models.policy import NoAnswerDecision
 from cited_rag.domain.models.query_result import QueryOutcome
+from cited_rag.observability.metrics import metrics
+from cited_rag.observability.redact import redact_text
 from cited_rag.ports.embedding import EmbeddingProvider
 from cited_rag.ports.generation import GroundedGenerator
 from cited_rag.ports.reranker import Reranker
@@ -58,13 +60,15 @@ async def answer_question(
     """Collection-scoped query pipeline. Routes own authorization."""
     stripped = question.strip()
     logger.info(
-        "query start collection=%s versions=%s question_chars=%s",
+        "query start collection=%s versions=%s question=%s",
         collection_id,
         len(document_version_ids),
-        len(stripped),
+        redact_text(stripped),
         extra={"correlation_id": "-"},
     )
+    metrics.incr("query.started")
     if not document_version_ids:
+        metrics.incr("query.no_answer")
         return _from_decision(no_ready_documents())
     fused = await retrieve_hybrid(
         stripped,
@@ -101,6 +105,7 @@ async def answer_question(
         min_rerank_score=settings.min_rerank_score,
     )
     if before is not None:
+        metrics.incr("query.no_answer")
         return _from_decision(before)
     generated = await generate_grounded_answer(
         stripped,
@@ -110,6 +115,7 @@ async def answer_question(
     )
     after = decide_after_generation(generated)
     if after is not None:
+        metrics.incr("query.no_answer")
         citations = validate_citations(
             generated,
             evidence,
@@ -128,6 +134,7 @@ async def answer_question(
         collection_id=collection_id,
         allowed_version_ids=set(document_version_ids),
     )
+    metrics.incr("query.answered")
     logger.info(
         "query complete status=%s citations=%s",
         generated.status,
