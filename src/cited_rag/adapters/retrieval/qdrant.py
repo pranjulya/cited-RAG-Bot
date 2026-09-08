@@ -10,11 +10,16 @@ from qdrant_client.models import (
     Distance,
     FieldCondition,
     Filter,
+    MatchAny,
     MatchValue,
     PayloadSchemaType,
     PointStruct,
+    PointVectors,
     SparseVectorParams,
     VectorParams,
+)
+from qdrant_client.models import (
+    SparseVector as QdrantSparseVector,
 )
 
 from cited_rag.domain.exceptions import PermanentIngestionError, TransientIngestionError
@@ -24,6 +29,8 @@ from cited_rag.domain.indexing import (
     PAYLOAD_FIELDS,
     SPARSE_VECTOR_NAME,
     IndexedPoint,
+    SearchHit,
+    SparseVector,
 )
 
 _KEYWORD_PAYLOAD = {
@@ -60,7 +67,14 @@ class QdrantRetrievalStore:
         try:
             exists = await self._client.collection_exists(self.collection_name)
             if exists:
-                await self._reject_dense_only()
+                info = await self._client.get_collection(self.collection_name)
+                assert_existing_collection_schema(info, dense_dimension=dense_dimension)
+                for field in missing_payload_index_fields(info):
+                    await self._client.create_payload_index(
+                        collection_name=self.collection_name,
+                        field_name=field,
+                        field_schema=payload_field_schema(field),
+                    )
             else:
                 dense, sparse = dense_and_sparse_params(dense_dimension)
                 await self._client.create_collection(
@@ -69,15 +83,10 @@ class QdrantRetrievalStore:
                     sparse_vectors_config=sparse,
                 )
                 for field in PAYLOAD_FIELDS:
-                    schema = (
-                        PayloadSchemaType.KEYWORD
-                        if field in _KEYWORD_PAYLOAD
-                        else PayloadSchemaType.INTEGER
-                    )
                     await self._client.create_payload_index(
                         collection_name=self.collection_name,
                         field_name=field,
-                        field_schema=schema,
+                        field_schema=payload_field_schema(field),
                     )
             self.vector_names = set(NAMED_VECTORS)
         except PermanentIngestionError:
@@ -120,8 +129,81 @@ class QdrantRetrievalStore:
             return None
         record = records[0]
         vectors = _named_dense(record.vector)
-        payload = {key: record.payload[key] for key in PAYLOAD_FIELDS if record.payload}
-        return IndexedPoint(point_id=point_id, vectors=vectors, payload=payload)
+        payload = _record_payload(record)
+        return IndexedPoint(
+            point_id=point_id,
+            vectors=vectors,
+            payload=payload,
+            sparse=_named_sparse(record.vector),
+        )
+
+    async def upsert_sparse(self, points: Sequence[IndexedPoint]) -> None:
+        if not points:
+            return
+        structs = []
+        for point in points:
+            if point.sparse is None:
+                raise PermanentIngestionError(
+                    "sparse vector missing",
+                    failure_code="SPARSE_INDEX_FAILED",
+                )
+            structs.append(
+                PointVectors(
+                    id=str(point.point_id),
+                    vector={
+                        SPARSE_VECTOR_NAME: QdrantSparseVector(
+                            indices=list(point.sparse.indices),
+                            values=list(point.sparse.values),
+                        )
+                    },
+                )
+            )
+        try:
+            await self._client.update_vectors(
+                collection_name=self.collection_name,
+                points=structs,
+            )
+        except UnexpectedResponse as exc:
+            raise TransientIngestionError("retrieval store unavailable") from exc
+        except Exception as exc:
+            raise TransientIngestionError("retrieval store unavailable") from exc
+
+    async def search_sparse(
+        self,
+        vector: SparseVector,
+        *,
+        collection_id: UUID,
+        document_version_ids: Sequence[UUID],
+        top_k: int,
+    ) -> list[SearchHit]:
+        if not document_version_ids or top_k < 1:
+            return []
+        query_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="collection_id",
+                    match=MatchValue(value=str(collection_id)),
+                ),
+                FieldCondition(
+                    key="document_version_id",
+                    match=MatchAny(any=[str(version_id) for version_id in document_version_ids]),
+                ),
+            ]
+        )
+        try:
+            result = await self._client.query_points(
+                collection_name=self.collection_name,
+                query=QdrantSparseVector(indices=list(vector.indices), values=list(vector.values)),
+                using=SPARSE_VECTOR_NAME,
+                query_filter=query_filter,
+                limit=top_k,
+                with_payload=True,
+            )
+        except UnexpectedResponse as exc:
+            raise TransientIngestionError("retrieval store unavailable") from exc
+        except Exception as exc:
+            raise TransientIngestionError("retrieval store unavailable") from exc
+        return _hits_from_query(result)
 
     async def scroll_collection(
         self, *, collection_id: UUID, limit: int = 10
@@ -152,23 +234,114 @@ class QdrantRetrievalStore:
                 IndexedPoint(
                     point_id=UUID(str(record.id)),
                     vectors=_named_dense(record.vector),
-                    payload={key: record.payload[key] for key in PAYLOAD_FIELDS if record.payload},
+                    payload=_record_payload(record),
+                    sparse=_named_sparse(record.vector),
                 )
             )
         return found
 
-    async def _reject_dense_only(self) -> None:
-        info = await self._client.get_collection(self.collection_name)
-        params = info.config.params
-        dense = getattr(params, "vectors", None)
-        sparse = getattr(params, "sparse_vectors", None)
-        dense_names = set(dense.keys()) if isinstance(dense, dict) else set()
-        sparse_names = set(sparse.keys()) if isinstance(sparse, dict) else set()
-        if DENSE_VECTOR_NAME not in dense_names or SPARSE_VECTOR_NAME not in sparse_names:
-            raise PermanentIngestionError(
-                "dense-only qdrant collection is not allowed",
-                failure_code="INDEX_UNAVAILABLE",
+
+def payload_field_schema(field: str) -> PayloadSchemaType:
+    if field in _KEYWORD_PAYLOAD:
+        return PayloadSchemaType.KEYWORD
+    return PayloadSchemaType.INTEGER
+
+
+def assert_existing_collection_schema(info: Any, *, dense_dimension: int) -> None:
+    params = getattr(getattr(info, "config", None), "params", None)
+    dense = getattr(params, "vectors", None)
+    sparse = getattr(params, "sparse_vectors", None)
+    dense_map = dense if isinstance(dense, dict) else {}
+    sparse_map = sparse if isinstance(sparse, dict) else {}
+    if DENSE_VECTOR_NAME not in dense_map or SPARSE_VECTOR_NAME not in sparse_map:
+        raise PermanentIngestionError(
+            "dense-only qdrant collection is not allowed",
+            failure_code="INDEX_UNAVAILABLE",
+        )
+    dense_params = dense_map[DENSE_VECTOR_NAME]
+    size = getattr(dense_params, "size", None)
+    distance = getattr(dense_params, "distance", None)
+    if size != dense_dimension:
+        raise PermanentIngestionError(
+            "qdrant dense dimension does not match configured embedding dimension",
+            failure_code="INDEX_UNAVAILABLE",
+        )
+    distance_value = getattr(distance, "value", distance)
+    if str(distance_value).lower() != "cosine":
+        raise PermanentIngestionError(
+            "qdrant dense distance must be cosine",
+            failure_code="INDEX_UNAVAILABLE",
+        )
+    wrong = _wrong_payload_index_fields(info)
+    if wrong:
+        raise PermanentIngestionError(
+            "qdrant payload index types do not match the retrieval contract",
+            failure_code="INDEX_UNAVAILABLE",
+        )
+
+
+def missing_payload_index_fields(info: Any) -> list[str]:
+    schema = getattr(info, "payload_schema", None) or {}
+    if not isinstance(schema, dict):
+        return list(PAYLOAD_FIELDS)
+    return [field for field in PAYLOAD_FIELDS if field not in schema]
+
+
+def _wrong_payload_index_fields(info: Any) -> list[str]:
+    schema = getattr(info, "payload_schema", None) or {}
+    if not isinstance(schema, dict):
+        return []
+    wrong: list[str] = []
+    for field, entry in schema.items():
+        if field not in PAYLOAD_FIELDS:
+            continue
+        expected = payload_field_schema(field)
+        actual = getattr(entry, "data_type", None)
+        actual_value = str(getattr(actual, "value", actual)).lower()
+        if expected.value.lower() not in actual_value and str(expected).lower() not in actual_value:
+            wrong.append(field)
+    return wrong
+
+
+def _hits_from_query(result: Any) -> list[SearchHit]:
+    points = getattr(result, "points", result)
+    hits: list[SearchHit] = []
+    for record in points:
+        hits.append(
+            SearchHit(
+                point_id=UUID(str(record.id)),
+                score=float(record.score),
+                payload=_record_payload(record),
             )
+        )
+    return hits
+
+
+def _record_payload(record: Any) -> dict[str, str | int]:
+    raw = getattr(record, "payload", None) or {}
+    if not isinstance(raw, dict):
+        return {}
+    return {key: raw[key] for key in PAYLOAD_FIELDS if key in raw}
+
+
+def _named_sparse(vector: Any) -> SparseVector | None:
+    if not isinstance(vector, dict) or SPARSE_VECTOR_NAME not in vector:
+        return None
+    raw = vector[SPARSE_VECTOR_NAME]
+    if raw is None:
+        return None
+    indices = getattr(raw, "indices", None)
+    values = getattr(raw, "values", None)
+    if indices is None and isinstance(raw, dict):
+        indices = raw.get("indices")
+        values = raw.get("values")
+    if indices is None or values is None:
+        return None
+    index_list = [int(index) for index in list(indices)]
+    value_list = [float(value) for value in list(values)]
+    if not index_list:
+        return None
+    return SparseVector(indices=index_list, values=value_list)
 
 
 def _named_dense(vector: Any) -> dict[str, list[float]]:

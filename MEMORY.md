@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 05 **[#10](https://github.com/pranjulya/cited-RAG-Bot/pull/10)** merged (`97dff92`). Phase 06 implementation pushed; Qdrant integration not verified locally. |
-| Phase file status | Phase 06 `IN_PROGRESS` (not `TESTED`) |
-| Branch | `phase-06-dense-indexing` |
-| PR | [#11](https://github.com/pranjulya/cited-RAG-Bot/pull/11) — open |
-| `main` | `97dff92` — Phase 05 chunking. **Do not push or merge to `main` except via PR.** |
-| Next action | Confirm CI (including Qdrant integration) on the Phase 06 PR. Do not start Phase 07 until it is on `main`. |
-| Blockers | Local Docker/Qdrant did not come up in the implementation session. No `READY` yet. |
+| Last completed work | Phase 06 **[#11](https://github.com/pranjulya/cited-RAG-Bot/pull/11)** merged (`2a87918`). Phase 07 sparse indexing opened. |
+| Phase file status | Phase 07 `IN_PROGRESS` (not `TESTED`) |
+| Branch | `phase-07-sparse-indexing-retrieval` |
+| PR | [#12](https://github.com/pranjulya/cited-RAG-Bot/pull/12) — open |
+| `main` | `2a87918` — Phase 06 dense indexing. **Do not push or merge to `main` except via PR.** |
+| Next action | Confirm CI (Qdrant sparse upsert + READY) on the Phase 07 PR. Do not start Phase 08 until it is on `main`. |
+| Blockers | Local Docker/Qdrant not re-run for Phase 07. Hosted BM42 extra not exercised in unit tests. |
 
 ---
 
@@ -66,12 +66,55 @@ Do not put secrets, API keys, or raw PDF text here.
 
 ## Phase records
 
+### Phase 07 — Sparse Indexing and Retrieval
+
+- **Date:** 2026-09-08
+- **Branch:** `phase-07-sparse-indexing-retrieval`
+- **PR:** [#12](https://github.com/pranjulya/cited-RAG-Bot/pull/12) (`phase-07-sparse-indexing-retrieval` → `main`, OPEN)
+- **Status in phase file:** `IN_PROGRESS`
+- **Goal:** Encode sparse vectors onto the same chunk UUIDs as dense, retrieve with collection + version filters, and set `READY` only after both named vectors exist.
+
+- **Files added/changed:**
+  - `ports/sparse_encoder.py`; store `upsert_sparse` / `search_sparse`
+  - `adapters/sparse/lexical.py` (default tests/dev); `fastembed_bm42.py` optional extra
+  - `application/indexing.py` — sparse upsert, completeness check, `finalize_ready`
+  - `application/retrieval.py` — sparse `RetrievedCandidate` list
+  - Migration `0004_sparse_encoder_config`
+  - Worker/ingestion: dense then sparse then READY
+  - Tests: `tests/unit/test_sparse.py`; ingestion tests now expect READY
+  - `Learning/07-sparse-indexing-retrieval.md`
+
+- **Public contracts / commands:**
+  - `CITED_RAG_SPARSE_ENCODER_BACKEND` (`lexical` default, `bm42` optional)
+  - `CITED_RAG_SPARSE_ENCODER_NAME`, `CITED_RAG_SPARSE_ENCODER_VERSION`
+  - Sparse updates the same Qdrant point; does not replace dense
+  - Production search uses `collection_id` and `document_version_id IN (active READY versions)`
+  - Empty READY set returns no hits
+
+- **Decisions made in this phase (not already in ADR-011):**
+  - Default encoder is lexical TF so CI does not download BM42; production V1 adapter is FastEmbed BM42 via settings
+  - Sparse is applied with `update_vectors` so dense is not wiped
+
+- **Verification run (exact commands + results):**
+  - ruff / mypy — passed
+  - `pytest tests/unit` — **90 passed, 1 skipped**
+  - `pytest tests/integration` — **not run locally**
+
+- **Not verified / known gaps:**
+  - Live Qdrant sparse search / READY path
+  - FastEmbed BM42 model download and encoding
+  - Dense retrieval product path (Phase 08); RRF (Phase 09)
+
+- **Follow-ups for the next phase:**
+  - Confirm CI integration
+  - Phase 08: collection-scoped dense retrieval on READY versions
+
 ### Phase 06 — Embedding and Dense Indexing
 
 - **Date:** 2026-09-07
 - **Branch:** `phase-06-dense-indexing`
-- **PR:** [#11](https://github.com/pranjulya/cited-RAG-Bot/pull/11) (`phase-06-dense-indexing` → `main`, OPEN)
-- **Status in phase file:** `IN_PROGRESS`
+- **PR:** [#11](https://github.com/pranjulya/cited-RAG-Bot/pull/11) (`phase-06-dense-indexing` → `main`, MERGED `2a87918`)
+- **Status in phase file:** `IN_PROGRESS` (merged; CI integration passed)
 - **Goal:** Embed persisted chunks and upsert dense named vectors on chunk UUIDs in one application Qdrant collection that already declares `sparse`. Never `READY`. No sparse values.
 
 - **Files added/changed:**

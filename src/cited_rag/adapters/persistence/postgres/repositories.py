@@ -98,6 +98,18 @@ class PostgresDocumentRepository:
             .values(active_version_id=version_id)
         )
 
+    async def list_searchable_version_ids(self, collection_id: UUID) -> list[UUID]:
+        result = await self._session.scalars(
+            select(DocumentRow.active_version_id)
+            .join(DocumentVersionRow, DocumentRow.active_version_id == DocumentVersionRow.id)
+            .where(
+                DocumentRow.collection_id == collection_id,
+                DocumentRow.deleted_at.is_(None),
+                DocumentVersionRow.ingestion_status == DocumentVersionStatus.READY.value,
+            )
+        )
+        return [version_id for version_id in result.all() if version_id is not None]
+
     async def mark_deleted(self, document_id: UUID) -> None:
         await self._session.execute(
             update(DocumentRow)
@@ -222,6 +234,15 @@ class PostgresDocumentVersionRepository:
             update(DocumentVersionRow)
             .where(DocumentVersionRow.id == version_id)
             .values(chunking_config=chunking_config)
+        )
+
+    async def set_sparse_encoder_config(
+        self, version_id: UUID, sparse_encoder_config: dict[str, str]
+    ) -> None:
+        await self._session.execute(
+            update(DocumentVersionRow)
+            .where(DocumentVersionRow.id == version_id)
+            .values(sparse_encoder_config=sparse_encoder_config)
         )
 
 

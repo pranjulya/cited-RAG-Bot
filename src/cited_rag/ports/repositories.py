@@ -34,6 +34,8 @@ class DocumentRepository(Protocol):
 
     async def set_active_version(self, document_id: UUID, version_id: UUID | None) -> None: ...
 
+    async def list_searchable_version_ids(self, collection_id: UUID) -> list[UUID]: ...
+
     async def mark_deleted(self, document_id: UUID) -> None: ...
 
 
@@ -67,6 +69,10 @@ class DocumentVersionRepository(Protocol):
 
     async def set_chunking_config(
         self, version_id: UUID, chunking_config: dict[str, str | int]
+    ) -> None: ...
+
+    async def set_sparse_encoder_config(
+        self, version_id: UUID, sparse_encoder_config: dict[str, str]
     ) -> None: ...
 
 

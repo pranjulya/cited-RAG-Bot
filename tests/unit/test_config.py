@@ -56,6 +56,21 @@ def test_production_disables_debug(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "not-a-placeholder" not in repr(settings)
 
 
+def test_sparse_encoder_identity_follows_backend() -> None:
+    get_settings.cache_clear()
+    lexical = Settings(_env_file=None, sparse_encoder_backend="lexical")
+    assert lexical.sparse_encoder_name == "lexical_tf_v1"
+    assert lexical.sparse_encoder_version == "v1"
+    bm42 = Settings(
+        _env_file=None,
+        sparse_encoder_backend="bm42",
+        sparse_encoder_name="lexical_tf_v1",
+        sparse_encoder_version="v1",
+    )
+    assert bm42.sparse_encoder_name == "fastembed-bm42"
+    assert bm42.sparse_encoder_version == "Qdrant/bm42-all-minilm-l6-v2-attentions"
+
+
 def test_chunk_overlap_must_be_smaller_than_target() -> None:
     get_settings.cache_clear()
     with pytest.raises(ValidationError, match="CHUNK_OVERLAP"):

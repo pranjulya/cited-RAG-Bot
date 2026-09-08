@@ -5,7 +5,7 @@ from dataclasses import replace
 from uuid import UUID
 
 from cited_rag.application.chunking import persist_chunks
-from cited_rag.application.indexing import persist_dense_index
+from cited_rag.application.indexing import finalize_ready, persist_dense_index, persist_sparse_index
 from cited_rag.application.parsing import persist_parsed_pages
 from cited_rag.domain.clock import utc_now
 from cited_rag.domain.embedding import EmbeddingConfig
@@ -23,6 +23,7 @@ from cited_rag.ports.object_storage import ObjectStorage
 from cited_rag.ports.parser import DocumentParser
 from cited_rag.ports.repositories import UnitOfWork
 from cited_rag.ports.retrieval_store import RetrievalStore
+from cited_rag.ports.sparse_encoder import SparseEncoder
 
 logger = logging.getLogger("cited_rag.ingestion")
 
@@ -44,15 +45,18 @@ async def process_ingestion_job(
     embedding_provider: EmbeddingProvider | None = None,
     retrieval_store: RetrievalStore | None = None,
     embedding_config: EmbeddingConfig | None = None,
+    sparse_encoder: SparseEncoder | None = None,
 ) -> str:
-    """Claim a version, parse, chunk, dense-index. Never mark READY."""
+    """Claim a version, parse, chunk, dense+sparse index, READY if complete."""
     extra = {"correlation_id": correlation_id or "-"}
     version = await uow.versions.get(document_version_id)
     if version is None:
         raise PermanentIngestionError("document version not found")
 
+    if version.ingestion_status is DocumentVersionStatus.READY:
+        logger.info("already processed; skip duplicate delivery", extra=extra)
+        return "duplicate"
     if version.ingestion_status in {
-        DocumentVersionStatus.READY,
         DocumentVersionStatus.DELETING,
         DocumentVersionStatus.DELETED,
     }:
@@ -118,6 +122,8 @@ async def process_ingestion_job(
                 raise PermanentIngestionError("ingestion chunker is not configured")
             if embedding_provider is None or retrieval_store is None or embedding_config is None:
                 raise PermanentIngestionError("ingestion dense indexer is not configured")
+            if sparse_encoder is None:
+                raise PermanentIngestionError("ingestion sparse encoder is not configured")
             pages = await persist_parsed_pages(uow, version, storage=storage, parser=parser)
             chunks = await persist_chunks(uow, version, pages, chunker)
             await persist_dense_index(
@@ -125,6 +131,20 @@ async def process_ingestion_job(
                 embedder=embedding_provider,
                 store=retrieval_store,
                 config=embedding_config,
+            )
+            await persist_sparse_index(
+                chunks,
+                encoder=sparse_encoder,
+                store=retrieval_store,
+                config=embedding_config,
+            )
+            await finalize_ready(
+                uow,
+                version,
+                chunks,
+                store=retrieval_store,
+                encoder_config=sparse_encoder.config,
+                index_version=embedding_config.index_version,
             )
         else:
             raise PermanentIngestionError("ingestion parser is not configured")
@@ -163,7 +183,7 @@ async def process_ingestion_job(
         )
     )
     await uow.commit()
-    logger.info("parse, chunk, and dense index complete; version remains PROCESSING", extra=extra)
+    logger.info("ingestion complete; version READY after dense+sparse", extra=extra)
     return "processed"
 
 

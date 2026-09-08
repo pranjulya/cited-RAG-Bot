@@ -8,6 +8,8 @@ from typing import Literal, Self
 from pydantic import Field, SecretStr, ValidationInfo, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from cited_rag.domain.sparse import SparseEncoderConfig
+
 EnvironmentName = Literal["development", "test", "production"]
 
 
@@ -43,6 +45,9 @@ class Settings(BaseSettings):
     embedding_dimension: int = Field(default=32, ge=1)
     embedding_batch_size: int = Field(default=32, ge=1)
     index_version: str = "v1"
+    sparse_encoder_backend: Literal["lexical", "bm42"] = "lexical"
+    sparse_encoder_name: str = "lexical_tf_v1"
+    sparse_encoder_version: str = "v1"
 
     @field_validator("debug")
     @classmethod
@@ -84,6 +89,13 @@ class Settings(BaseSettings):
             raise ValueError(
                 "CITED_RAG_CHUNK_OVERLAP_CHARS must be smaller than CHUNK_TARGET_CHARS"
             )
+        return self
+
+    @model_validator(mode="after")
+    def sparse_encoder_identity_from_backend(self) -> Self:
+        identity = SparseEncoderConfig.for_backend(self.sparse_encoder_backend)
+        self.sparse_encoder_name = identity.name
+        self.sparse_encoder_version = identity.version
         return self
 
 

@@ -29,3 +29,7 @@ See `Learning/05-provenance-aware-chunking.md`.
 ## Phase 06
 
 See `Learning/06-dense-indexing.md`.
+
+## Phase 07
+
+See `Learning/07-sparse-indexing-retrieval.md`.

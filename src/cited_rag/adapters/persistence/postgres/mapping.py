@@ -93,6 +93,7 @@ def version_to_row(version: DocumentVersion) -> DocumentVersionRow:
         failure_message=version.failure_message,
         page_count=version.page_count,
         chunking_config=version.chunking_config,
+        sparse_encoder_config=version.sparse_encoder_config,
         created_at=version.created_at,
         ready_at=version.ready_at,
     )
@@ -114,6 +115,7 @@ def version_from_row(row: DocumentVersionRow) -> DocumentVersion:
         failure_message=row.failure_message,
         page_count=row.page_count,
         chunking_config=row.chunking_config,
+        sparse_encoder_config=row.sparse_encoder_config,
         created_at=row.created_at,
         ready_at=row.ready_at,
     )
