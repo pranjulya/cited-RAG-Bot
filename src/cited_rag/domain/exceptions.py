@@ -103,3 +103,9 @@ class SparseRetrievalError(DomainError):
     def __init__(self, message: str = "sparse retrieval failed") -> None:
         self.failure_code = "SPARSE_RETRIEVAL_ERROR"
         super().__init__(message)
+
+
+class HybridFusionError(DomainError):
+    def __init__(self, message: str = "hybrid fusion failed") -> None:
+        self.failure_code = "HYBRID_FUSION_ERROR"
+        super().__init__(message)

@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     sparse_encoder_name: str = "lexical_tf_v1"
     sparse_encoder_version: str = "v1"
     retrieval_top_k: int = Field(default=20, ge=1)
+    rrf_k: int = Field(default=60, ge=1)
+    fused_top_k: int = Field(default=20, ge=1)
 
     @field_validator("debug")
     @classmethod

@@ -1,6 +1,6 @@
 # Phase 09 — Hybrid Retrieval and RRF
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Combine dense and sparse candidate sets using Reciprocal Rank Fusion while preserving deterministic chunk identity and auditability.
