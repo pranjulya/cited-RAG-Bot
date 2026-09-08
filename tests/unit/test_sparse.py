@@ -198,10 +198,51 @@ async def test_payload_mismatch_blocks_ready() -> None:
         await assert_dense_and_sparse_complete(store, chunks, index_version="idx-1")
 
 
-def test_factory_rejects_bm42_backend_with_lexical_identity() -> None:
-    settings = Settings(_env_file=None, sparse_encoder_backend="bm42")
-    with pytest.raises(ValueError, match="must match backend"):
-        create_sparse_encoder(settings)
+def test_factory_derives_bm42_identity_from_backend_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[object] = []
+
+    class _FakeBm42:
+        def __init__(self, config: object) -> None:
+            captured.append(config)
+            self.config = config
+
+    monkeypatch.setattr(
+        "cited_rag.adapters.sparse.fastembed_bm42.FastEmbedBm42Encoder",
+        _FakeBm42,
+    )
+    settings = Settings(
+        _env_file=None,
+        sparse_encoder_backend="bm42",
+        sparse_encoder_name="lexical_tf_v1",
+        sparse_encoder_version="v1",
+    )
+    encoder = create_sparse_encoder(settings)
+    assert settings.sparse_encoder_name == "fastembed-bm42"
+    assert settings.sparse_encoder_version == "Qdrant/bm42-all-minilm-l6-v2-attentions"
+    assert encoder.config.name == "fastembed-bm42"
+    assert encoder.config.version == "Qdrant/bm42-all-minilm-l6-v2-attentions"
+    assert captured[0] == encoder.config
+
+
+@pytest.mark.asyncio
+async def test_missing_payload_field_blocks_ready() -> None:
+    version = _version()
+    chunks = [_chunk(version, 0, "ready text")]
+    store = MemoryRetrievalStore()
+    await _index(version, chunks, store)
+    point = store.points[chunks[0].id]
+    incomplete = dict(point.payload)
+    incomplete.pop("collection_id")
+    store.points[chunks[0].id] = IndexedPoint(
+        point_id=point.point_id,
+        vectors=point.vectors,
+        payload=incomplete,
+        sparse=point.sparse,
+    )
+    with pytest.raises(PermanentIngestionError, match="payload"):
+        await assert_dense_and_sparse_complete(store, chunks, index_version="idx-1")
 
 
 class _Versions:

@@ -129,7 +129,7 @@ class QdrantRetrievalStore:
             return None
         record = records[0]
         vectors = _named_dense(record.vector)
-        payload = {key: record.payload[key] for key in PAYLOAD_FIELDS if record.payload}
+        payload = _record_payload(record)
         return IndexedPoint(
             point_id=point_id,
             vectors=vectors,
@@ -234,7 +234,7 @@ class QdrantRetrievalStore:
                 IndexedPoint(
                     point_id=UUID(str(record.id)),
                     vectors=_named_dense(record.vector),
-                    payload={key: record.payload[key] for key in PAYLOAD_FIELDS if record.payload},
+                    payload=_record_payload(record),
                     sparse=_named_sparse(record.vector),
                 )
             )
@@ -307,15 +307,21 @@ def _hits_from_query(result: Any) -> list[SearchHit]:
     points = getattr(result, "points", result)
     hits: list[SearchHit] = []
     for record in points:
-        payload = getattr(record, "payload", None) or {}
         hits.append(
             SearchHit(
                 point_id=UUID(str(record.id)),
                 score=float(record.score),
-                payload={key: payload[key] for key in PAYLOAD_FIELDS if key in payload},
+                payload=_record_payload(record),
             )
         )
     return hits
+
+
+def _record_payload(record: Any) -> dict[str, str | int]:
+    raw = getattr(record, "payload", None) or {}
+    if not isinstance(raw, dict):
+        return {}
+    return {key: raw[key] for key in PAYLOAD_FIELDS if key in raw}
 
 
 def _named_sparse(vector: Any) -> SparseVector | None:

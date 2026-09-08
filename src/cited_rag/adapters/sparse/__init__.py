@@ -8,14 +8,6 @@ from cited_rag.ports.sparse_encoder import SparseEncoder
 
 def create_sparse_encoder(settings: Settings) -> SparseEncoder:
     config = SparseEncoderConfig.for_backend(settings.sparse_encoder_backend)
-    if (
-        settings.sparse_encoder_name != config.name
-        or settings.sparse_encoder_version != config.version
-    ):
-        raise ValueError(
-            "sparse encoder name/version must match backend "
-            f"{settings.sparse_encoder_backend} ({config.name}/{config.version})"
-        )
     if settings.sparse_encoder_backend == "lexical":
         return LexicalSparseEncoder(config)
     if settings.sparse_encoder_backend == "bm42":

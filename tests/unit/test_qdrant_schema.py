@@ -6,6 +6,7 @@ import pytest
 from qdrant_client.models import Distance, PayloadSchemaType, VectorParams
 
 from cited_rag.adapters.retrieval.qdrant import (
+    _record_payload,
     assert_existing_collection_schema,
     missing_payload_index_fields,
 )
@@ -55,6 +56,16 @@ def test_missing_payload_indexes_are_listed() -> None:
     info = _info(payload={"collection_id": object()})
     missing = missing_payload_index_fields(info)
     assert missing == [field for field in PAYLOAD_FIELDS if field != "collection_id"]
+
+
+def test_record_payload_omits_missing_fields() -> None:
+    record = SimpleNamespace(payload={"collection_id": "abc", "page_start": 1})
+    assert _record_payload(record) == {"collection_id": "abc", "page_start": 1}
+
+
+def test_record_payload_empty_when_payload_missing() -> None:
+    assert _record_payload(SimpleNamespace(payload=None)) == {}
+    assert _record_payload(SimpleNamespace()) == {}
 
 
 def test_wrong_payload_index_type_is_rejected() -> None:
