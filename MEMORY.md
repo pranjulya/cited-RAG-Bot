@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 08 **[#13](https://github.com/pranjulya/cited-RAG-Bot/pull/13)** merged. Phases 09–15 opened as a stack for Codex review. |
-| Phase file status | Phase 15 `IN_PROGRESS` (not `TESTED`) |
-| Branch | `phase-15-query-api` (stacked on 09→10→11→12→13→14) |
-| PR | [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14)–[#20](https://github.com/pranjulya/cited-RAG-Bot/pull/20) — all OPEN |
+| Last completed work | Phase 08 on `main`. Phases 09–23 opened as one stack for review. |
+| Phase file status | Phase 23 `IN_PROGRESS` (implementation stacked, not merged) |
+| Branch | `phase-23-docs-learning` |
+| PR | [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14)–[#28](https://github.com/pranjulya/cited-RAG-Bot/pull/28) OPEN |
 | `main` | `b6d7774` — Phase 08. **Do not push or merge to `main` except via PR.** |
-| Next action | Codex review in order: **#14 → #15 → #16 → #17 → #18 → #19 → #20**. Merge each before retargeting the next onto `main`. Do not start Phase 16 until #20 is on `main`. |
-| Blockers | Live Qdrant/Postgres query E2E not run locally. Generator is heuristic (not an LLM). |
+| Next action | Review/merge in order **#14 → #28**. Do not land later PRs before their base. |
+| Blockers | Live Postgres/Qdrant E2E not run locally. Generator is heuristic, not an LLM. |
 
 ---
 
