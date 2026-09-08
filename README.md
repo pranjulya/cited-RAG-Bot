@@ -2,7 +2,7 @@
 
 PDF-only question answering with page-level citations. V1 architecture is frozen in `docs/architecture/decisions/ADR-011-v1-locked-policies.md`.
 
-Phase 07 upserts sparse named vectors on the same chunk UUIDs and marks a version `READY` only after dense and sparse both exist. Phase 09 fuses dense and sparse ranks in process with Reciprocal Rank Fusion (`CITED_RAG_RRF_K`, `CITED_RAG_FUSED_TOP_K`). Phase 10 reranks that fused shortlist (`CITED_RAG_RERANK_TOP_N`); production timeout is `RERANKER_ERROR`.
+Phase 07 upserts sparse named vectors on the same chunk UUIDs and marks a version `READY` only after dense and sparse both exist. Phase 09 fuses dense and sparse ranks in process with Reciprocal Rank Fusion (`CITED_RAG_RRF_K`, `CITED_RAG_FUSED_TOP_K`). Phase 10 reranks that fused shortlist (`CITED_RAG_RERANK_TOP_N`); production timeout is `RERANKER_ERROR`. `POST /v1/collections/{collection_id}/query` returns a validated grounded answer or `INSUFFICIENT_EVIDENCE`.
 
 ## Requirements
 
