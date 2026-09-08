@@ -1,8 +1,32 @@
 # Cited RAG Bot
 
-PDF-only question answering with page-level citations. V1 architecture is frozen in `docs/architecture/decisions/ADR-011-v1-locked-policies.md`.
+PDF-only question answering with **page-level citations**. A collection holds many PDFs. Answers may only use evidence the application supplied as `E1..En`. Invented citations fail the request.
 
-Phase 07 upserts sparse named vectors on the same chunk UUIDs and marks a version `READY` only after dense and sparse both exist. Phase 09 fuses dense and sparse ranks in process with Reciprocal Rank Fusion (`CITED_RAG_RRF_K`, `CITED_RAG_FUSED_TOP_K`). Phase 10 reranks that fused shortlist (`CITED_RAG_RERANK_TOP_N`); production timeout is `RERANKER_ERROR`. `POST /v1/collections/{collection_id}/query` returns a validated grounded answer or `INSUFFICIENT_EVIDENCE`.
+Architecture freeze: `docs/architecture/decisions/ADR-011-v1-locked-policies.md`.
+
+## Demo flow
+
+1. `POST /v1/collections`
+2. `POST /v1/collections/{id}/documents` (PDF) → `202 QUEUED`
+3. Worker parses, chunks, indexes dense **and** sparse on the same chunk UUID, then `READY`
+4. `POST /v1/collections/{id}/query` `{"question":"..."}` → `ANSWERED` with citations `{document_id, document_version_id, document_name, page_start, page_end}` or `INSUFFICIENT_EVIDENCE`
+
+## Pipeline
+
+```text
+PDF → pages/chunks (Postgres) → dense + sparse (Qdrant)
+query → dense & sparse retrieve → RRF → rerank → context (E1..)
+      → generate → citation validate → response
+```
+
+Hybrid fusion is in-process Reciprocal Rank Fusion. Production timeouts fail closed (`DENSE_RETRIEVAL_ERROR`, `SPARSE_RETRIEVAL_ERROR`, `RERANKER_ERROR`, `GENERATION_PROVIDER_ERROR`). Empty hit lists still fuse. Hash embeddings / overlap rerank / heuristic generator are local defaults, not quality claims (`reports/v1-defaults.md`).
+
+## Limitations
+
+- PDF-only, API-key auth, one application Qdrant collection
+- No V1 citation repair
+- Heuristic generator is not an LLM
+- Evaluation golden set is a tiny fixture until a hosted model is measured
 
 ## Requirements
 
@@ -36,6 +60,8 @@ arq cited_rag.workers.ingestion_worker.WorkerSettings
 - Authenticated `/v1/*` routes use `Authorization: Bearer <api_key>`
 - `POST /v1/collections` → `201`
 - `POST /v1/collections/{collection_id}/documents` (multipart PDF) → `202` `{"status":"QUEUED"}`
+- `POST /v1/collections/{collection_id}/query` → `200` `ANSWERED` | `INSUFFICIENT_EVIDENCE`
+- `DELETE /v1/documents/{document_id}` → `202` `DELETING` (tombstone, then index purge)
 - List-all-collections and list-documents-in-collection are omitted in V1 so far
 
 ## Database
@@ -70,4 +96,6 @@ Compose starts PostgreSQL, Redis, Qdrant, the API, and the ingestion worker. The
 
 ## Layout
 
-Application code lives in `src/cited_rag/`. Implementation proceeds one phase at a time from `implementation/`. Never commit or merge directly to `main`; use a branch and a pull request (`AGENTS.md`).
+Application code lives in `src/cited_rag/`. Phases live in `implementation/`. Learning notes in `Learning/`. Operations in `docs/operations/`. Never commit or merge directly to `main`; use a branch and a pull request (`AGENTS.md`).
+
+Interview notes: `Learning/interview-qa.md`.
