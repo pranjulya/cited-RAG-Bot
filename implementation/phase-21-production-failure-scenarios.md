@@ -1,6 +1,6 @@
 # Phase 21 — Production Failure Scenarios
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Exercise the failure modes identified in the PRD and master plan so failure behavior is classified, visible, and safe. Production V1 has no silent single-retriever degraded mode.
