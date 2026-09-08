@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     context_token_budget: int = Field(default=1500, ge=1)
     generation_backend: Literal["heuristic"] = "heuristic"
     generation_timeout_seconds: float = Field(default=15, gt=0)
+    min_rerank_score: float = Field(default=0, ge=0)
 
     @field_validator("debug")
     @classmethod

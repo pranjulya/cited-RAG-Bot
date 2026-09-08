@@ -1,6 +1,6 @@
 # Phase 14 — No-Answer Decision Policy
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Implement explicit insufficient-evidence behavior so unsupported questions do not become hallucinated answers.
