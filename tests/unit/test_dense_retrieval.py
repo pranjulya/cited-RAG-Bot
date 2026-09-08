@@ -10,6 +10,7 @@ from cited_rag.application.retrieval import retrieve_dense
 from cited_rag.domain.embedding import EmbeddingConfig
 from cited_rag.domain.enums import RetrievalSource
 from cited_rag.domain.exceptions import DenseRetrievalError
+from cited_rag.domain.indexing import IndexedPoint
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.document import DocumentVersion
 
@@ -178,6 +179,79 @@ async def test_embedding_timeout_is_dense_retrieval_error() -> None:
         await retrieve_dense(
             "a feline sat",
             embedder=_TimeoutEmbedder(),
+            store=store,
+            chunks=chunks,
+            collection_id=version.collection_id,
+            document_version_ids=[version.id],
+            top_k=5,
+        )
+
+
+@pytest.mark.asyncio
+async def test_missing_authoritative_chunk_is_dense_retrieval_error() -> None:
+    version = _version()
+    chunks = [_chunk(version, 0, "the cat sat")]
+    store = MemoryRetrievalStore()
+    embedder = _AliasEmbedder()
+    await _index(version, chunks, store, embedder)
+    with pytest.raises(DenseRetrievalError, match="authoritative"):
+        await retrieve_dense(
+            "a feline sat",
+            embedder=embedder,
+            store=store,
+            chunks=[],
+            collection_id=version.collection_id,
+            document_version_ids=[version.id],
+            top_k=5,
+        )
+
+
+@pytest.mark.asyncio
+async def test_stale_hit_payload_is_dense_retrieval_error() -> None:
+    version = _version()
+    chunks = [_chunk(version, 0, "the cat sat")]
+    store = MemoryRetrievalStore()
+    embedder = _AliasEmbedder()
+    await _index(version, chunks, store, embedder)
+    point = store.points[chunks[0].id]
+    store.points[chunks[0].id] = IndexedPoint(
+        point_id=point.point_id,
+        vectors=point.vectors,
+        payload={**point.payload, "document_id": str(uuid4())},
+        sparse=point.sparse,
+    )
+    with pytest.raises(DenseRetrievalError, match="authoritative"):
+        await retrieve_dense(
+            "a feline sat",
+            embedder=embedder,
+            store=store,
+            chunks=chunks,
+            collection_id=version.collection_id,
+            document_version_ids=[version.id],
+            top_k=5,
+        )
+
+
+@pytest.mark.asyncio
+async def test_malformed_hit_payload_is_dense_retrieval_error() -> None:
+    version = _version()
+    chunks = [_chunk(version, 0, "the cat sat")]
+    store = MemoryRetrievalStore()
+    embedder = _AliasEmbedder()
+    await _index(version, chunks, store, embedder)
+    point = store.points[chunks[0].id]
+    incomplete = dict(point.payload)
+    incomplete.pop("page_start")
+    store.points[chunks[0].id] = IndexedPoint(
+        point_id=point.point_id,
+        vectors=point.vectors,
+        payload=incomplete,
+        sparse=point.sparse,
+    )
+    with pytest.raises(DenseRetrievalError, match="malformed"):
+        await retrieve_dense(
+            "a feline sat",
+            embedder=embedder,
             store=store,
             chunks=chunks,
             collection_id=version.collection_id,

@@ -52,7 +52,16 @@ async def retrieve_dense(
         raise DenseRetrievalError(str(exc) or "dense retrieval store failed") from exc
     except Exception as exc:
         raise DenseRetrievalError("dense retrieval failed") from exc
-    candidates = _candidates_from_hits(hits, chunks, RetrievalSource.DENSE)
+    try:
+        candidates = _candidates_from_hits(
+            hits,
+            chunks,
+            RetrievalSource.DENSE,
+            collection_id=collection_id,
+            document_version_ids=document_version_ids,
+        )
+    except ValueError as exc:
+        raise DenseRetrievalError(str(exc)) from exc
     logger.info(
         "dense retrieval count=%s top_k=%s latency_ms=%s",
         len(candidates),
@@ -83,20 +92,46 @@ async def retrieve_sparse(
         document_version_ids=document_version_ids,
         top_k=top_k,
     )
-    return _candidates_from_hits(hits, chunks, RetrievalSource.SPARSE)
+    return _candidates_from_hits(
+        hits,
+        chunks,
+        RetrievalSource.SPARSE,
+        collection_id=collection_id,
+        document_version_ids=document_version_ids,
+    )
+
+
+_HIT_METADATA_FIELDS = (
+    "collection_id",
+    "document_id",
+    "document_version_id",
+    "page_start",
+    "page_end",
+    "chunk_order",
+)
 
 
 def _candidates_from_hits(
     hits: Sequence[SearchHit],
     chunks: Sequence[Chunk],
     source: RetrievalSource,
+    *,
+    collection_id: UUID,
+    document_version_ids: Sequence[UUID],
 ) -> list[RetrievedCandidate]:
     by_id = {chunk.id: chunk for chunk in chunks}
+    allowed_versions = set(document_version_ids)
     candidates: list[RetrievedCandidate] = []
     for rank, hit in enumerate(hits, start=1):
         chunk = by_id.get(hit.point_id)
         if chunk is None:
-            continue
+            raise ValueError("retrieved point is missing from authoritative chunks")
+        if (
+            chunk.collection_id != collection_id
+            or chunk.document_version_id not in allowed_versions
+        ):
+            raise ValueError("retrieved point does not match collection/version filter")
+        _assert_hit_matches_chunk(hit, chunk)
         candidates.append(
             RetrievedCandidate(
                 chunk_id=chunk.id,
@@ -112,3 +147,26 @@ def _candidates_from_hits(
             )
         )
     return candidates
+
+
+def _assert_hit_matches_chunk(hit: SearchHit, chunk: Chunk) -> None:
+    expected: dict[str, str | int] = {
+        "collection_id": str(chunk.collection_id),
+        "document_id": str(chunk.document_id),
+        "document_version_id": str(chunk.document_version_id),
+        "page_start": chunk.page_start,
+        "page_end": chunk.page_end,
+        "chunk_order": chunk.chunk_order,
+    }
+    for key in _HIT_METADATA_FIELDS:
+        if key not in hit.payload:
+            raise ValueError("retrieved point payload is malformed")
+        raw = hit.payload[key]
+        try:
+            actual: str | int = (
+                int(raw) if key in {"page_start", "page_end", "chunk_order"} else str(raw)
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError("retrieved point payload is malformed") from exc
+        if actual != expected[key]:
+            raise ValueError("retrieved point payload does not match authoritative chunk")
