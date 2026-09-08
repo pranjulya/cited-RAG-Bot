@@ -6,12 +6,13 @@ from uuid import uuid4
 import pytest
 
 from cited_rag.adapters.generation.heuristic import HeuristicGroundedGenerator
+from cited_rag.application.context import serialize_model_evidence
 from cited_rag.application.generation import generate_grounded_answer
 from cited_rag.application.prompt import SYSTEM_INSTRUCTIONS, build_generation_prompt
 from cited_rag.domain.enums import AnswerStatus
 from cited_rag.domain.exceptions import GenerationError
 from cited_rag.domain.models.evidence import EvidencePackage, EvidenceRecord
-from cited_rag.domain.models.generation import Claim, GroundedGenerationResult
+from cited_rag.domain.models.generation import Claim, GenerationPrompt, GroundedGenerationResult
 
 
 def _record(text: str, evidence_id: str = "E1") -> EvidenceRecord:
@@ -30,18 +31,21 @@ def _record(text: str, evidence_id: str = "E1") -> EvidenceRecord:
 
 def _package(*texts: str) -> EvidencePackage:
     records = tuple(_record(text, f"E{index}") for index, text in enumerate(texts, start=1))
-    context = "\n\n".join(f"[{record.evidence_id}]\nEvidence:\n{record.text}" for record in records)
-    return EvidencePackage(records=records, model_context=context, dropped_chunk_ids=())
+    return EvidencePackage(
+        records=records,
+        model_context=serialize_model_evidence(records),
+        dropped_chunk_ids=(),
+    )
 
 
 class _TimeoutGenerator:
-    async def generate(self, question: str, evidence: EvidencePackage) -> GroundedGenerationResult:
+    async def generate(self, prompt: GenerationPrompt) -> GroundedGenerationResult:
         await asyncio.sleep(1)
         raise AssertionError("unreachable")
 
 
 class _MalformedGenerator:
-    async def generate(self, question: str, evidence: EvidencePackage) -> GroundedGenerationResult:
+    async def generate(self, prompt: GenerationPrompt) -> GroundedGenerationResult:
         return GroundedGenerationResult(
             status="WEIRD",  # type: ignore[arg-type]
             answer="nope",
@@ -51,7 +55,7 @@ class _MalformedGenerator:
 
 
 class _InventedIdGenerator:
-    async def generate(self, question: str, evidence: EvidencePackage) -> GroundedGenerationResult:
+    async def generate(self, prompt: GenerationPrompt) -> GroundedGenerationResult:
         return GroundedGenerationResult(
             status=AnswerStatus.ANSWERED,
             answer="invented",
@@ -63,11 +67,14 @@ class _InventedIdGenerator:
 def test_prompt_keeps_system_instructions_out_of_evidence_text() -> None:
     package = _package("Employees get 20 days of leave.")
     prompt = build_generation_prompt("How much leave?", package)
-    assert prompt.startswith(SYSTEM_INSTRUCTIONS)
-    assert "Employees get 20 days of leave." in prompt
-    assert "handbook.pdf" not in prompt
-    assert str(package.records[0].chunk_id) not in prompt
-    assert "page" not in package.model_context.lower()
+    assert prompt.system == SYSTEM_INSTRUCTIONS
+    assert prompt.question == "How much leave?"
+    assert prompt.system not in prompt.evidence_json
+    assert prompt.question not in prompt.evidence_json
+    assert "Employees get 20 days of leave." in prompt.evidence_json
+    assert "handbook.pdf" not in prompt.evidence_json
+    assert str(package.records[0].chunk_id) not in prompt.evidence_json
+    assert "page_start" not in prompt.evidence_json
 
 
 @pytest.mark.asyncio

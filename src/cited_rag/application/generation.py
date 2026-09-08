@@ -4,6 +4,7 @@ import asyncio
 import logging
 import time
 
+from cited_rag.application.prompt import build_generation_prompt
 from cited_rag.domain.enums import AnswerStatus
 from cited_rag.domain.exceptions import GenerationError
 from cited_rag.domain.models.evidence import EvidencePackage
@@ -22,8 +23,9 @@ async def generate_grounded_answer(
 ) -> GroundedGenerationResult:
     started = time.perf_counter()
     try:
+        prompt = build_generation_prompt(question, evidence)
         result = await asyncio.wait_for(
-            generator.generate(question, evidence),
+            generator.generate(prompt),
             timeout=timeout_seconds,
         )
     except GenerationError:
