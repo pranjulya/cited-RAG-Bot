@@ -77,3 +77,7 @@ See `Learning/17-observability.md`.
 ## Phase 18
 
 See `Learning/18-security-hardening.md`.
+
+## Phase 19
+
+See `Learning/19-evaluation-harness.md`.

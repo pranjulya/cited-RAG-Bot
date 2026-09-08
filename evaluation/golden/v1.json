@@ -1,0 +1,19 @@
+{
+  "version": "golden-v1",
+  "cases": [
+    {
+      "id": "leave-policy",
+      "question": "How much leave?",
+      "answerable": true,
+      "relevant_texts": ["Employees receive 20 days of leave."],
+      "tags": ["sparse", "policy"]
+    },
+    {
+      "id": "unsupported-secret",
+      "question": "Who is the CEO of OpenAI?",
+      "answerable": false,
+      "relevant_texts": [],
+      "tags": ["no-answer", "injection"]
+    }
+  ]
+}
