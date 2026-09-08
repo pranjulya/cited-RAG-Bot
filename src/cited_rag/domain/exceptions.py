@@ -97,3 +97,9 @@ class DenseRetrievalError(DomainError):
     def __init__(self, message: str = "dense retrieval failed") -> None:
         self.failure_code = "DENSE_RETRIEVAL_ERROR"
         super().__init__(message)
+
+
+class SparseRetrievalError(DomainError):
+    def __init__(self, message: str = "sparse retrieval failed") -> None:
+        self.failure_code = "SPARSE_RETRIEVAL_ERROR"
+        super().__init__(message)
