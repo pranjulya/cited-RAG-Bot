@@ -17,9 +17,11 @@ from cited_rag.adapters.persistence.postgres.uow import PostgresUnitOfWork
 from cited_rag.adapters.retrieval import create_retrieval_store
 from cited_rag.adapters.sparse import create_sparse_encoder
 from cited_rag.adapters.storage.local import LocalObjectStorage
+from cited_rag.application.deletion import purge_deleted_document
 from cited_rag.application.ingestion import process_ingestion_job
 from cited_rag.config import get_settings
 from cited_rag.domain.embedding import EmbeddingConfig
+from cited_rag.domain.exceptions import TransientIngestionError
 from cited_rag.ports.chunker import Chunker
 from cited_rag.ports.embedding import EmbeddingProvider
 from cited_rag.ports.object_storage import ObjectStorage
@@ -63,6 +65,29 @@ async def ingest_document_version(
     return outcome
 
 
+async def cleanup_deleted_document(
+    ctx: dict[str, object],
+    document_id: str,
+    correlation_id: str | None = None,
+) -> str:
+    factory = ctx["session_factory"]
+    assert isinstance(factory, async_sessionmaker)
+    storage = cast(ObjectStorage, ctx["storage"])
+    retrieval_store = cast(RetrievalStore, ctx["retrieval_store"])
+    async with PostgresUnitOfWork(factory) as uow:
+        try:
+            await purge_deleted_document(
+                uow,
+                storage,
+                retrieval_store,
+                document_id=UUID(document_id),
+            )
+        except TransientIngestionError as exc:
+            raise Retry(defer=5) from exc
+    _ = correlation_id
+    return "purged"
+
+
 async def startup(ctx: dict[str, object]) -> None:
     settings = get_settings()
     if settings.database_url is None:
@@ -95,7 +120,7 @@ async def shutdown(ctx: dict[str, object]) -> None:
 
 
 class WorkerSettings:
-    functions = [ingest_document_version]
+    functions = [ingest_document_version, cleanup_deleted_document]
     on_startup = startup
     on_shutdown = shutdown
     max_tries = 10

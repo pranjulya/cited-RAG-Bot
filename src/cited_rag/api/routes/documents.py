@@ -193,9 +193,10 @@ async def get_document(
 @router.delete("/v1/documents/{document_id}", status_code=status.HTTP_202_ACCEPTED)
 async def delete_document_route(
     document_id: UUID,
+    request: Request,
     principal: ApiPrincipal = Depends(get_principal),
     uow: PostgresUnitOfWork = Depends(get_uow),
-    storage: ObjectStorage = Depends(get_storage),
+    queue: JobQueue = Depends(get_queue),
 ) -> DeleteResponse:
     document = await uow.documents.get(document_id)
     if document is None or document.deleted_at is not None:
@@ -206,7 +207,12 @@ async def delete_document_route(
     if collection is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="document_not_found")
     try:
-        await delete_document(uow, storage, document=document)
-    except StorageError as exc:
+        await delete_document(
+            uow,
+            queue,
+            document=document,
+            correlation_id=getattr(request.state, "correlation_id", None),
+        )
+    except QueueError as exc:
         raise _http_for_upload_error(exc) from exc
     return DeleteResponse(document_id=document.id, status="DELETING")

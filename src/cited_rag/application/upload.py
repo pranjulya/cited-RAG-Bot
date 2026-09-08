@@ -160,42 +160,14 @@ async def upload_new_version(
 
 async def delete_document(
     uow: UnitOfWork,
-    storage: ObjectStorage,
+    queue: JobQueue,
     *,
     document: Document,
+    correlation_id: str | None = None,
 ) -> None:
-    versions = await uow.versions.list_by_document(document.id)
-    for version in versions:
-        if version.ingestion_status is DocumentVersionStatus.DELETED:
-            continue
-        if version.ingestion_status is DocumentVersionStatus.READY:
-            await uow.versions.transition(
-                version.id, DocumentVersionStatus.READY, DocumentVersionStatus.DELETING
-            )
-        elif version.ingestion_status is not DocumentVersionStatus.DELETING:
-            await uow.versions.mark_deleting(version.id)
-    await uow.commit()
+    from cited_rag.application.deletion import tombstone_document
 
-    for version in versions:
-        if version.ingestion_status is DocumentVersionStatus.DELETED:
-            continue
-        key = source_pdf_key(
-            collection_id=version.collection_id,
-            document_id=version.document_id,
-            version_id=version.id,
-        )
-        await storage.delete(key)
-
-    for version in versions:
-        current = await uow.versions.get(version.id)
-        if current is None:
-            continue
-        if current.ingestion_status is DocumentVersionStatus.DELETING:
-            await uow.versions.transition(
-                version.id, DocumentVersionStatus.DELETING, DocumentVersionStatus.DELETED
-            )
-    await uow.documents.mark_deleted(document.id)
-    await uow.commit()
+    await tombstone_document(uow, queue, document_id=document.id, correlation_id=correlation_id)
 
 
 async def _existing_hash(

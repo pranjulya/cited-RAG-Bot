@@ -10,6 +10,7 @@ from qdrant_client.models import (
     Distance,
     FieldCondition,
     Filter,
+    FilterSelector,
     MatchAny,
     MatchValue,
     PayloadSchemaType,
@@ -136,6 +137,26 @@ class QdrantRetrievalStore:
             payload=payload,
             sparse=_named_sparse(record.vector),
         )
+
+    async def delete_version_points(self, document_version_id: UUID) -> None:
+        try:
+            await self._client.delete(
+                collection_name=self.collection_name,
+                points_selector=FilterSelector(
+                    filter=Filter(
+                        must=[
+                            FieldCondition(
+                                key="document_version_id",
+                                match=MatchValue(value=str(document_version_id)),
+                            )
+                        ]
+                    )
+                ),
+            )
+        except UnexpectedResponse as exc:
+            raise TransientIngestionError("retrieval store unavailable") from exc
+        except Exception as exc:
+            raise TransientIngestionError("retrieval store unavailable") from exc
 
     async def upsert_sparse(self, points: Sequence[IndexedPoint]) -> None:
         if not points:
