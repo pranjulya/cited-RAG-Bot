@@ -1,6 +1,6 @@
 # Phase 12 — Grounded Generation
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Generate answers strictly from approved evidence using a provider-neutral LLM adapter and structured citation output.

@@ -115,3 +115,9 @@ class RerankerError(DomainError):
     def __init__(self, message: str = "reranker failed") -> None:
         self.failure_code = "RERANKER_ERROR"
         super().__init__(message)
+
+
+class GenerationError(DomainError):
+    def __init__(self, message: str = "generation failed") -> None:
+        self.failure_code = "GENERATION_PROVIDER_ERROR"
+        super().__init__(message)

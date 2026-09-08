@@ -49,3 +49,7 @@ See `Learning/10-reranking.md`.
 ## Phase 11
 
 See `Learning/11-context-evidence-contract.md`.
+
+## Phase 12
+
+See `Learning/12-grounded-generation.md`.
