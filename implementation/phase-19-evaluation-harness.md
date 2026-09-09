@@ -1,6 +1,6 @@
 # Phase 19 — Evaluation Harness
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Implement the versioned golden dataset and reusable evaluation runners defined in Step 5.
