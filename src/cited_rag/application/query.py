@@ -69,7 +69,6 @@ async def answer_question(
         "query start collection=%s versions=%s question=%s",
         collection_id,
         len(document_version_ids),
-<<<<<<< HEAD
         redact_text(stripped, enabled=not getattr(settings, "log_sensitive_content", False)),
         extra={"correlation_id": cid},
     )

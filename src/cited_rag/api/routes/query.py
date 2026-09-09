@@ -21,6 +21,7 @@ from cited_rag.domain.exceptions import (
 )
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.principal import ApiPrincipal
+from cited_rag.domain.models.query_result import QueryOutcome
 
 router = APIRouter()
 
@@ -118,8 +119,8 @@ async def post_query(
                 names[chunk.document_id] = version.original_filename
         return loaded
 
-    try:
-        outcome = await answer_question(
+    async def _run_query() -> QueryOutcome:
+        return await answer_question(
             question,
             collection_id=collection_id,
             document_version_ids=version_ids,
@@ -133,6 +134,14 @@ async def post_query(
             settings=settings,
             correlation_id=getattr(request.state, "correlation_id", None),
         )
+
+    semaphore = getattr(request.app.state, "query_semaphore", None)
+    try:
+        if semaphore is None:
+            outcome = await _run_query()
+        else:
+            async with semaphore:
+                outcome = await _run_query()
     except Exception as exc:
         raise _http_for_query_error(exc) from exc
     return QueryResponse(

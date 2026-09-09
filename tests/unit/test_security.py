@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from uuid import uuid4
 
 import pytest
@@ -15,6 +16,32 @@ from cited_rag.config import Settings
 from cited_rag.domain.enums import AnswerStatus
 from cited_rag.main import create_app
 from cited_rag.observability.redact import redact_text
+
+
+@pytest.mark.asyncio
+async def test_query_semaphore_limits_in_flight_work() -> None:
+    settings = Settings(
+        _env_file=None,
+        api_key="test-placeholder-key",
+        environment="test",
+        max_in_flight_queries=1,
+    )
+    with TestClient(create_app(settings)) as client:
+        semaphore = client.app.state.query_semaphore
+        assert semaphore._value == 1
+        running = 0
+        peak = 0
+
+        async def hold() -> None:
+            nonlocal running, peak
+            async with semaphore:
+                running += 1
+                peak = max(peak, running)
+                await asyncio.sleep(0.02)
+                running -= 1
+
+        await asyncio.gather(hold(), hold())
+        assert peak == 1
 
 
 def test_query_requires_bearer() -> None:
@@ -70,9 +97,7 @@ async def test_prompt_injection_in_evidence_does_not_answer_unrelated_question()
     await persist_dense_index(
         [chunk], embedder=HashEmbeddingProvider(dimension=8), store=store, config=config
     )
-    await persist_sparse_index(
-        [chunk], encoder=LexicalSparseEncoder(), store=store, config=config
-    )
+    await persist_sparse_index([chunk], encoder=LexicalSparseEncoder(), store=store, config=config)
     outcome = await answer_question(
         "Who is the CEO of OpenAI?",
         collection_id=version.collection_id,
