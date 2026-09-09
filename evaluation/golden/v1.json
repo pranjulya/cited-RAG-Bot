@@ -10,7 +10,7 @@
     },
     {
       "id": "unsupported-secret",
-      "question": "Who is the CEO of OpenAI?",
+      "question": "Who leads OpenAI?",
       "answerable": false,
       "relevant_texts": [],
       "tags": ["no-answer", "injection"]
