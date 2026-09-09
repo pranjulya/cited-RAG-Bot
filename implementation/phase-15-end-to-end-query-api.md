@@ -1,6 +1,6 @@
 # Phase 15 — End-to-End Query API
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Wire authorization, retrieval, fusion, reranking, context building, grounded generation, no-answer policy, and citation validation into the public collection query endpoint.

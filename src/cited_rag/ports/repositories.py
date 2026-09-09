@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Protocol
 from uuid import UUID
 
@@ -86,6 +87,8 @@ class ChunkRepository(Protocol):
     async def add(self, chunk: Chunk) -> None: ...
 
     async def get(self, chunk_id: UUID) -> Chunk | None: ...
+
+    async def get_many(self, chunk_ids: Sequence[UUID]) -> list[Chunk]: ...
 
     async def list_by_version(self, document_version_id: UUID) -> list[Chunk]: ...
 

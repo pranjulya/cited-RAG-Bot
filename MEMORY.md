@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 08 **[#13](https://github.com/pranjulya/cited-RAG-Bot/pull/13)** merged (`b6d7774`). Phases 09 and 10 opened for Codex review. |
-| Phase file status | Phase 10 `IN_PROGRESS` (not `TESTED`) |
-| Branch | `phase-10-reranking` (stacked on `phase-09-hybrid-rrf`) |
-| PR | [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14) Phase 09 → `main`; [#15](https://github.com/pranjulya/cited-RAG-Bot/pull/15) Phase 10 → Phase 09 |
-| `main` | `b6d7774` — Phase 08 dense retrieval. **Do not push or merge to `main` except via PR.** |
-| Next action | Codex review #14, merge it, then review/retarget #15 onto `main`. Do not start Phase 11 until #15 is on `main`. |
-| Blockers | Local Docker/Qdrant hybrid integration not run. Cross-encoder adapter not shipped (overlap fake for CI). |
+| Last completed work | Phase 08 **[#13](https://github.com/pranjulya/cited-RAG-Bot/pull/13)** merged. Phases 09–15 opened as a stack for Codex review. |
+| Phase file status | Phase 15 `IN_PROGRESS` (not `TESTED`) |
+| Branch | `phase-15-query-api` (stacked on 09→10→11→12→13→14) |
+| PR | [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14)–[#20](https://github.com/pranjulya/cited-RAG-Bot/pull/20) — all OPEN |
+| `main` | `b6d7774` — Phase 08. **Do not push or merge to `main` except via PR.** |
+| Next action | Codex review in order: **#14 → #15 → #16 → #17 → #18 → #19 → #20**. Merge each before retargeting the next onto `main`. Do not start Phase 16 until #20 is on `main`. |
+| Blockers | Live Qdrant/Postgres query E2E not run locally. Generator is heuristic (not an LLM). |
 
 ---
 
@@ -65,6 +65,31 @@ Do not put secrets, API keys, or raw PDF text here.
 ---
 
 ## Phase records
+
+### Phase 15 — End-to-End Query API
+- **Date:** 2026-09-09
+- **Branch:** `phase-15-query-api`
+- **PR:** [#20](https://github.com/pranjulya/cited-RAG-Bot/pull/20)
+- **Status in phase file:** `IN_PROGRESS`
+- **Goal:** Public `POST /v1/collections/{collection_id}/query` runs the full grounded pipeline.
+- **Verification:** `pytest tests/unit` **165 passed**, 1 skipped. Integration query tests not run locally.
+- **Follow-ups:** Phase 16 deletion; hosted LLM adapter; persist QueryRun completion.
+
+### Phase 14 — No-Answer Policy
+- **PR:** [#19](https://github.com/pranjulya/cited-RAG-Bot/pull/19)
+- **Goal:** Distinguish abstention reasons from infrastructure errors.
+
+### Phase 13 — Citation Validation
+- **PR:** [#18](https://github.com/pranjulya/cited-RAG-Bot/pull/18)
+- **Goal:** Fail closed on unapproved evidence IDs; public citations omit `chunk_id`.
+
+### Phase 12 — Grounded Generation
+- **PR:** [#17](https://github.com/pranjulya/cited-RAG-Bot/pull/17)
+- **Goal:** Evidence-only structured generation; PDF text is untrusted.
+
+### Phase 11 — Context Builder
+- **PR:** [#16](https://github.com/pranjulya/cited-RAG-Bot/pull/16)
+- **Goal:** Assign `E1..En`; model sees ID + text only.
 
 ### Phase 10 — Reranking
 

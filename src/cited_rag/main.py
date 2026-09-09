@@ -11,13 +11,19 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
 
+from cited_rag.adapters.embedding.hashing import HashEmbeddingProvider
+from cited_rag.adapters.generation import create_generator
 from cited_rag.adapters.persistence.postgres.session import create_engine, create_session_factory
 from cited_rag.adapters.queue.arq_redis import ArqJobQueue
 from cited_rag.adapters.queue.memory import MemoryJobQueue
+from cited_rag.adapters.rerank import create_reranker
+from cited_rag.adapters.retrieval.qdrant import QdrantRetrievalStore
+from cited_rag.adapters.sparse import create_sparse_encoder
 from cited_rag.adapters.storage.local import LocalObjectStorage
 from cited_rag.api.health import router as health_router
 from cited_rag.api.routes.collections import router as collections_router
 from cited_rag.api.routes.documents import router as documents_router
+from cited_rag.api.routes.query import router as query_router
 from cited_rag.config import Settings, get_settings
 
 logger = logging.getLogger("cited_rag")
@@ -59,12 +65,24 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     else:
         raise RuntimeError("CITED_RAG_REDIS_URL is required outside tests")
     app.state.queue = queue
+    app.state.embedder = HashEmbeddingProvider(dimension=settings.embedding_dimension)
+    app.state.sparse_encoder = create_sparse_encoder(settings)
+    app.state.reranker = create_reranker(settings)
+    app.state.generator = create_generator(settings)
+    store = None
+    if settings.qdrant_url:
+        store = QdrantRetrievalStore(
+            url=settings.qdrant_url, collection_name=settings.qdrant_collection
+        )
+    app.state.retrieval_store = store
     logger.info("application starting")
     yield
     logger.info("application stopping")
     closer = getattr(queue, "close", None)
     if closer is not None:
         await closer()
+    if store is not None:
+        await store.close()
     if engine is not None:
         await engine.dispose()
 
@@ -99,6 +117,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health_router)
     app.include_router(collections_router)
     app.include_router(documents_router)
+    app.include_router(query_router)
     return app
 
 
