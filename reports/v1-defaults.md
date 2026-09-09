@@ -1,6 +1,6 @@
 # V1 configuration defaults
 
-These defaults are **wiring defaults**, not quality winners. Unit experiments run hash embeddings and a heuristic generator on `evaluation/golden/v1.json`. They prove dense-only, sparse-only, hybrid, and hybrid+rerank ablations are isolated via `EvaluationRunConfig`. They do not justify changing ADR-011.
+Measured on `evaluation/golden/v1.json` with hash embeddings and the heuristic generator (`python -m cited_rag.evaluation` and `run_v1_matrix`). Ablations are isolated via `EvaluationRunConfig`. These numbers are fixture-scale, not a hosted-model bake-off.
 
 Recommended production path until a hosted encoder/reranker is measured:
 
