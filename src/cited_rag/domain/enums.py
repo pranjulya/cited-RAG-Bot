@@ -34,3 +34,8 @@ class QueryRunStatus(StrEnum):
 class RetrievalSource(StrEnum):
     DENSE = "DENSE"
     SPARSE = "SPARSE"
+
+
+class AnswerStatus(StrEnum):
+    ANSWERED = "ANSWERED"
+    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
