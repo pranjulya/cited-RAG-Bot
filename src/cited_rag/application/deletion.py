@@ -22,7 +22,15 @@ async def tombstone_document(
 ) -> None:
     """Make the document unsearchable, then enqueue retryable index/storage purge."""
     document = await uow.documents.get(document_id)
-    if document is None or document.deleted_at is not None:
+    if document is None:
+        return
+    if document.deleted_at is not None:
+        await queue.enqueue_cleanup(document.id, correlation_id)
+        logger.info(
+            "cleanup re-enqueued id=%s",
+            document.id,
+            extra={"correlation_id": correlation_id or "-"},
+        )
         return
     versions = await uow.versions.list_by_document(document.id)
     for version in versions:
@@ -37,7 +45,11 @@ async def tombstone_document(
     await uow.documents.mark_deleted(document.id)
     await uow.commit()
     await queue.enqueue_cleanup(document.id, correlation_id)
-    logger.info("document tombstoned id=%s", document.id, extra={"correlation_id": "-"})
+    logger.info(
+        "document tombstoned id=%s",
+        document.id,
+        extra={"correlation_id": correlation_id or "-"},
+    )
 
 
 async def purge_deleted_document(

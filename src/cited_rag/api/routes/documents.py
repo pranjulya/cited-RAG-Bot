@@ -199,7 +199,7 @@ async def delete_document_route(
     queue: JobQueue = Depends(get_queue),
 ) -> DeleteResponse:
     document = await uow.documents.get(document_id)
-    if document is None or document.deleted_at is not None:
+    if document is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="document_not_found")
     collection = owned_collection_or_none(
         await uow.collections.get(document.collection_id), principal.id

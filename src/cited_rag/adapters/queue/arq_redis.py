@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from arq import ArqRedis
 from arq.connections import RedisSettings, create_pool
@@ -49,7 +49,7 @@ class ArqJobQueue:
         document_id: UUID,
         correlation_id: str | None = None,
     ) -> str:
-        job_id = f"cleanup:{document_id}"
+        job_id = f"cleanup:{document_id}:{uuid4().hex[:8]}"
         try:
             job = await self._pool.enqueue_job(
                 CLEANUP_FUNCTION_NAME,
