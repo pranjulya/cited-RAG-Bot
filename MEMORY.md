@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 08 on `main`. Phases 09–23 opened as one stack for review. |
-| Phase file status | Phase 23 `IN_PROGRESS` (implementation stacked, not merged) |
+| Last completed work | Phase 08 on `main`. Phases 09–23 opened as one stack for review. Codex P1s on #21–#27 and P2 docs on #28 applied on the stack. |
+| Phase file status | Phase 23 `TESTED` (docs + measured golden-v1 table; not merged) |
 | Branch | `phase-23-docs-learning` |
 | PR | [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14)–[#28](https://github.com/pranjulya/cited-RAG-Bot/pull/28) OPEN |
 | `main` | `b6d7774` — Phase 08. **Do not push or merge to `main` except via PR.** |
 | Next action | Review/merge in order **#14 → #28**. Do not land later PRs before their base. |
-| Blockers | Live Postgres/Qdrant E2E not run locally. Generator is heuristic, not an LLM. |
+| Blockers | Live Postgres/Qdrant E2E not run locally. Generator is heuristic, not an LLM. Glass-box UI is deferred until #14–#28 are on `main`. |
 
 ---
 
@@ -65,6 +65,18 @@ Do not put secrets, API keys, or raw PDF text here.
 ---
 
 ## Phase records
+
+### Phase 23 — Documentation, Learning, and Interview Readiness
+- **Date:** 2026-09-09
+- **Branch:** `phase-23-docs-learning`
+- **PR:** [#28](https://github.com/pranjulya/cited-RAG-Bot/pull/28)
+- **Status in phase file:** `TESTED`
+- **Goal:** README, Learning index, interview Q&A, and a reproducible golden-v1 benchmark table so a reviewer can run the project and see measured dense/sparse/hybrid/rerank scores.
+- **Files added/changed:** `README.md`, `reports/v1-defaults.md`, `Learning/20-rag-quality-experiments.md`, `Learning/23-documentation-learning.md`, `src/cited_rag/evaluation/__main__.py` (`--matrix`), `src/cited_rag/evaluation/experiments.py`, `evaluation/results/matrix.json`.
+- **Public contracts / commands:** `python -m cited_rag.evaluation`; `python -m cited_rag.evaluation --matrix`.
+- **Verification:** evaluation CLI + unit tests on this branch (see commit). Live compose smoke is in CI, not re-run locally here.
+- **Not verified:** hosted encoder/reranker; live Postgres/Qdrant E2E.
+- **Follow-ups:** Review/merge #14–#28 in order. Do not start the glass-box UI until that lands.
 
 ### Phase 15 — End-to-End Query API
 - **Date:** 2026-09-09

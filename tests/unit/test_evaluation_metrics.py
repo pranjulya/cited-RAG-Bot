@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 from pathlib import Path
 from uuid import uuid4
@@ -52,6 +53,25 @@ async def test_evaluation_command_writes_layer_results(tmp_path: Path) -> None:
     assert 0.0 <= manifest.layers.recall_at_5 <= 1.0
     assert out.is_file()
     assert "recall_at_5" in out.read_text(encoding="utf-8")
+
+
+def test_evaluation_matrix_cli_writes_ablations(tmp_path: Path, monkeypatch) -> None:
+    from cited_rag.evaluation.__main__ import main
+
+    out = tmp_path / "matrix.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        ["cited_rag.evaluation", "--matrix", "--out", str(out)],
+    )
+    main()
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    assert [row["name"] for row in payload] == [
+        "dense-only",
+        "sparse-only",
+        "hybrid",
+        "hybrid-rerank",
+    ]
+    assert all("recall_at_5" in row and "mrr" in row for row in payload)
 
 
 def test_golden_dataset_loads() -> None:

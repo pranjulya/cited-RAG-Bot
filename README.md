@@ -19,14 +19,27 @@ query → dense & sparse retrieve → RRF → rerank → context (E1..)
       → generate → citation validate → response
 ```
 
-Hybrid fusion is in-process Reciprocal Rank Fusion. Production timeouts fail closed (`DENSE_RETRIEVAL_ERROR`, `SPARSE_RETRIEVAL_ERROR`, `RERANKER_ERROR`, `GENERATION_PROVIDER_ERROR`). Empty hit lists still fuse. Hash embeddings / overlap rerank / heuristic generator are local defaults, not quality claims (`reports/v1-defaults.md`).
+Hybrid fusion is in-process Reciprocal Rank Fusion. Production timeouts fail closed (`DENSE_RETRIEVAL_ERROR`, `SPARSE_RETRIEVAL_ERROR`, `RERANKER_ERROR`, `GENERATION_PROVIDER_ERROR`). Empty hit lists still fuse. Hash embeddings / overlap rerank / heuristic generator are local defaults; measured fixture scores are in `reports/v1-defaults.md`.
+
+## Measured retrieval (golden-v1)
+
+Two-case fixture: one answerable policy sentence, one unanswerable question. Reproduce with `python -m cited_rag.evaluation --matrix`.
+
+| Config | Recall@5 | MRR | nDCG@5 | Citation validity | False-answer |
+|---|---:|---:|---:|---:|---:|
+| dense-only | 1.000 | 0.250 | 0.815 | 1.000 | 0.000 |
+| sparse-only | 1.000 | 0.500 | 1.000 | 1.000 | 0.000 |
+| hybrid | 1.000 | 0.500 | 1.000 | 1.000 | 0.000 |
+| hybrid-rerank | 1.000 | 0.500 | 1.000 | 1.000 | 0.000 |
+
+Dense-only finds the page but ranks it worse. Sparse/hybrid/hybrid+rerank tie here because the answer is a lexical hit. V1 still ships hybrid RRF plus rerank (`CITED_RAG_RRF_K=60`, `CITED_RAG_RERANK_TOP_N=10`) so paraphrase questions keep a dense path. Full table including no-answer precision/recall: `reports/v1-defaults.md`.
 
 ## Limitations
 
 - PDF-only, API-key auth, one application Qdrant collection
 - No V1 citation repair
-- Heuristic generator is not an LLM
-- Evaluation golden set is a tiny fixture until a hosted model is measured
+- Heuristic generator is not an LLM; hash embeddings are not a hosted encoder
+- Golden set is two cases. Scores above are reproducible, not a hosted-model bake-off
 
 ## Requirements
 
@@ -74,25 +87,30 @@ docker compose up -d postgres redis qdrant
 alembic upgrade head
 ```
 
-## Test, lint, types
+## Test, lint, types, evaluation
 
 ```bash
 ruff check . && ruff format --check .
 mypy src
 pytest tests/unit
+python -m cited_rag.evaluation
+python -m cited_rag.evaluation --matrix
 CITED_RAG_DATABASE_URL=postgresql+asyncpg://cited_rag:cited_rag@localhost:5432/cited_rag \
 CITED_RAG_QDRANT_URL=http://localhost:6333 pytest tests/integration
 ```
 
-Persistence tests skip unless `CITED_RAG_DATABASE_URL` is set. Compose runs `alembic upgrade head` before the API starts.
+Persistence tests skip unless `CITED_RAG_DATABASE_URL` is set. Compose runs `alembic upgrade head` before the API starts. CI also builds the compose stack and probes `/health` and `/ready` (`.github/workflows/ci.yml` job `compose-smoke`).
 
 ## Docker
 
 ```bash
-docker compose up --build
+docker compose up --build -d --wait
+curl -sf http://localhost:8000/health
+curl -sf http://localhost:8000/ready
+docker compose down -v
 ```
 
-Compose starts PostgreSQL, Redis, Qdrant, the API, and the ingestion worker. The worker parses, chunks, dense-indexes, sparse-indexes, then marks versions `READY`.
+Compose starts PostgreSQL, Redis, Qdrant, Alembic migrate, the API, and the ingestion worker. The worker parses, chunks, dense-indexes, sparse-indexes, then marks versions `READY`.
 
 ## Layout
 
