@@ -53,3 +53,7 @@ See `Learning/11-context-evidence-contract.md`.
 ## Phase 12
 
 See `Learning/12-grounded-generation.md`.
+
+## Phase 13
+
+See `Learning/13-citation-validation.md`.

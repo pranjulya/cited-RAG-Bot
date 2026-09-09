@@ -121,3 +121,9 @@ class GenerationError(DomainError):
     def __init__(self, message: str = "generation failed") -> None:
         self.failure_code = "GENERATION_PROVIDER_ERROR"
         super().__init__(message)
+
+
+class CitationValidationError(DomainError):
+    def __init__(self, message: str = "citation validation failed") -> None:
+        self.failure_code = "CITATION_VALIDATION_FAILED"
+        super().__init__(message)

@@ -1,6 +1,6 @@
 # Phase 13 — Citation Mapping and Validation
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Convert model-selected evidence IDs into authoritative document/page citations and reject fabricated or unauthorized references before response delivery.
