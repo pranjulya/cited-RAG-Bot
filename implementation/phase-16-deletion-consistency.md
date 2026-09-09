@@ -1,6 +1,6 @@
 # Phase 16 — Document Deletion and Index Consistency
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Delete or tombstone documents safely so no stale searchable chunks remain in derived retrieval indexes.

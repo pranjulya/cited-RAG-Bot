@@ -65,3 +65,7 @@ See `Learning/14-no-answer-policy.md`.
 ## Phase 15
 
 See `Learning/15-end-to-end-query-api.md`.
+
+## Phase 16
+
+See `Learning/16-deletion-consistency.md`.

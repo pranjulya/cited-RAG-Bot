@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from arq import ArqRedis
 from arq.connections import RedisSettings, create_pool
@@ -8,6 +8,7 @@ from arq.connections import RedisSettings, create_pool
 from cited_rag.domain.exceptions import QueueError
 
 INGEST_FUNCTION_NAME = "ingest_document_version"
+CLEANUP_FUNCTION_NAME = "cleanup_deleted_document"
 
 
 class ArqJobQueue:
@@ -41,6 +42,25 @@ class ArqJobQueue:
             raise QueueError("failed to enqueue ingestion job") from exc
         if job is None:
             raise QueueError(f"ingestion job id already exists: {job_id}")
+        return job.job_id
+
+    async def enqueue_cleanup(
+        self,
+        document_id: UUID,
+        correlation_id: str | None = None,
+    ) -> str:
+        job_id = f"cleanup:{document_id}:{uuid4().hex[:8]}"
+        try:
+            job = await self._pool.enqueue_job(
+                CLEANUP_FUNCTION_NAME,
+                str(document_id),
+                correlation_id,
+                _job_id=job_id,
+            )
+        except Exception as exc:
+            raise QueueError("failed to enqueue cleanup job") from exc
+        if job is None:
+            return job_id
         return job.job_id
 
     async def close(self) -> None:
