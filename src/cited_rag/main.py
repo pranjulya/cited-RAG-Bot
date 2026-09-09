@@ -6,7 +6,6 @@ import logging
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from contextvars import ContextVar
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
@@ -25,9 +24,9 @@ from cited_rag.api.routes.collections import router as collections_router
 from cited_rag.api.routes.documents import router as documents_router
 from cited_rag.api.routes.query import router as query_router
 from cited_rag.config import Settings, get_settings
+from cited_rag.observability.correlation import CorrelationIdFilter, set_correlation_id
 
 logger = logging.getLogger("cited_rag")
-_correlation_id: ContextVar[str] = ContextVar("correlation_id", default="-")
 
 
 def _configure_logging(settings: Settings) -> None:
@@ -37,16 +36,10 @@ def _configure_logging(settings: Settings) -> None:
     )
     # Logger filters are not applied to records that propagate from child loggers.
     # The formatter requires correlation_id, so the filter must live on handlers.
-    correlation_filter = _CorrelationIdFilter()
+    correlation_filter = CorrelationIdFilter()
     for handler in logging.getLogger().handlers:
-        if not any(isinstance(item, _CorrelationIdFilter) for item in handler.filters):
+        if not any(isinstance(item, CorrelationIdFilter) for item in handler.filters):
             handler.addFilter(correlation_filter)
-
-
-class _CorrelationIdFilter(logging.Filter):
-    def filter(self, record: logging.LogRecord) -> bool:
-        record.correlation_id = _correlation_id.get()
-        return True
 
 
 @asynccontextmanager
@@ -106,11 +99,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         header_name = resolved.correlation_id_header
         correlation_id = request.headers.get(header_name) or str(uuid.uuid4())
         request.state.correlation_id = correlation_id
-        token = _correlation_id.set(correlation_id)
+        set_correlation_id(correlation_id)
         try:
             response = await call_next(request)
         finally:
-            _correlation_id.reset(token)
+            set_correlation_id("-")
         response.headers[header_name] = correlation_id
         return response
 

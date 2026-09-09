@@ -1,6 +1,6 @@
 # Phase 17 — Observability
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Standardize ingestion and query telemetry so failures are diagnosable without leaking sensitive raw document/query content. Phases 03–15 already emit stage spans for the capability they add; this phase names, redacts, and completes that instrumentation. It is not the first telemetry.

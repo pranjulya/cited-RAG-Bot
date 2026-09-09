@@ -6,7 +6,8 @@ from collections.abc import Iterator
 import pytest
 
 from cited_rag.config import Settings
-from cited_rag.main import _configure_logging, _CorrelationIdFilter
+from cited_rag.main import _configure_logging
+from cited_rag.observability.correlation import CorrelationIdFilter
 
 
 @pytest.fixture
@@ -38,7 +39,7 @@ def test_child_logger_records_format_with_default_correlation_id(
     root = logging.getLogger()
     assert root.handlers, "expected basicConfig to attach a handler"
     handler = root.handlers[0]
-    assert any(isinstance(item, _CorrelationIdFilter) for item in handler.filters)
+    assert any(isinstance(item, CorrelationIdFilter) for item in handler.filters)
     handler.setFormatter(
         logging.Formatter("%(levelname)s %(name)s correlation_id=%(correlation_id)s %(message)s")
     )
