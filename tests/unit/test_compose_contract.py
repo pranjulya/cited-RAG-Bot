@@ -14,3 +14,4 @@ def test_ci_runs_unit_and_integration() -> None:
     assert "pytest tests/unit" in text
     assert "pytest tests/integration" in text
     assert "python -m cited_rag.evaluation" in text
+    assert "docker compose up" in text
