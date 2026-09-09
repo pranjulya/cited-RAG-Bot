@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 06 **[#11](https://github.com/pranjulya/cited-RAG-Bot/pull/11)** merged (`2a87918`). Phase 07 sparse indexing opened. |
-| Phase file status | Phase 07 `IN_PROGRESS` (not `TESTED`) |
-| Branch | `phase-07-sparse-indexing-retrieval` |
-| PR | [#12](https://github.com/pranjulya/cited-RAG-Bot/pull/12) — open |
-| `main` | `2a87918` — Phase 06 dense indexing. **Do not push or merge to `main` except via PR.** |
-| Next action | Confirm CI (Qdrant sparse upsert + READY) on the Phase 07 PR. Do not start Phase 08 until it is on `main`. |
-| Blockers | Local Docker/Qdrant not re-run for Phase 07. Hosted BM42 extra not exercised in unit tests. |
+| Last completed work | Phase 08 **[#13](https://github.com/pranjulya/cited-RAG-Bot/pull/13)** merged (`b6d7774`). Phase 09 hybrid RRF opened. |
+| Phase file status | Phase 09 `IN_PROGRESS` (not `TESTED`) |
+| Branch | `phase-09-hybrid-rrf` |
+| PR | [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14) — open |
+| `main` | `b6d7774` — Phase 08 dense retrieval. **Do not push or merge to `main` except via PR.** |
+| Next action | Codex review of Phase 09. Phase 10 reranking is stacked after this PR is opened; merge #14 before #15. |
+| Blockers | Local Docker/Qdrant hybrid integration not run. |
 
 ---
 
@@ -66,11 +66,62 @@ Do not put secrets, API keys, or raw PDF text here.
 
 ## Phase records
 
+### Phase 09 — Hybrid Retrieval and RRF
+
+- **Date:** 2026-09-09
+- **Branch:** `phase-09-hybrid-rrf`
+- **PR:** [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14) (`phase-09-hybrid-rrf` → `main`, OPEN)
+- **Status in phase file:** `IN_PROGRESS`
+- **Goal:** Run dense and sparse independently, fuse with in-process RRF, preserve source ranks, fail closed on retriever errors, fuse empty hit lists.
+
+- **Files added/changed:**
+  - `application/retrieval/` package: `retrievers.py`, `fusion.py` (`FusionStrategy`, `ReciprocalRankFusion`), `hybrid.py`
+  - `domain/models/retrieval.py` — `FusedCandidate`
+  - `domain/models/evaluation.py` — `EvaluationRunConfig` (ablations only)
+  - `HybridFusionError` for invalid ranks / duplicate metadata conflict
+  - Settings: `CITED_RAG_RRF_K`, `CITED_RAG_FUSED_TOP_K`
+  - Tests: `tests/unit/test_hybrid_rrf.py`, `tests/integration/test_hybrid_retrieval.py`
+  - `Learning/09-hybrid-retrieval-rrf.md`
+
+- **Public contracts / commands:**
+  - `retrieve_hybrid(...)` always runs both retrievers unless `EvaluationRunConfig` disables a side
+  - Empty list from one retriever still fuses
+  - Operational dense/sparse failure propagates (`DENSE_RETRIEVAL_ERROR` / `SPARSE_RETRIEVAL_ERROR`)
+  - RRF score is rank-only: `Σ 1/(k + rank)`
+
+- **Decisions made in this phase (not already in ADR-011):**
+  - Tie-break fused order by `chunk_id` string
+  - Duplicate chunk_id in one list keeps the best (lowest) rank
+  - Duplicate chunk with conflicting provenance fails fusion
+
+- **Verification run (exact commands + results):**
+  - ruff / mypy — passed
+  - `pytest tests/unit` — **127 passed, 1 skipped**
+  - `pytest tests/integration` — **not run locally**
+
+- **Not verified / known gaps:**
+  - Live Qdrant hybrid search
+  - Query API orchestration (Phase 15)
+
+- **Follow-ups for the next phase:**
+  - Phase 10: rerank fused candidates; production timeout is `RERANKER_ERROR`
+
+### Phase 08 — Dense Retrieval
+
+- **Date:** 2026-09-08
+- **Branch:** `phase-08-dense-retrieval`
+- **PR:** [#13](https://github.com/pranjulya/cited-RAG-Bot/pull/13) (`phase-08-dense-retrieval` → `main`, MERGED `b6d7774`)
+- **Status in phase file:** `IN_PROGRESS` (merged)
+- **Goal:** Collection-scoped dense retrieval over READY version ids with fail-closed payload validation.
+
+- **Follow-ups for the next phase:**
+  - Phase 09 hybrid RRF (opened as #14)
+
 ### Phase 07 — Sparse Indexing and Retrieval
 
 - **Date:** 2026-09-08
 - **Branch:** `phase-07-sparse-indexing-retrieval`
-- **PR:** [#12](https://github.com/pranjulya/cited-RAG-Bot/pull/12) (`phase-07-sparse-indexing-retrieval` → `main`, OPEN)
+- **PR:** [#12](https://github.com/pranjulya/cited-RAG-Bot/pull/12) (`phase-07-sparse-indexing-retrieval` → `main`, MERGED `b9ec137`)
 - **Status in phase file:** `IN_PROGRESS`
 - **Goal:** Encode sparse vectors onto the same chunk UUIDs as dense, retrieve with collection + version filters, and set `READY` only after both named vectors exist.
 

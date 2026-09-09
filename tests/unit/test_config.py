@@ -71,6 +71,13 @@ def test_sparse_encoder_identity_follows_backend() -> None:
     assert bm42.sparse_encoder_version == "Qdrant/bm42-all-minilm-l6-v2-attentions"
 
 
+def test_rrf_settings_have_positive_defaults() -> None:
+    get_settings.cache_clear()
+    settings = Settings(_env_file=None)
+    assert settings.rrf_k == 60
+    assert settings.fused_top_k == 20
+
+
 def test_chunk_overlap_must_be_smaller_than_target() -> None:
     get_settings.cache_clear()
     with pytest.raises(ValidationError, match="CHUNK_OVERLAP"):

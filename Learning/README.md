@@ -37,3 +37,7 @@ See `Learning/07-sparse-indexing-retrieval.md`.
 ## Phase 08
 
 See `Learning/08-dense-retrieval.md`.
+
+## Phase 09
+
+See `Learning/09-hybrid-retrieval-rrf.md`.
