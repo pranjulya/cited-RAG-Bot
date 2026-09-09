@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -68,6 +69,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             url=settings.qdrant_url, collection_name=settings.qdrant_collection
         )
     app.state.retrieval_store = store
+    app.state.query_semaphore = asyncio.Semaphore(settings.max_in_flight_queries)
     logger.info("application starting")
     yield
     logger.info("application stopping")

@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     generation_backend: Literal["heuristic"] = "heuristic"
     generation_timeout_seconds: float = Field(default=15, gt=0)
     min_rerank_score: float = Field(default=0, ge=0)
+    query_max_chars: int = Field(default=4000, ge=1, le=20000)
+    max_in_flight_queries: int = Field(default=32, ge=1)
+    log_sensitive_content: bool = False
 
     @field_validator("debug")
     @classmethod
