@@ -126,6 +126,7 @@ async def post_query(
             reranker=reranker,
             generator=generator,
             settings=settings,
+            correlation_id=getattr(request.state, "correlation_id", None),
         )
     except Exception as exc:
         raise _http_for_query_error(exc) from exc
