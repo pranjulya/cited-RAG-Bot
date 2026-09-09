@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 08 **[#13](https://github.com/pranjulya/cited-RAG-Bot/pull/13)** merged (`b6d7774`). Phase 09 hybrid RRF opened. |
-| Phase file status | Phase 09 `IN_PROGRESS` (not `TESTED`) |
-| Branch | `phase-09-hybrid-rrf` |
-| PR | [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14) — open |
+| Last completed work | Phase 08 **[#13](https://github.com/pranjulya/cited-RAG-Bot/pull/13)** merged (`b6d7774`). Phases 09 and 10 opened for Codex review. |
+| Phase file status | Phase 10 `IN_PROGRESS` (not `TESTED`) |
+| Branch | `phase-10-reranking` (stacked on `phase-09-hybrid-rrf`) |
+| PR | [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14) Phase 09 → `main`; [#15](https://github.com/pranjulya/cited-RAG-Bot/pull/15) Phase 10 → Phase 09 |
 | `main` | `b6d7774` — Phase 08 dense retrieval. **Do not push or merge to `main` except via PR.** |
-| Next action | Codex review of Phase 09. Phase 10 reranking is stacked after this PR is opened; merge #14 before #15. |
-| Blockers | Local Docker/Qdrant hybrid integration not run. |
+| Next action | Codex review #14, merge it, then review/retarget #15 onto `main`. Do not start Phase 11 until #15 is on `main`. |
+| Blockers | Local Docker/Qdrant hybrid integration not run. Cross-encoder adapter not shipped (overlap fake for CI). |
 
 ---
 
@@ -65,6 +65,44 @@ Do not put secrets, API keys, or raw PDF text here.
 ---
 
 ## Phase records
+
+### Phase 10 — Reranking
+
+- **Date:** 2026-09-09
+- **Branch:** `phase-10-reranking`
+- **PR:** [#15](https://github.com/pranjulya/cited-RAG-Bot/pull/15) (`phase-10-reranking` → `phase-09-hybrid-rrf`, OPEN)
+- **Status in phase file:** `IN_PROGRESS`
+- **Goal:** Rerank fused candidates through a replaceable port; production timeout/failure is `RERANKER_ERROR`; evaluation may disable rerank.
+
+- **Files added/changed:**
+  - `ports/reranker.py`
+  - `adapters/rerank/overlap.py` — deterministic lexical overlap
+  - `application/rerank.py` — timeout wrapper, evaluation passthrough
+  - `RerankedEvidence`, `RerankerError`
+  - `EvaluationRunConfig.include_rerank`
+  - Settings: `CITED_RAG_RERANKER_BACKEND`, `CITED_RAG_RERANK_TOP_N`, `CITED_RAG_RERANKER_TIMEOUT_SECONDS`
+  - Tests: `tests/unit/test_rerank.py`
+  - `Learning/10-reranking.md`
+
+- **Public contracts / commands:**
+  - `rerank_candidates(query, fused, reranker=, top_n=, timeout_seconds=)`
+  - Empty input → empty output
+  - Timeout / provider error → `RERANKER_ERROR` (no fused-order fallback)
+  - `EvaluationRunConfig(include_rerank=False)` keeps fused order with `reranker_name=disabled`
+
+- **Decisions made in this phase (not already in ADR-011):**
+  - Default adapter is lexical overlap so CI does not download a cross-encoder. Production can swap a cross-encoder behind the same port.
+
+- **Verification run (exact commands + results):**
+  - ruff / mypy — passed
+  - `pytest tests/unit` — **135 passed, 1 skipped**
+
+- **Not verified / known gaps:**
+  - Hosted/local cross-encoder quality vs overlap
+  - Query API wiring (Phase 15)
+
+- **Follow-ups for the next phase:**
+  - Phase 11: context builder and request-scoped evidence IDs (`E1`, `E2`, …)
 
 ### Phase 09 — Hybrid Retrieval and RRF
 

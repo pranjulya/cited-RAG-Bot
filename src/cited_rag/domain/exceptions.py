@@ -109,3 +109,9 @@ class HybridFusionError(DomainError):
     def __init__(self, message: str = "hybrid fusion failed") -> None:
         self.failure_code = "HYBRID_FUSION_ERROR"
         super().__init__(message)
+
+
+class RerankerError(DomainError):
+    def __init__(self, message: str = "reranker failed") -> None:
+        self.failure_code = "RERANKER_ERROR"
+        super().__init__(message)

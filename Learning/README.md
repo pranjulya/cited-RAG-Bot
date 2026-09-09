@@ -41,3 +41,7 @@ See `Learning/08-dense-retrieval.md`.
 ## Phase 09
 
 See `Learning/09-hybrid-retrieval-rrf.md`.
+
+## Phase 10
+
+See `Learning/10-reranking.md`.
