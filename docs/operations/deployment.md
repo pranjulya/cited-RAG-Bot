@@ -7,7 +7,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Compose starts PostgreSQL, Redis, Qdrant, Alembic migrate, API (`:8000`), and the ingestion worker. Secrets stay in `.env`, not in the image.
+Compose starts PostgreSQL, Redis, Qdrant, Alembic migrate, API (`:8000`), and the ingestion worker. Postgres is published on host **5433** so a local Postgres on 5432 is not selected. Authenticated `/v1/*` calls need `Authorization: Bearer replace-me`. Secrets stay in `.env`, not in the image.
 
 ## Readiness
 

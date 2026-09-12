@@ -26,7 +26,8 @@ services:
       POSTGRES_PASSWORD: cited_rag
       POSTGRES_DB: cited_rag
     ports:
-      - "5432:5432"
+      # Host 5433 so a local Postgres on 5432 is not used by mistake.
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cited_rag -d cited_rag"]
       interval: 5s
@@ -72,6 +73,18 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
 
   worker:
     build: .
@@ -99,6 +112,18 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os, pathlib, redis; assert b'arq' in pathlib.Path('/proc/1/cmdline').read_bytes(); redis.Redis.from_url(os.environ['CITED_RAG_REDIS_URL']).ping()",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
 
 volumes:
   api-objects:

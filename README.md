@@ -6,7 +6,21 @@ Architecture freeze: `docs/architecture/decisions/ADR-011-v1-locked-policies.md`
 
 ## Demo flow
 
-1. `POST /v1/collections`
+Start Docker Desktop, then `docker compose up --build -d --wait`. `/v1/*` requires `Authorization: Bearer replace-me` (compose / `.env.example`). `/health` and `/ready` are open.
+
+```bash
+export AUTH='Authorization: Bearer replace-me'
+curl -sS http://localhost:8000/health
+curl -sS http://localhost:8000/ready
+curl -sS -X POST http://localhost:8000/v1/collections \
+  -H "$AUTH" -H 'Content-Type: application/json' \
+  -d '{"name":"policies"}'
+# POST /v1/collections/{id}/documents  (multipart PDF) → 202 QUEUED
+# GET  /v1/documents/{id} until status READY
+# POST /v1/collections/{id}/query  {"question":"How much leave?"}
+```
+
+1. `POST /v1/collections` with the Bearer header → `201`
 2. `POST /v1/collections/{id}/documents` (PDF) → `202 QUEUED`
 3. Worker parses, chunks, indexes dense **and** sparse on the same chunk UUID, then `READY`
 4. `POST /v1/collections/{id}/query` `{"question":"..."}` → `ANSWERED` with citations `{document_id, document_version_id, document_name, page_start, page_end}` or `INSUFFICIENT_EVIDENCE`
@@ -81,6 +95,8 @@ arq cited_rag.workers.ingestion_worker.WorkerSettings
 
 Copy `.env.example` to `.env` and set `CITED_RAG_DATABASE_URL` (async SQLAlchemy URL, `postgresql+asyncpg://…`).
 
+Compose publishes Postgres on **host 5433** (container 5432) so a local Postgres on 5432 is not used by mistake. `.env.example` already uses `localhost:5433`.
+
 ```bash
 docker compose up -d postgres redis qdrant
 # or use a local Postgres and create the database yourself
@@ -95,7 +111,8 @@ mypy src
 pytest tests/unit
 python -m cited_rag.evaluation
 python -m cited_rag.evaluation --matrix
-CITED_RAG_DATABASE_URL=postgresql+asyncpg://cited_rag:cited_rag@localhost:5432/cited_rag \
+# Compose-published Postgres is localhost:5433. CI services use 5432.
+CITED_RAG_DATABASE_URL=postgresql+asyncpg://cited_rag:cited_rag@localhost:5433/cited_rag \
 CITED_RAG_QDRANT_URL=http://localhost:6333 pytest tests/integration
 ```
 
@@ -110,7 +127,7 @@ curl -sf http://localhost:8000/ready
 docker compose down -v
 ```
 
-Compose starts PostgreSQL, Redis, Qdrant, Alembic migrate, the API, and the ingestion worker. The worker parses, chunks, dense-indexes, sparse-indexes, then marks versions `READY`.
+Compose starts PostgreSQL, Redis, Qdrant, Alembic migrate, the API, and the ingestion worker. API and worker have healthchecks; `--wait` blocks until `/health` responds and the arq process is up. The worker parses, chunks, dense-indexes, sparse-indexes, then marks versions `READY`. Authenticated calls need `Authorization: Bearer replace-me`.
 
 ## Layout
 

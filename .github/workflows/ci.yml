@@ -87,8 +87,11 @@ jobs:
         run: |
           curl -sf http://localhost:8000/health
           curl -sf http://localhost:8000/ready
-      - name: Confirm worker container is running
-        run: docker compose ps --status running | grep -E "worker"
+      - name: Confirm API and worker are healthy
+        run: |
+          docker compose ps
+          docker compose ps | grep -E "api-1" | grep -i healthy
+          docker compose ps | grep -E "worker-1" | grep -i healthy
       - name: Tear down
         if: always()
         run: docker compose down -v
