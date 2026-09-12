@@ -63,6 +63,16 @@ class MemoryRetrievalStore:
     async def get_point(self, point_id: UUID) -> IndexedPoint | None:
         return self.points.get(point_id)
 
+    async def delete_version_points(self, document_version_id: UUID) -> None:
+        if self.fail_upsert:
+            raise TransientIngestionError("retrieval store unavailable")
+        version = str(document_version_id)
+        self.points = {
+            point_id: point
+            for point_id, point in self.points.items()
+            if point.payload.get("document_version_id") != version
+        }
+
     async def search_dense(
         self,
         vector: Sequence[float],

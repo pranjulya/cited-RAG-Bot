@@ -9,3 +9,4 @@ class EvaluationRunConfig:
 
     include_dense: bool = True
     include_sparse: bool = True
+    include_rerank: bool = True

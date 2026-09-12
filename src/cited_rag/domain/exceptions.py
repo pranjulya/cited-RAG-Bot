@@ -84,7 +84,12 @@ class PasswordProtectedPdfError(PdfParseError):
 
 
 class EmptyExtractionError(PdfParseError):
-    def __init__(self, message: str = "PDF has no extractable text") -> None:
+    def __init__(
+        self,
+        message: str = (
+            "PDF has no extractable text (scanned or image-only pages); pypdf has no OCR"
+        ),
+    ) -> None:
         super().__init__(message, failure_code="PDF_UNSUPPORTED")
 
 
@@ -108,4 +113,22 @@ class SparseRetrievalError(DomainError):
 class HybridFusionError(DomainError):
     def __init__(self, message: str = "hybrid fusion failed") -> None:
         self.failure_code = "HYBRID_FUSION_ERROR"
+        super().__init__(message)
+
+
+class RerankerError(DomainError):
+    def __init__(self, message: str = "reranker failed") -> None:
+        self.failure_code = "RERANKER_ERROR"
+        super().__init__(message)
+
+
+class GenerationError(DomainError):
+    def __init__(self, message: str = "generation failed") -> None:
+        self.failure_code = "GENERATION_PROVIDER_ERROR"
+        super().__init__(message)
+
+
+class CitationValidationError(DomainError):
+    def __init__(self, message: str = "citation validation failed") -> None:
+        self.failure_code = "CITATION_VALIDATION_FAILED"
         super().__init__(message)

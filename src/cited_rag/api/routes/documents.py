@@ -14,6 +14,7 @@ from cited_rag.application.upload import (
     upload_new_version,
 )
 from cited_rag.config import Settings
+from cited_rag.domain.enums import DocumentVersionStatus
 from cited_rag.domain.exceptions import (
     EmptyUploadError,
     InvalidPdfError,
@@ -21,6 +22,7 @@ from cited_rag.domain.exceptions import (
     QueueError,
     StorageError,
 )
+from cited_rag.domain.models.document import Document, DocumentVersion
 from cited_rag.domain.models.principal import ApiPrincipal
 from cited_rag.domain.policies import public_ingestion_status
 from cited_rag.ports.object_storage import ObjectStorage
@@ -44,11 +46,44 @@ class DocumentStatusResponse(BaseModel):
     version_number: int | None
     status: str | None
     original_filename: str | None
+    failure_code: str | None = None
+    failure_message: str | None = None
 
 
 class DeleteResponse(BaseModel):
     document_id: UUID
     status: str
+
+
+def _document_status_response(
+    document: Document, current: DocumentVersion | None
+) -> DocumentStatusResponse:
+    if current is None:
+        return DocumentStatusResponse(
+            document_id=document.id,
+            collection_id=document.collection_id,
+            logical_name=document.logical_name,
+            active_version_id=document.active_version_id,
+            document_version_id=None,
+            version_number=None,
+            status=None,
+            original_filename=None,
+            failure_code=None,
+            failure_message=None,
+        )
+    failed = current.ingestion_status is DocumentVersionStatus.FAILED
+    return DocumentStatusResponse(
+        document_id=document.id,
+        collection_id=document.collection_id,
+        logical_name=document.logical_name,
+        active_version_id=document.active_version_id,
+        document_version_id=current.id,
+        version_number=current.version_number,
+        status=public_ingestion_status(current.ingestion_status),
+        original_filename=current.original_filename,
+        failure_code=current.failure_code if failed else None,
+        failure_message=current.failure_message if failed else None,
+    )
 
 
 def _http_for_upload_error(exc: Exception) -> HTTPException:
@@ -178,27 +213,19 @@ async def get_document(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="document_not_found")
     versions = await uow.versions.list_by_document(document.id)
     current = versions[-1] if versions else None
-    return DocumentStatusResponse(
-        document_id=document.id,
-        collection_id=document.collection_id,
-        logical_name=document.logical_name,
-        active_version_id=document.active_version_id,
-        document_version_id=current.id if current else None,
-        version_number=current.version_number if current else None,
-        status=public_ingestion_status(current.ingestion_status) if current else None,
-        original_filename=current.original_filename if current else None,
-    )
+    return _document_status_response(document, current)
 
 
 @router.delete("/v1/documents/{document_id}", status_code=status.HTTP_202_ACCEPTED)
 async def delete_document_route(
     document_id: UUID,
+    request: Request,
     principal: ApiPrincipal = Depends(get_principal),
     uow: PostgresUnitOfWork = Depends(get_uow),
-    storage: ObjectStorage = Depends(get_storage),
+    queue: JobQueue = Depends(get_queue),
 ) -> DeleteResponse:
     document = await uow.documents.get(document_id)
-    if document is None or document.deleted_at is not None:
+    if document is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="document_not_found")
     collection = owned_collection_or_none(
         await uow.collections.get(document.collection_id), principal.id
@@ -206,7 +233,12 @@ async def delete_document_route(
     if collection is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="document_not_found")
     try:
-        await delete_document(uow, storage, document=document)
-    except StorageError as exc:
+        await delete_document(
+            uow,
+            queue,
+            document=document,
+            correlation_id=getattr(request.state, "correlation_id", None),
+        )
+    except QueueError as exc:
         raise _http_for_upload_error(exc) from exc
     return DeleteResponse(document_id=document.id, status="DELETING")

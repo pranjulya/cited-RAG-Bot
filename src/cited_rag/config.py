@@ -51,6 +51,18 @@ class Settings(BaseSettings):
     retrieval_top_k: int = Field(default=20, ge=1)
     rrf_k: int = Field(default=60, ge=1)
     fused_top_k: int = Field(default=20, ge=1)
+    reranker_backend: Literal["overlap"] = "overlap"
+    rerank_top_n: int = Field(default=10, ge=1)
+    reranker_timeout_seconds: float = Field(default=5, gt=0)
+    max_evidence_items: int = Field(default=8, ge=1)
+    context_token_budget: int = Field(default=1500, ge=1)
+    generation_backend: Literal["heuristic"] = "heuristic"
+    generation_timeout_seconds: float = Field(default=15, gt=0)
+    min_rerank_score: float = Field(default=0, ge=0)
+    query_max_chars: int = Field(default=4000, ge=1, le=20000)
+    max_in_flight_queries: int = Field(default=32, ge=1)
+    log_sensitive_content: bool = False
+    cors_allow_origins: str = Field(default="*")
 
     @field_validator("debug")
     @classmethod
@@ -83,6 +95,11 @@ class Settings(BaseSettings):
         if not (self.qdrant_url or "").strip():
             raise ValueError(
                 "CITED_RAG_QDRANT_URL must be set when CITED_RAG_ENVIRONMENT=production"
+            )
+        if self.cors_allow_origins.strip() == "*":
+            raise ValueError(
+                "CITED_RAG_CORS_ALLOW_ORIGINS must be empty (CORS off) or an explicit "
+                "comma-separated origin list when CITED_RAG_ENVIRONMENT=production"
             )
         return self
 

@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 08 **[#13](https://github.com/pranjulya/cited-RAG-Bot/pull/13)** merged (`b6d7774`). Phase 09 hybrid RRF opened. |
-| Phase file status | Phase 09 `IN_PROGRESS` (not `TESTED`) |
-| Branch | `phase-09-hybrid-rrf` |
-| PR | [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14) — open |
-| `main` | `b6d7774` — Phase 08 dense retrieval. **Do not push or merge to `main` except via PR.** |
-| Next action | Codex review of Phase 09. Phase 10 reranking is stacked after this PR is opened; merge #14 before #15. |
-| Blockers | Local Docker/Qdrant hybrid integration not run. |
+| Last completed work | Phase 08 on `main`. Phases 09–23 opened as one stack for review. Codex P1s on #21–#27 and P2 docs on #28 applied on the stack. |
+| Phase file status | Phase 23 `TESTED` (docs + measured golden-v1 table; not merged) |
+| Branch | `phase-23-docs-learning` |
+| PR | [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14)–[#28](https://github.com/pranjulya/cited-RAG-Bot/pull/28) OPEN |
+| `main` | `b6d7774` — Phase 08. **Do not push or merge to `main` except via PR.** |
+| Next action | Review/merge in order **#14 → #28**. Do not land later PRs before their base. |
+| Blockers | Live Postgres/Qdrant E2E not run locally. Generator is heuristic, not an LLM. Glass-box UI is deferred until #14–#28 are on `main`. |
 
 ---
 
@@ -65,6 +65,81 @@ Do not put secrets, API keys, or raw PDF text here.
 ---
 
 ## Phase records
+
+### Phase 23 — Documentation, Learning, and Interview Readiness
+- **Date:** 2026-09-09
+- **Branch:** `phase-23-docs-learning`
+- **PR:** [#28](https://github.com/pranjulya/cited-RAG-Bot/pull/28)
+- **Status in phase file:** `TESTED`
+- **Goal:** README, Learning index, interview Q&A, and a reproducible golden-v1 benchmark table so a reviewer can run the project and see measured dense/sparse/hybrid/rerank scores.
+- **Files added/changed:** `README.md`, `reports/v1-defaults.md`, `Learning/20-rag-quality-experiments.md`, `Learning/23-documentation-learning.md`, `src/cited_rag/evaluation/__main__.py` (`--matrix`), `src/cited_rag/evaluation/experiments.py`, `evaluation/results/matrix.json`.
+- **Public contracts / commands:** `python -m cited_rag.evaluation`; `python -m cited_rag.evaluation --matrix`.
+- **Verification:** evaluation CLI + unit tests on this branch (see commit). Live compose smoke is in CI, not re-run locally here.
+- **Not verified:** hosted encoder/reranker; live Postgres/Qdrant E2E.
+- **Follow-ups:** Review/merge #14–#28 in order. Do not start the glass-box UI until that lands.
+
+### Phase 15 — End-to-End Query API
+- **Date:** 2026-09-09
+- **Branch:** `phase-15-query-api`
+- **PR:** [#20](https://github.com/pranjulya/cited-RAG-Bot/pull/20)
+- **Status in phase file:** `IN_PROGRESS`
+- **Goal:** Public `POST /v1/collections/{collection_id}/query` runs the full grounded pipeline.
+- **Verification:** `pytest tests/unit` **165 passed**, 1 skipped. Integration query tests not run locally.
+- **Follow-ups:** Phase 16 deletion; hosted LLM adapter; persist QueryRun completion.
+
+### Phase 14 — No-Answer Policy
+- **PR:** [#19](https://github.com/pranjulya/cited-RAG-Bot/pull/19)
+- **Goal:** Distinguish abstention reasons from infrastructure errors.
+
+### Phase 13 — Citation Validation
+- **PR:** [#18](https://github.com/pranjulya/cited-RAG-Bot/pull/18)
+- **Goal:** Fail closed on unapproved evidence IDs; public citations omit `chunk_id`.
+
+### Phase 12 — Grounded Generation
+- **PR:** [#17](https://github.com/pranjulya/cited-RAG-Bot/pull/17)
+- **Goal:** Evidence-only structured generation; PDF text is untrusted.
+
+### Phase 11 — Context Builder
+- **PR:** [#16](https://github.com/pranjulya/cited-RAG-Bot/pull/16)
+- **Goal:** Assign `E1..En`; model sees ID + text only.
+
+### Phase 10 — Reranking
+
+- **Date:** 2026-09-09
+- **Branch:** `phase-10-reranking`
+- **PR:** [#15](https://github.com/pranjulya/cited-RAG-Bot/pull/15) (`phase-10-reranking` → `phase-09-hybrid-rrf`, OPEN)
+- **Status in phase file:** `IN_PROGRESS`
+- **Goal:** Rerank fused candidates through a replaceable port; production timeout/failure is `RERANKER_ERROR`; evaluation may disable rerank.
+
+- **Files added/changed:**
+  - `ports/reranker.py`
+  - `adapters/rerank/overlap.py` — deterministic lexical overlap
+  - `application/rerank.py` — timeout wrapper, evaluation passthrough
+  - `RerankedEvidence`, `RerankerError`
+  - `EvaluationRunConfig.include_rerank`
+  - Settings: `CITED_RAG_RERANKER_BACKEND`, `CITED_RAG_RERANK_TOP_N`, `CITED_RAG_RERANKER_TIMEOUT_SECONDS`
+  - Tests: `tests/unit/test_rerank.py`
+  - `Learning/10-reranking.md`
+
+- **Public contracts / commands:**
+  - `rerank_candidates(query, fused, reranker=, top_n=, timeout_seconds=)`
+  - Empty input → empty output
+  - Timeout / provider error → `RERANKER_ERROR` (no fused-order fallback)
+  - `EvaluationRunConfig(include_rerank=False)` keeps fused order with `reranker_name=disabled`
+
+- **Decisions made in this phase (not already in ADR-011):**
+  - Default adapter is lexical overlap so CI does not download a cross-encoder. Production can swap a cross-encoder behind the same port.
+
+- **Verification run (exact commands + results):**
+  - ruff / mypy — passed
+  - `pytest tests/unit` — **135 passed, 1 skipped**
+
+- **Not verified / known gaps:**
+  - Hosted/local cross-encoder quality vs overlap
+  - Query API wiring (Phase 15)
+
+- **Follow-ups for the next phase:**
+  - Phase 11: context builder and request-scoped evidence IDs (`E1`, `E2`, …)
 
 ### Phase 09 — Hybrid Retrieval and RRF
 

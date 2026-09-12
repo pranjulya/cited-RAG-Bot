@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import timedelta
 from uuid import UUID
 
@@ -272,6 +273,15 @@ class PostgresChunkRepository:
     async def get(self, chunk_id: UUID) -> Chunk | None:
         row = await self._session.get(ChunkRow, chunk_id)
         return chunk_from_row(row) if row is not None else None
+
+    async def get_many(self, chunk_ids: Sequence[UUID]) -> list[Chunk]:
+        if not chunk_ids:
+            return []
+        result = await self._session.scalars(
+            select(ChunkRow).where(ChunkRow.id.in_(list(chunk_ids)))
+        )
+        by_id = {row.id: chunk_from_row(row) for row in result.all()}
+        return [by_id[chunk_id] for chunk_id in chunk_ids if chunk_id in by_id]
 
     async def list_by_version(self, document_version_id: UUID) -> list[Chunk]:
         result = await self._session.scalars(

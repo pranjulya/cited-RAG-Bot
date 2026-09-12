@@ -17,6 +17,8 @@ from cited_rag.domain.exceptions import (
     TransientIngestionError,
 )
 from cited_rag.domain.models.ingestion import IngestionJob
+from cited_rag.observability.correlation import set_correlation_id
+from cited_rag.observability.tracing import span
 from cited_rag.ports.chunker import Chunker
 from cited_rag.ports.embedding import EmbeddingProvider
 from cited_rag.ports.object_storage import ObjectStorage
@@ -48,6 +50,8 @@ async def process_ingestion_job(
     sparse_encoder: SparseEncoder | None = None,
 ) -> str:
     """Claim a version, parse, chunk, dense+sparse index, READY if complete."""
+    if correlation_id:
+        set_correlation_id(correlation_id)
     extra = {"correlation_id": correlation_id or "-"}
     version = await uow.versions.get(document_version_id)
     if version is None:
@@ -124,28 +128,33 @@ async def process_ingestion_job(
                 raise PermanentIngestionError("ingestion dense indexer is not configured")
             if sparse_encoder is None:
                 raise PermanentIngestionError("ingestion sparse encoder is not configured")
-            pages = await persist_parsed_pages(uow, version, storage=storage, parser=parser)
-            chunks = await persist_chunks(uow, version, pages, chunker)
-            await persist_dense_index(
-                chunks,
-                embedder=embedding_provider,
-                store=retrieval_store,
-                config=embedding_config,
-            )
-            await persist_sparse_index(
-                chunks,
-                encoder=sparse_encoder,
-                store=retrieval_store,
-                config=embedding_config,
-            )
-            await finalize_ready(
-                uow,
-                version,
-                chunks,
-                store=retrieval_store,
-                encoder_config=sparse_encoder.config,
-                index_version=embedding_config.index_version,
-            )
+            with span("ingest.parse"):
+                pages = await persist_parsed_pages(uow, version, storage=storage, parser=parser)
+            with span("ingest.chunk"):
+                chunks = await persist_chunks(uow, version, pages, chunker)
+            with span("ingest.embed"):
+                await persist_dense_index(
+                    chunks,
+                    embedder=embedding_provider,
+                    store=retrieval_store,
+                    config=embedding_config,
+                )
+            with span("ingest.sparse"):
+                await persist_sparse_index(
+                    chunks,
+                    encoder=sparse_encoder,
+                    store=retrieval_store,
+                    config=embedding_config,
+                )
+            with span("ingest.ready"):
+                await finalize_ready(
+                    uow,
+                    version,
+                    chunks,
+                    store=retrieval_store,
+                    encoder_config=sparse_encoder.config,
+                    index_version=embedding_config.index_version,
+                )
         else:
             raise PermanentIngestionError("ingestion parser is not configured")
     except TransientIngestionError as exc:

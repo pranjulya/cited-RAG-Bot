@@ -10,6 +10,7 @@ from cited_rag.domain.indexing import DENSE_VECTOR_NAME, PAYLOAD_FIELDS, Indexed
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.document import DocumentVersion
 from cited_rag.domain.sparse import SparseEncoderConfig
+from cited_rag.observability.correlation import get_correlation_id
 from cited_rag.ports.embedding import EmbeddingProvider
 from cited_rag.ports.repositories import UnitOfWork
 from cited_rag.ports.retrieval_store import RetrievalStore
@@ -85,7 +86,7 @@ async def persist_dense_index(
         len(indexed),
         config.dimension,
         config.batch_size,
-        extra={"correlation_id": "-"},
+        extra={"correlation_id": get_correlation_id()},
     )
     return indexed
 
@@ -138,7 +139,7 @@ async def persist_sparse_index(
         "sparse indexed count=%s encoder=%s",
         len(indexed),
         encoder.config.name,
-        extra={"correlation_id": "-"},
+        extra={"correlation_id": get_correlation_id()},
     )
     return indexed
 
@@ -209,5 +210,5 @@ async def finalize_ready(
         DocumentVersionStatus.READY,
     )
     await uow.documents.set_active_version(version.document_id, version.id)
-    logger.info("version READY after dense+sparse", extra={"correlation_id": "-"})
+    logger.info("version READY after dense+sparse", extra={"correlation_id": get_correlation_id()})
     return ready

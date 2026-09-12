@@ -64,6 +64,16 @@ async def test_pypdf_parser_rejects_extraction_empty_pdf() -> None:
     with pytest.raises(EmptyExtractionError) as exc:
         await parser.parse(BytesIO(make_blank_pdf()))
     assert exc.value.failure_code == "PDF_UNSUPPORTED"
+    message = str(exc.value)
+    assert "scanned" in message.lower() or "image-only" in message.lower()
+    assert "ocr" in message.lower()
+
+
+def test_empty_extraction_message_mentions_scanned_pages_and_no_ocr() -> None:
+    error = EmptyExtractionError()
+    assert error.failure_code == "PDF_UNSUPPORTED"
+    assert "scanned" in str(error).lower() or "image-only" in str(error).lower()
+    assert "ocr" in str(error).lower()
 
 
 @pytest.mark.asyncio

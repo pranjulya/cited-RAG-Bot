@@ -7,6 +7,7 @@ from cited_rag.domain.exceptions import IngestionIntegrityError, PermanentIngest
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.document import DocumentVersion
 from cited_rag.domain.models.page import Page
+from cited_rag.observability.correlation import get_correlation_id
 from cited_rag.ports.chunker import Chunker
 from cited_rag.ports.repositories import UnitOfWork
 
@@ -30,7 +31,7 @@ async def persist_chunks(
         logger.info(
             "chunks already persisted count=%s",
             len(existing),
-            extra={"correlation_id": "-"},
+            extra={"correlation_id": get_correlation_id()},
         )
         return existing
 
@@ -49,6 +50,6 @@ async def persist_chunks(
         chunker.config.strategy,
         chunker.config.target_chars,
         chunker.config.overlap_chars,
-        extra={"correlation_id": "-"},
+        extra={"correlation_id": get_correlation_id()},
     )
     return chunks

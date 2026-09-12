@@ -1,6 +1,6 @@
 # Phase 11 — Context Builder and Evidence Contract
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Build model-ready context from approved reranked evidence while enforcing token/evidence budgets and assigning request-scoped evidence IDs.

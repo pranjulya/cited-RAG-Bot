@@ -7,10 +7,15 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from cited_rag.application.retrieval.fusion import FusionStrategy
-from cited_rag.application.retrieval.retrievers import retrieve_dense, retrieve_sparse
+from cited_rag.application.retrieval.retrievers import (
+    ChunkLoader,
+    retrieve_dense,
+    retrieve_sparse,
+)
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.evaluation import EvaluationRunConfig
 from cited_rag.domain.models.retrieval import FusedCandidate, RetrievedCandidate
+from cited_rag.observability.correlation import get_correlation_id
 from cited_rag.ports.embedding import EmbeddingProvider
 from cited_rag.ports.retrieval_store import RetrievalStore
 from cited_rag.ports.sparse_encoder import SparseEncoder
@@ -24,13 +29,14 @@ async def retrieve_hybrid(
     embedder: EmbeddingProvider,
     encoder: SparseEncoder,
     store: RetrievalStore,
-    chunks: Sequence[Chunk],
+    chunks: Sequence[Chunk] = (),
     collection_id: UUID,
     document_version_ids: Sequence[UUID],
     top_k: int,
     fusion: FusionStrategy,
     fused_top_k: int,
     evaluation: EvaluationRunConfig | None = None,
+    load_chunks: ChunkLoader | None = None,
 ) -> list[FusedCandidate]:
     """Run dense and sparse independently, then fuse ranks in process.
 
@@ -53,6 +59,7 @@ async def retrieve_hybrid(
             collection_id=collection_id,
             document_version_ids=document_version_ids,
             top_k=top_k,
+            load_chunks=load_chunks,
         )
 
     async def _sparse() -> list[RetrievedCandidate]:
@@ -66,6 +73,7 @@ async def retrieve_hybrid(
             collection_id=collection_id,
             document_version_ids=document_version_ids,
             top_k=top_k,
+            load_chunks=load_chunks,
         )
 
     dense, sparse = await asyncio.gather(_dense(), _sparse())
@@ -78,6 +86,6 @@ async def retrieve_hybrid(
         top_k,
         fused_top_k,
         int((time.perf_counter() - started) * 1000),
-        extra={"correlation_id": "-"},
+        extra={"correlation_id": get_correlation_id()},
     )
     return fused
