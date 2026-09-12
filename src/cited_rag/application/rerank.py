@@ -9,6 +9,7 @@ from uuid import UUID
 from cited_rag.domain.exceptions import RerankerError
 from cited_rag.domain.models.evaluation import EvaluationRunConfig
 from cited_rag.domain.models.retrieval import FusedCandidate, RerankedEvidence
+from cited_rag.observability.correlation import get_correlation_id
 from cited_rag.ports.reranker import Reranker
 
 logger = logging.getLogger("cited_rag.rerank")
@@ -31,14 +32,14 @@ async def rerank_candidates(
             len(passthrough),
             top_n,
             int((time.perf_counter() - started) * 1000),
-            extra={"correlation_id": "-"},
+            extra={"correlation_id": get_correlation_id()},
         )
         return passthrough
     if not candidates or top_n < 1:
         logger.info(
             "rerank empty count=0 top_n=%s",
             top_n,
-            extra={"correlation_id": "-"},
+            extra={"correlation_id": get_correlation_id()},
         )
         return []
     try:
@@ -58,7 +59,7 @@ async def rerank_candidates(
         len(validated),
         top_n,
         int((time.perf_counter() - started) * 1000),
-        extra={"correlation_id": "-"},
+        extra={"correlation_id": get_correlation_id()},
     )
     return validated
 

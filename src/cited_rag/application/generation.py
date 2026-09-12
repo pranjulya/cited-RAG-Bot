@@ -9,6 +9,7 @@ from cited_rag.domain.enums import AnswerStatus
 from cited_rag.domain.exceptions import GenerationError
 from cited_rag.domain.models.evidence import EvidencePackage
 from cited_rag.domain.models.generation import GroundedGenerationResult
+from cited_rag.observability.correlation import get_correlation_id
 from cited_rag.ports.generation import GroundedGenerator
 
 logger = logging.getLogger("cited_rag.generation")
@@ -42,6 +43,6 @@ async def generate_grounded_answer(
         len(result.claims),
         int((time.perf_counter() - started) * 1000),
         result.model,
-        extra={"correlation_id": "-"},
+        extra={"correlation_id": get_correlation_id()},
     )
     return result

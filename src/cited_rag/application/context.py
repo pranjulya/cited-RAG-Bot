@@ -7,6 +7,7 @@ from uuid import UUID
 
 from cited_rag.domain.models.evidence import EvidencePackage, EvidenceRecord
 from cited_rag.domain.models.retrieval import RerankedEvidence
+from cited_rag.observability.correlation import get_correlation_id
 
 logger = logging.getLogger("cited_rag.context")
 
@@ -65,7 +66,7 @@ def build_evidence_package(
         len(dropped),
         used_tokens,
         token_budget,
-        extra={"correlation_id": "-"},
+        extra={"correlation_id": get_correlation_id()},
     )
     return EvidencePackage(
         records=tuple(kept),

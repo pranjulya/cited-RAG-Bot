@@ -11,6 +11,10 @@ INGEST_FUNCTION_NAME = "ingest_document_version"
 CLEANUP_FUNCTION_NAME = "cleanup_deleted_document"
 
 
+def ingest_job_id(document_version_id: UUID) -> str:
+    return f"ingest:{document_version_id}:{uuid4().hex[:8]}"
+
+
 class ArqJobQueue:
     def __init__(self, pool: ArqRedis) -> None:
         self._pool = pool
@@ -30,7 +34,7 @@ class ArqJobQueue:
         *,
         attempt: int | None = None,
     ) -> str:
-        job_id = f"{document_version_id}:{0 if attempt is None else attempt}"
+        job_id = ingest_job_id(document_version_id)
         try:
             job = await self._pool.enqueue_job(
                 INGEST_FUNCTION_NAME,
@@ -41,7 +45,7 @@ class ArqJobQueue:
         except Exception as exc:
             raise QueueError("failed to enqueue ingestion job") from exc
         if job is None:
-            raise QueueError(f"ingestion job id already exists: {job_id}")
+            return job_id
         return job.job_id
 
     async def enqueue_cleanup(

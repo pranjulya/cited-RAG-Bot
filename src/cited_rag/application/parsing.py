@@ -10,6 +10,7 @@ from cited_rag.domain.exceptions import (
 )
 from cited_rag.domain.models.document import DocumentVersion
 from cited_rag.domain.models.page import Page
+from cited_rag.observability.correlation import get_correlation_id
 from cited_rag.ports.object_storage import ObjectStorage, key_from_storage_uri, source_pdf_key
 from cited_rag.ports.parser import DocumentParser
 from cited_rag.ports.repositories import UnitOfWork
@@ -30,7 +31,7 @@ async def persist_parsed_pages(
         logger.info(
             "pages already persisted count=%s",
             len(existing),
-            extra={"correlation_id": "-"},
+            extra={"correlation_id": get_correlation_id()},
         )
         return existing
 
@@ -69,6 +70,6 @@ async def persist_parsed_pages(
         "parsed pages=%s parser=%s",
         len(pages),
         parser.name,
-        extra={"correlation_id": "-"},
+        extra={"correlation_id": get_correlation_id()},
     )
     return pages

@@ -49,6 +49,7 @@ def test_production_disables_debug(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     monkeypatch.setenv("CITED_RAG_REDIS_URL", "redis://localhost:6379/0")
     monkeypatch.setenv("CITED_RAG_QDRANT_URL", "http://localhost:6333")
+    monkeypatch.setenv("CITED_RAG_CORS_ALLOW_ORIGINS", "https://app.example.com")
     get_settings.cache_clear()
     settings = Settings(_env_file=None)
     assert settings.debug is False
@@ -92,6 +93,35 @@ def test_production_requires_database_url(monkeypatch: pytest.MonkeyPatch) -> No
     get_settings.cache_clear()
     with pytest.raises(ValidationError, match="CITED_RAG_DATABASE_URL"):
         Settings(_env_file=None)
+
+
+def test_production_rejects_wildcard_cors(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CITED_RAG_ENVIRONMENT", "production")
+    monkeypatch.setenv("CITED_RAG_API_KEY", "not-a-placeholder")
+    monkeypatch.setenv(
+        "CITED_RAG_DATABASE_URL",
+        "postgresql+asyncpg://cited_rag:cited_rag@localhost:5432/cited_rag",
+    )
+    monkeypatch.setenv("CITED_RAG_REDIS_URL", "redis://localhost:6379/0")
+    monkeypatch.setenv("CITED_RAG_QDRANT_URL", "http://localhost:6333")
+    monkeypatch.setenv("CITED_RAG_CORS_ALLOW_ORIGINS", "*")
+    get_settings.cache_clear()
+    with pytest.raises(ValidationError, match="CITED_RAG_CORS_ALLOW_ORIGINS"):
+        Settings(_env_file=None)
+
+
+def test_production_allows_cors_disabled() -> None:
+    get_settings.cache_clear()
+    settings = Settings(
+        _env_file=None,
+        environment="production",
+        api_key="not-a-placeholder",
+        database_url="postgresql+asyncpg://cited_rag:cited_rag@localhost:5432/cited_rag",
+        redis_url="redis://localhost:6379/0",
+        qdrant_url="http://localhost:6333",
+        cors_allow_origins="",
+    )
+    assert settings.cors_allow_origins == ""
 
 
 def test_production_requires_qdrant_url(monkeypatch: pytest.MonkeyPatch) -> None:

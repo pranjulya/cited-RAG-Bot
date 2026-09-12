@@ -5,6 +5,7 @@ from uuid import UUID
 
 from cited_rag.domain.enums import DocumentVersionStatus
 from cited_rag.domain.exceptions import TransientIngestionError
+from cited_rag.observability.correlation import get_correlation_id
 from cited_rag.ports.object_storage import ObjectStorage, source_pdf_key
 from cited_rag.ports.queue import JobQueue
 from cited_rag.ports.repositories import UnitOfWork
@@ -80,4 +81,6 @@ async def purge_deleted_document(
                 version.id, DocumentVersionStatus.DELETING, DocumentVersionStatus.DELETED
             )
     await uow.commit()
-    logger.info("document purged id=%s", document_id, extra={"correlation_id": "-"})
+    logger.info(
+        "document purged id=%s", document_id, extra={"correlation_id": get_correlation_id()}
+    )

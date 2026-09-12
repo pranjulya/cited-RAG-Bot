@@ -9,6 +9,7 @@ from cited_rag.domain.exceptions import CitationValidationError
 from cited_rag.domain.models.citation import PublicCitation
 from cited_rag.domain.models.evidence import EvidencePackage
 from cited_rag.domain.models.generation import GroundedGenerationResult
+from cited_rag.observability.correlation import get_correlation_id
 from cited_rag.observability.metrics import metrics
 
 logger = logging.getLogger("cited_rag.citations")
@@ -67,6 +68,6 @@ def validate_citations(
         "citations validated count=%s status=%s",
         len(citations),
         result.status,
-        extra={"correlation_id": "-"},
+        extra={"correlation_id": get_correlation_id()},
     )
     return tuple(citations)

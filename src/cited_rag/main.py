@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 
 from cited_rag.adapters.embedding.hashing import HashEmbeddingProvider
 from cited_rag.adapters.generation import create_generator
@@ -82,6 +83,10 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         await engine.dispose()
 
 
+def _cors_origins(raw: str) -> list[str]:
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     resolved = settings if settings is not None else get_settings()
     _configure_logging(resolved)
@@ -108,6 +113,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             set_correlation_id("-")
         response.headers[header_name] = correlation_id
         return response
+
+    if resolved.cors_allow_origins.strip():
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=_cors_origins(resolved.cors_allow_origins),
+            allow_credentials=False,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     app.include_router(health_router)
     app.include_router(collections_router)

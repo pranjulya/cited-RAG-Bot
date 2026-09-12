@@ -62,6 +62,7 @@ class Settings(BaseSettings):
     query_max_chars: int = Field(default=4000, ge=1, le=20000)
     max_in_flight_queries: int = Field(default=32, ge=1)
     log_sensitive_content: bool = False
+    cors_allow_origins: str = Field(default="*")
 
     @field_validator("debug")
     @classmethod
@@ -94,6 +95,11 @@ class Settings(BaseSettings):
         if not (self.qdrant_url or "").strip():
             raise ValueError(
                 "CITED_RAG_QDRANT_URL must be set when CITED_RAG_ENVIRONMENT=production"
+            )
+        if self.cors_allow_origins.strip() == "*":
+            raise ValueError(
+                "CITED_RAG_CORS_ALLOW_ORIGINS must be empty (CORS off) or an explicit "
+                "comma-separated origin list when CITED_RAG_ENVIRONMENT=production"
             )
         return self
 

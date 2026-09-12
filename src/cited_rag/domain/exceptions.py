@@ -84,7 +84,12 @@ class PasswordProtectedPdfError(PdfParseError):
 
 
 class EmptyExtractionError(PdfParseError):
-    def __init__(self, message: str = "PDF has no extractable text") -> None:
+    def __init__(
+        self,
+        message: str = (
+            "PDF has no extractable text (scanned or image-only pages); pypdf has no OCR"
+        ),
+    ) -> None:
         super().__init__(message, failure_code="PDF_UNSUPPORTED")
 
 

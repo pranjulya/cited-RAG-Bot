@@ -155,3 +155,33 @@ def test_query_route_requires_bearer() -> None:
         json={"question": "How much leave?"},
     )
     assert missing.status_code == 401
+
+
+def test_query_route_too_long_is_413_not_pydantic_422() -> None:
+    from cited_rag.api.deps import get_principal, get_uow
+    from cited_rag.domain.models.principal import ApiPrincipal
+
+    settings = Settings(
+        _env_file=None,
+        api_key="test-placeholder-key",
+        environment="test",
+        query_max_chars=8,
+    )
+    app = create_app(settings)
+
+    async def _uow() -> object:
+        yield object()
+
+    async def _principal() -> ApiPrincipal:
+        return ApiPrincipal(name="test")
+
+    app.dependency_overrides[get_uow] = _uow
+    app.dependency_overrides[get_principal] = _principal
+    client = TestClient(app)
+    response = client.post(
+        f"/v1/collections/{uuid4()}/query",
+        json={"question": "123456789"},
+        headers={"Authorization": "Bearer test-placeholder-key"},
+    )
+    assert response.status_code == 413
+    assert response.json()["detail"] == "query_too_long"

@@ -53,6 +53,7 @@ Dense-only finds the page but ranks it worse. Sparse/hybrid/hybrid+rerank tie he
 - PDF-only, API-key auth, one application Qdrant collection
 - No V1 citation repair
 - Heuristic generator is not an LLM; hash embeddings are not a hosted encoder
+- Scanned/image-only PDFs fail with `PDF_UNSUPPORTED` (no OCR); paraphrase questions may abstain with the heuristic generator
 - Golden set is two cases. Scores above are reproducible, not a hosted-model bake-off
 
 ## Requirements

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from cited_rag.domain.exceptions import QueueError
 
@@ -25,7 +25,7 @@ class MemoryJobQueue:
             raise QueueError("redis unavailable")
         token = 0 if attempt is None else attempt
         self.jobs.append((document_version_id, correlation_id, token))
-        return f"{document_version_id}:{token}"
+        return f"ingest:{document_version_id}:{uuid4().hex[:8]}"
 
     async def enqueue_cleanup(
         self,

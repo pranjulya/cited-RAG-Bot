@@ -14,6 +14,7 @@ from cited_rag.domain.exceptions import (
 from cited_rag.domain.indexing import SearchHit
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.retrieval import RetrievedCandidate
+from cited_rag.observability.correlation import get_correlation_id
 from cited_rag.ports.embedding import EmbeddingProvider
 from cited_rag.ports.retrieval_store import RetrievalStore
 from cited_rag.ports.sparse_encoder import SparseEncoder
@@ -49,7 +50,7 @@ async def retrieve_dense(
         logger.info(
             "dense retrieval empty-filter count=0 top_k=%s",
             top_k,
-            extra={"correlation_id": "-"},
+            extra={"correlation_id": get_correlation_id()},
         )
         return []
     try:
@@ -83,7 +84,7 @@ async def retrieve_dense(
         len(candidates),
         top_k,
         int((time.perf_counter() - started) * 1000),
-        extra={"correlation_id": "-"},
+        extra={"correlation_id": get_correlation_id()},
     )
     return candidates
 
