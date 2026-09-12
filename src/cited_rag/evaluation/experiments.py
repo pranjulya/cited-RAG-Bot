@@ -28,6 +28,8 @@ class ExperimentScore:
     mrr: float
     ndcg_at_5: float
     citation_validity: float
+    no_answer_precision: float
+    no_answer_recall: float
     false_answer_rate: float
     latency_ms: int
     cases: int
@@ -50,6 +52,8 @@ async def run_v1_matrix(dataset: GoldenDataset | None = None) -> list[Experiment
                 mrr=layers.mrr,
                 ndcg_at_5=layers.ndcg_at_5,
                 citation_validity=layers.citation_validity,
+                no_answer_precision=layers.no_answer_precision,
+                no_answer_recall=layers.no_answer_recall,
                 false_answer_rate=layers.false_answer_rate,
                 latency_ms=layers.latency_ms,
                 cases=layers.cases,
