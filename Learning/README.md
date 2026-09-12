@@ -89,3 +89,7 @@ See `Learning/20-rag-quality-experiments.md`.
 ## Phase 21
 
 See `Learning/21-production-failure-scenarios.md`.
+
+## Phase 22
+
+See `Learning/22-docker-ci-deployment.md`.
