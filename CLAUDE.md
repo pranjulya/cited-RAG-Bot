@@ -10,10 +10,11 @@ Before any implementation:
 2. read `AGENTS.md`;
 3. read `Implementation.md`;
 4. read `docs/architecture/decisions/ADR-011-v1-locked-policies.md`;
-5. read the current phase file under `implementation/`;
-6. read the architecture documents referenced by that phase;
-7. confirm the phase prerequisites and scope. Do not re-open ADR-011 locks.
-8. After the phase PR is opened, update `MEMORY.md` and push it on the phase branch before the session is cleared.
+5. for UI work, read `docs/architecture/decisions/ADR-012-glass-box-console.md` and `implementation/ui/README.md`;
+6. read the current phase file under `implementation/` or `implementation/ui/`;
+7. read the architecture documents referenced by that phase;
+8. confirm the phase prerequisites and scope. Do not re-open ADR-011 or ADR-012 locks.
+9. After the phase PR is opened, update `MEMORY.md` and push it on the phase branch before the session is cleared.
 
 ## Working Style
 

@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 08 on `main`. Phases 09–23 opened as one stack for review. Codex P1s on #21–#27 and P2 docs on #28 applied on the stack. |
-| Phase file status | Phase 23 `TESTED` (docs + measured golden-v1 table; not merged) |
-| Branch | `phase-23-docs-learning` |
-| PR | [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14)–[#28](https://github.com/pranjulya/cited-RAG-Bot/pull/28) OPEN |
-| `main` | `b6d7774` — Phase 08. **Do not push or merge to `main` except via PR.** |
-| Next action | Review/merge in order **#14 → #28**. Do not land later PRs before their base. |
-| Blockers | Live Postgres/Qdrant E2E not run locally. Generator is heuristic, not an LLM. Glass-box UI is deferred until #14–#28 are on `main`. |
+| Last completed work | Backend Phases 00–23 merged to `main` (`9c060ae`, PR #29). Glass-box UI **planned**, not implemented. |
+| Phase file status | UI-00 `NOT_STARTED`. Backend phase files still say IN_PROGRESS/TESTED (hygiene, not a code gap). |
+| Branch | `docs/ui-glass-box-plan` (planning only) |
+| PR | Open this docs PR into `main`. No UI code on this branch. |
+| `main` | `9c060ae` — Phase 23 + P1/P2. **Do not push or merge to `main` except via PR.** |
+| Next action | Review/merge the UI plan. Then start **UI-00** from latest `main` (`ui-00-foundation`). One UI phase per PR. |
+| Blockers | No console yet. Generator is heuristic until UI-07. No OCR. MEMORY was stale before this planning PR. |
 
 ---
 

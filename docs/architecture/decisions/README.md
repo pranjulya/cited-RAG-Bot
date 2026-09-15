@@ -40,6 +40,7 @@ The ADR index is the authoritative status registry for these decisions. Detailed
 | ADR-009 | Model/provider boundaries | Embedding, reranking, generation, parser, storage and retrieval infrastructure behind explicit adapters | Accepted |
 | ADR-010 | Evaluation gates | Versioned golden dataset and retrieval/citation/no-answer regression gates | Accepted |
 | ADR-011 | V1 locked policies | Lifecycle, versioning, Qdrant named vectors, READY filters, auth, citations, fail-closed, worker, eval ablations | Accepted |
+| ADR-012 | Glass-box console | `web/` SPA; API-only; thin list/trace/PDF routes; heuristic CI default; hosted generator in UI-07 | Proposed until UI-00 |
 
 Individual ADR files are **Accepted**. Do not treat leftover “Proposed” language in older revisions as license to redesign. ADR-011 wins on any remaining contradiction.
 
