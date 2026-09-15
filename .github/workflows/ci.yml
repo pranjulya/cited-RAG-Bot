@@ -23,6 +23,25 @@ jobs:
       - name: Evaluation smoke
         run: python -m cited_rag.evaluation
 
+  web-unit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+
   integration-postgres:
     runs-on: ubuntu-latest
     services:
@@ -82,16 +101,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build and start compose stack
-        run: docker compose up --build -d --wait --wait-timeout 180
+        run: docker compose up --build -d --wait --wait-timeout 300
       - name: Probe API health and readiness
         run: |
           curl -sf http://localhost:8000/health
           curl -sf http://localhost:8000/ready
+          curl -sf http://localhost:8080/
       - name: Confirm API and worker are healthy
         run: |
           docker compose ps
           docker compose ps | grep -E "api-1" | grep -i healthy
           docker compose ps | grep -E "worker-1" | grep -i healthy
+          docker compose ps | grep -E "web-1" | grep -i healthy
       - name: Tear down
         if: always()
         run: docker compose down -v

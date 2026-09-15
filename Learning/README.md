@@ -97,3 +97,7 @@ See `Learning/22-docker-ci-deployment.md`.
 ## Phase 23
 
 See `Learning/23-documentation-learning.md` and `Learning/interview-qa.md`.
+
+## UI-00
+
+See `Learning/ui-00-foundation.md`.

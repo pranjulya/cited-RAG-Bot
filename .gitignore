@@ -12,6 +12,10 @@ build/
 .coverage
 htmlcov/
 
+# Frontend
+web/node_modules/
+web/dist/
+
 # Local object storage
 data/
 

@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Backend **code** for Phases 00–23 is on `main` (`9c060ae`, PRs #2–#29). Phase status is **TESTED**, not REVIEWED (no submitted GitHub reviews), not COMPLETE. |
-| Phase file status | Backend 00–23: **TESTED** (code merged, tests exist). **Not REVIEWED** (no submitted GitHub reviews on PRs #2–#29). **Not COMPLETE**. UI-00: `NOT_STARTED`. |
-| Branch | `docs/ui-glass-box-plan` (planning only) |
-| PR | [#30](https://github.com/pranjulya/cited-RAG-Bot/pull/30) into `main`. No UI code on this branch. |
-| `main` | `9c060ae`. **Do not push or merge to `main` except via PR.** |
-| Next action | Merge this plan after review. Then **UI-00** from latest `main` (`ui-00-foundation`). One UI phase per PR. |
-| Blockers | No console. Heuristic generator until UI-07. No OCR. Do not claim backend `COMPLETE` without a close-out checklist per phase. |
+| Last completed work | UI-00 console shell on `ui-00-foundation` (compose `web` :8080). |
+| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED` (not REVIEWED until PR review). |
+| Branch | `ui-00-foundation` |
+| PR | Open into `main`. Do not start UI-01 until it merges. |
+| `main` | `674812d` — UI plan. **Do not push or merge to `main` except via PR.** |
+| Next action | Review UI-00 PR. Then UI-01 collections. |
+| Blockers | Heuristic generator until UI-07. No OCR. |
 
 ---
 
