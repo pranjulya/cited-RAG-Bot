@@ -1,6 +1,7 @@
 # Phase 23 — Documentation, Learning, and Interview Readiness
 
 **Status:** TESTED
+**On main:** merged PR #28/#29. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Turn the completed system into a portfolio-ready, teachable project whose architecture, tradeoffs, benchmarks, failures, and learning outcomes are easy to understand.

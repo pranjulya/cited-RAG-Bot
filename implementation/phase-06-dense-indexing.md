@@ -1,6 +1,7 @@
 # Phase 06 — Embedding and Dense Indexing
 
-**Status:** IN_PROGRESS
+**Status:** TESTED
+**On main:** merged PR #11. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Generate dense embeddings for chunks and index them in the retrieval store with collection-scoped provenance filters.

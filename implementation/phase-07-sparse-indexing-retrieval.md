@@ -1,6 +1,7 @@
 # Phase 07 — Sparse Indexing and Retrieval
 
-**Status:** IN_PROGRESS
+**Status:** TESTED
+**On main:** merged PR #12. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Add lexical/sparse retrieval for exact names, identifiers, numbers, rare terms, and phrases while preserving the same chunk identity contract as dense retrieval.

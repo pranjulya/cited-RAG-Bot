@@ -1,6 +1,7 @@
 # Phase 10 — Reranking
 
-**Status:** IN_PROGRESS
+**Status:** TESTED
+**On main:** merged PR #15. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Rerank fused retrieval candidates with a replaceable cross-encoder or hosted reranker and prove whether relevance improves.

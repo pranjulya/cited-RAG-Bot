@@ -1,6 +1,7 @@
 # Phase 08 — Dense Retrieval
 
-**Status:** IN_PROGRESS
+**Status:** TESTED
+**On main:** merged PR #13. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Implement collection-scoped semantic retrieval over dense embeddings and expose deterministic candidates for downstream hybrid fusion.

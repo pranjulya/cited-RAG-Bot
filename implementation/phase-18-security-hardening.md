@@ -1,6 +1,7 @@
 # Phase 18 — Security Hardening
 
-**Status:** IN_PROGRESS
+**Status:** TESTED
+**On main:** merged PR #23. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Harden the portfolio deployment against cross-collection leakage, malicious PDFs, prompt injection, abusive requests, and secret exposure.

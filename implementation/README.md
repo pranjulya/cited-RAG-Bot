@@ -1,6 +1,6 @@
 # Project 04 — Phase Implementation Guide
 
-**Status:** PLANNING COMPLETE, ADR-011 FROZEN, PHASES 09–23 OPEN FOR REVIEW
+**Status:** BACKEND 00–23 **TESTED** ON MAIN (not REVIEWED, not COMPLETE); UI PROGRAM PLANNED (`implementation/ui/`)
 
 This folder is the execution layer for `Implementation.md`. Each phase is intentionally small enough to implement, test, review, learn, and complete before moving to the next dependency.
 
@@ -26,6 +26,12 @@ Before any phase:
 ## Status Model
 
 `NOT_STARTED → IN_PROGRESS → IMPLEMENTED → TESTED → REVIEWED → COMPLETE`
+
+`COMPLETE` means the phase Definition of Done was recorded: implementation, automated tests, review, documentation, and Learning notes (`AGENTS.md`). **Merged to `main` is not `COMPLETE` by itself.**
+
+Backend 00–23 **code** is on `main` (PRs #2–#29). Phase files are **TESTED**: merged and covered by automated tests. They are **not REVIEWED**: GitHub shows no submitted reviews on those PRs. They are **not COMPLETE**: AGENTS.md DoD was not recorded. A later PR may promote a phase only with recorded review evidence and a COMPLETE checklist.
+
+Older phase files still say “Prerequisites: Phase N COMPLETE”. Read that as “Phase N is on `main` (TESTED)”, not as AGENTS.md `COMPLETE`.
 
 ## Phase Index
 
@@ -55,6 +61,7 @@ Before any phase:
 | 21 | Production Failure Scenarios | 15–20 |
 | 22 | Docker, CI, Deployment Readiness | 00–21 |
 | 23 | Documentation, Learning, Interview Readiness | all prior phases |
+| UI-00…08 | Glass-box console | Backend 00–23 on `main`; see `implementation/ui/README.md` |
 
 ## Cross-Cutting Invariants
 

@@ -1,6 +1,7 @@
 # Phase 13 — Citation Mapping and Validation
 
-**Status:** IN_PROGRESS
+**Status:** TESTED
+**On main:** merged PR #18. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Convert model-selected evidence IDs into authoritative document/page citations and reject fabricated or unauthorized references before response delivery.

@@ -2,9 +2,9 @@
 
 ## Master Implementation Plan
 
-**Status:** Accepted for implementation (ADR-011 freeze); Phases 09–23 stacked for review  
-**Version:** 1.1  
-**Scope:** PDF-only, multi-document Cited RAG with page-level citations
+**Status:** Backend 00–23 **code** on `main` (phase files **TESTED**, not REVIEWED, not COMPLETE); UI program planned (ADR-012 Accepted, UI-00…UI-08)  
+**Version:** 1.2  
+**Scope:** PDF-only, multi-document Cited RAG with page-level citations; glass-box console after backend freeze
 
 ---
 
@@ -25,6 +25,7 @@ Before implementing any phase, read the relevant documents below.
 ### Product
 
 - `docs/product/PRD.md`
+- `docs/product/glass-box-console.md`
 
 ### Architecture Decisions
 
@@ -40,6 +41,7 @@ Before implementing any phase, read the relevant documents below.
 - `docs/architecture/decisions/ADR-009-provider-boundaries.md`
 - `docs/architecture/decisions/ADR-010-evaluation-gates.md`
 - `docs/architecture/decisions/ADR-011-v1-locked-policies.md`
+- `docs/architecture/decisions/ADR-012-glass-box-console.md`
 
 ### Architecture
 
@@ -103,7 +105,23 @@ Observability         Structured logs + metrics + traces
 Evaluation            Versioned golden dataset + automated evaluation harness
 ```
 
-These are accepted. ADR-011 freezes lifecycle, Qdrant schema, auth, citations, fail-closed retrieval, and READY ownership. If an ADR changes, update this document before implementation continues.
+These are accepted. ADR-011 freezes lifecycle, Qdrant schema, auth, citations, fail-closed retrieval, and READY ownership. ADR-012 freezes the glass-box console (`web/`, thin product APIs, no UI-to-database). If an ADR changes, update this document before implementation continues.
+
+Console UI is a separate program after backend 00–23:
+
+| UI phase | Name |
+|---|---|
+| UI-00 | Foundation (Vite/React, key gate, health) |
+| UI-01 | Collections list + create |
+| UI-02 | Ingest theater |
+| UI-03 | Ask + citations |
+| UI-04 | Glass box (stages, E-IDs, correlation) |
+| UI-05 | Page proof (PDF viewer) |
+| UI-06 | Fail-closed studio |
+| UI-07 | Hosted generation adapter |
+| UI-08 | Production pack (CI, compose web, docs) |
+
+Execution files: `implementation/ui/`. One UI phase per branch. Do not start UI-00 until this planning PR is on `main`.
 
 ---
 

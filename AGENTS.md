@@ -11,10 +11,11 @@ Before changing code:
 1. `MEMORY.md` (cold-start handoff; **Current state** first)
 2. `Implementation.md`
 3. `docs/architecture/decisions/ADR-011-v1-locked-policies.md`
-4. `implementation/README.md`
-5. the current `implementation/phase-XX-*.md`
-6. `docs/architecture/architecture-review.md`
-7. relevant PRD/HLD/LLD/ADR/evaluation documents
+4. `docs/architecture/decisions/ADR-012-glass-box-console.md` when the work is UI
+5. `implementation/README.md` and, for UI, `implementation/ui/README.md`
+6. the current `implementation/phase-XX-*.md` or `implementation/ui/ui-XX-*.md`
+7. `docs/architecture/architecture-review.md`
+8. relevant PRD/HLD/LLD/ADR/evaluation documents
 
 ## Execution Rules
 

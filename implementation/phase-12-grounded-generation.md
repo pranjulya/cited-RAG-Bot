@@ -1,6 +1,7 @@
 # Phase 12 — Grounded Generation
 
-**Status:** IN_PROGRESS
+**Status:** TESTED
+**On main:** merged PR #17. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Generate answers strictly from approved evidence using a provider-neutral LLM adapter and structured citation output.

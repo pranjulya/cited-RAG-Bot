@@ -1,6 +1,7 @@
 # Phase 21 — Production Failure Scenarios
 
-**Status:** IN_PROGRESS
+**Status:** TESTED
+**On main:** merged PR #26. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Exercise the failure modes identified in the PRD and master plan so failure behavior is classified, visible, and safe. Production V1 has no silent single-retriever degraded mode.

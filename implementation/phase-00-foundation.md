@@ -1,6 +1,7 @@
 # Phase 00 — Repository and Application Foundation
 
 **Status:** TESTED
+**On main:** merged PR #2. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Create the minimal production-oriented Python/FastAPI foundation required by every later phase without implementing RAG behavior yet.

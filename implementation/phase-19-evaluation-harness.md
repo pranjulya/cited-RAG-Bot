@@ -1,6 +1,7 @@
 # Phase 19 — Evaluation Harness
 
-**Status:** IN_PROGRESS
+**Status:** TESTED
+**On main:** merged PR #24. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Implement the versioned golden dataset and reusable evaluation runners defined in Step 5.

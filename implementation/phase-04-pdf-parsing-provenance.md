@@ -1,6 +1,7 @@
 # Phase 04 — PDF Parsing and Page Provenance
 
 **Status:** TESTED
+**On main:** merged PR #9. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Parse retained PDFs into ordered page-aware content while preserving exact source-page identity and classifying unsupported/failed extraction cases.

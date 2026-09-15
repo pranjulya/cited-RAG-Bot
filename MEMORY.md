@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Phase 08 on `main`. Phases 09–23 opened as one stack for review. Codex P1s on #21–#27 and P2 docs on #28 applied on the stack. |
-| Phase file status | Phase 23 `TESTED` (docs + measured golden-v1 table; not merged) |
-| Branch | `phase-23-docs-learning` |
-| PR | [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14)–[#28](https://github.com/pranjulya/cited-RAG-Bot/pull/28) OPEN |
-| `main` | `b6d7774` — Phase 08. **Do not push or merge to `main` except via PR.** |
-| Next action | Review/merge in order **#14 → #28**. Do not land later PRs before their base. |
-| Blockers | Live Postgres/Qdrant E2E not run locally. Generator is heuristic, not an LLM. Glass-box UI is deferred until #14–#28 are on `main`. |
+| Last completed work | Backend **code** for Phases 00–23 is on `main` (`9c060ae`, PRs #2–#29). Phase status is **TESTED**, not REVIEWED (no submitted GitHub reviews), not COMPLETE. |
+| Phase file status | Backend 00–23: **TESTED** (code merged, tests exist). **Not REVIEWED** (no submitted GitHub reviews on PRs #2–#29). **Not COMPLETE**. UI-00: `NOT_STARTED`. |
+| Branch | `docs/ui-glass-box-plan` (planning only) |
+| PR | [#30](https://github.com/pranjulya/cited-RAG-Bot/pull/30) into `main`. No UI code on this branch. |
+| `main` | `9c060ae`. **Do not push or merge to `main` except via PR.** |
+| Next action | Merge this plan after review. Then **UI-00** from latest `main` (`ui-00-foundation`). One UI phase per PR. |
+| Blockers | No console. Heuristic generator until UI-07. No OCR. Do not claim backend `COMPLETE` without a close-out checklist per phase. |
 
 ---
 
@@ -64,7 +64,11 @@ Do not put secrets, API keys, or raw PDF text here.
 
 ---
 
-## Phase records
+## Phase records (historical snapshots)
+
+The entries below were written when each phase PR was **opened**. They may still say `TESTED`, `IN_PROGRESS`, or PRs `OPEN`. They are not the live status.
+
+**Authoritative now:** Current state (above) and the `**Status:**` line in `implementation/phase-*.md` (**TESTED** on `main`, not REVIEWED, not COMPLETE).
 
 ### Phase 23 — Documentation, Learning, and Interview Readiness
 - **Date:** 2026-09-09

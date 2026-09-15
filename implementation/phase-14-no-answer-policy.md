@@ -1,6 +1,7 @@
 # Phase 14 — No-Answer Decision Policy
 
-**Status:** IN_PROGRESS
+**Status:** TESTED
+**On main:** merged PR #19. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Implement explicit insufficient-evidence behavior so unsupported questions do not become hallucinated answers.

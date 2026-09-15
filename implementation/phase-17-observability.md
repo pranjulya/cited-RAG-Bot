@@ -1,6 +1,7 @@
 # Phase 17 — Observability
 
-**Status:** IN_PROGRESS
+**Status:** TESTED
+**On main:** merged PR #22. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Standardize ingestion and query telemetry so failures are diagnosable without leaking sensitive raw document/query content. Phases 03–15 already emit stage spans for the capability they add; this phase names, redacts, and completes that instrumentation. It is not the first telemetry.
