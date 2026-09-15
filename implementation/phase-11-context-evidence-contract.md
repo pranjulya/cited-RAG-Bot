@@ -1,6 +1,7 @@
 # Phase 11 — Context Builder and Evidence Contract
 
-**Status:** IN_PROGRESS
+**Status:** REVIEWED
+**On main:** merged PR #16. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Build model-ready context from approved reranked evidence while enforcing token/evidence budgets and assigning request-scoped evidence IDs.

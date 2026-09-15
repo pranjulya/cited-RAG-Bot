@@ -1,6 +1,7 @@
 # Phase 00 — Repository and Application Foundation
 
-**Status:** TESTED
+**Status:** REVIEWED
+**On main:** merged PR #2. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Create the minimal production-oriented Python/FastAPI foundation required by every later phase without implementing RAG behavior yet.

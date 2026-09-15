@@ -1,6 +1,7 @@
 # Phase 07 — Sparse Indexing and Retrieval
 
-**Status:** IN_PROGRESS
+**Status:** REVIEWED
+**On main:** merged PR #12. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Add lexical/sparse retrieval for exact names, identifiers, numbers, rare terms, and phrases while preserving the same chunk identity contract as dense retrieval.

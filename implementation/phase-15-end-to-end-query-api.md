@@ -1,6 +1,7 @@
 # Phase 15 — End-to-End Query API
 
-**Status:** IN_PROGRESS
+**Status:** REVIEWED
+**On main:** merged PR #20. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Wire authorization, retrieval, fusion, reranking, context building, grounded generation, no-answer policy, and citation validation into the public collection query endpoint.

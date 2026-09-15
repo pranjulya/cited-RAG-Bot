@@ -1,6 +1,7 @@
 # Phase 20 — RAG Quality Experiments
 
-**Status:** IN_PROGRESS
+**Status:** REVIEWED
+**On main:** merged PR #25. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Benchmark retrieval/generation configurations and use evidence rather than intuition to choose V1 defaults.

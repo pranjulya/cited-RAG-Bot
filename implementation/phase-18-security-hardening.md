@@ -1,6 +1,7 @@
 # Phase 18 — Security Hardening
 
-**Status:** IN_PROGRESS
+**Status:** REVIEWED
+**On main:** merged PR #23. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Harden the portfolio deployment against cross-collection leakage, malicious PDFs, prompt injection, abusive requests, and secret exposure.

@@ -1,6 +1,7 @@
 # Phase 03 — Asynchronous Ingestion Worker
 
 **Status:** REVIEWED
+**On main:** merged PR #6. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Move long-running PDF ingestion outside HTTP request handling and make job execution idempotent, observable, and retry-safe.

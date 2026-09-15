@@ -1,6 +1,7 @@
 # Phase 21 — Production Failure Scenarios
 
-**Status:** IN_PROGRESS
+**Status:** REVIEWED
+**On main:** merged PR #26. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Exercise the failure modes identified in the PRD and master plan so failure behavior is classified, visible, and safe. Production V1 has no silent single-retriever degraded mode.

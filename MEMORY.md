@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Backend Phases 00–23 merged to `main` (`9c060ae`, PR #29). Glass-box UI **planned**, not implemented. |
-| Phase file status | UI-00 `NOT_STARTED`. Backend phase files still say IN_PROGRESS/TESTED (hygiene, not a code gap). |
+| Last completed work | Backend **code** for Phases 00–23 is on `main` (`9c060ae`, PRs #2–#29). That is **not** AGENTS.md `COMPLETE`. |
+| Phase file status | Backend 00–23: **REVIEWED** (merged + tests exist; DoD `COMPLETE` was never recorded). UI-00: `NOT_STARTED`. |
 | Branch | `docs/ui-glass-box-plan` (planning only) |
-| PR | Open this docs PR into `main`. No UI code on this branch. |
-| `main` | `9c060ae` — Phase 23 + P1/P2. **Do not push or merge to `main` except via PR.** |
-| Next action | Review/merge the UI plan. Then start **UI-00** from latest `main` (`ui-00-foundation`). One UI phase per PR. |
-| Blockers | No console yet. Generator is heuristic until UI-07. No OCR. MEMORY was stale before this planning PR. |
+| PR | [#30](https://github.com/pranjulya/cited-RAG-Bot/pull/30) into `main`. No UI code on this branch. |
+| `main` | `9c060ae`. **Do not push or merge to `main` except via PR.** |
+| Next action | Merge this plan after review. Then **UI-00** from latest `main` (`ui-00-foundation`). One UI phase per PR. |
+| Blockers | No console. Heuristic generator until UI-07. No OCR. Do not claim backend `COMPLETE` without a close-out checklist per phase. |
 
 ---
 

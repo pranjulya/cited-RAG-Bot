@@ -1,6 +1,7 @@
 # Phase 06 — Embedding and Dense Indexing
 
-**Status:** IN_PROGRESS
+**Status:** REVIEWED
+**On main:** merged PR #11. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Generate dense embeddings for chunks and index them in the retrieval store with collection-scoped provenance filters.

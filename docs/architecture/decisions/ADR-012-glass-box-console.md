@@ -1,8 +1,8 @@
 # ADR-012 — Glass-Box Console (UI V1)
 
-**Status:** Proposed (planning); becomes Accepted when the UI-00 PR lands  
+**Status:** Accepted  
 **Date:** 2026-09-15  
-**Extends:** ADR-011 (V1 locked policies). ADR-011 still wins on RAG, citations, auth, and fail-closed retrieval.
+**Extends:** ADR-011 (V1 locked policies). ADR-011 still wins on RAG, citations, auth, and fail-closed retrieval. Do not reopen ADR-012 locks without superseding this ADR.
 
 ## Context
 
@@ -23,8 +23,8 @@ Build a **glass-box product console**: one authenticated web app that can create
 3. **Thin product APIs are allowed** and owned by UI phases that need them:
    - `GET /v1/collections`
    - `GET /v1/collections/{collection_id}/documents`
-   - query **trace** (stages + evidence cards) on the existing query response (no extra GET in UI-04)
-   - authenticated PDF/page bytes for citation proof  
+   - query **trace** on the HTTP 200 query body (schema locked in UI-04; ContextVar isolation, not the process-global `traces` buffer)
+   - `GET /v1/documents/{document_id}/content` (full PDF bytes; UI-05)  
    Still collection-scoped. Still API-key auth. No architecture rewrite.
 
 4. **Auth.** Same `Authorization: Bearer <api_key>` as the API. No SSO in UI V1. The console stores the key in `sessionStorage` (tab-scoped), never in repo, screenshots, or default logs.

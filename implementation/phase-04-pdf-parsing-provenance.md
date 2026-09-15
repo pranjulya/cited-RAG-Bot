@@ -1,6 +1,7 @@
 # Phase 04 — PDF Parsing and Page Provenance
 
-**Status:** TESTED
+**Status:** REVIEWED
+**On main:** merged PR #9. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Parse retained PDFs into ordered page-aware content while preserving exact source-page identity and classifying unsupported/failed extraction cases.

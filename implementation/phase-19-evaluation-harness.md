@@ -1,6 +1,7 @@
 # Phase 19 — Evaluation Harness
 
-**Status:** IN_PROGRESS
+**Status:** REVIEWED
+**On main:** merged PR #24. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Implement the versioned golden dataset and reusable evaluation runners defined in Step 5.

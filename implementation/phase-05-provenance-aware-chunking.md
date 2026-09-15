@@ -1,6 +1,7 @@
 # Phase 05 — Provenance-Aware Chunking
 
-**Status:** TESTED
+**Status:** REVIEWED
+**On main:** merged PR #10. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Convert parsed page content into configurable retrieval chunks without losing source identity.

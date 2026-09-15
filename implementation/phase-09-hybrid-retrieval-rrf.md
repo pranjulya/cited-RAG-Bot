@@ -1,6 +1,7 @@
 # Phase 09 — Hybrid Retrieval and RRF
 
-**Status:** IN_PROGRESS
+**Status:** REVIEWED
+**On main:** merged PR #14. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Combine dense and sparse candidate sets using Reciprocal Rank Fusion while preserving deterministic chunk identity and auditability.

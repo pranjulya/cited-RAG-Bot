@@ -1,6 +1,7 @@
 # Phase 08 — Dense Retrieval
 
-**Status:** IN_PROGRESS
+**Status:** REVIEWED
+**On main:** merged PR #13. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Implement collection-scoped semantic retrieval over dense embeddings and expose deterministic candidates for downstream hybrid fusion.

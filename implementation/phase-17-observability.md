@@ -1,6 +1,7 @@
 # Phase 17 — Observability
 
-**Status:** IN_PROGRESS
+**Status:** REVIEWED
+**On main:** merged PR #22. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Standardize ingestion and query telemetry so failures are diagnosable without leaking sensitive raw document/query content. Phases 03–15 already emit stage spans for the capability they add; this phase names, redacts, and completes that instrumentation. It is not the first telemetry.

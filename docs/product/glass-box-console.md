@@ -71,10 +71,10 @@ Introduced in the phase that first needs them. Collection-scoped. Same auth.
 |---|---|---|
 | UI-01 | `GET /v1/collections` | List collections for the principal |
 | UI-02 | `GET /v1/collections/{id}/documents` | List documents + public ingestion status |
-| UI-04 | `trace` on the existing query response | Stages, evidence ids/text, timings, correlation id |
-| UI-05 | `GET /v1/documents/{id}/content` (or page image/pdf bytes) | Citation page proof; authenticated; not a public URL |
+| UI-04 | `trace` on HTTP 200 query JSON (schema in `implementation/ui/ui-04-glass-box.md`) | Six `query.*` stages, request-scoped; evidence without `chunk_id` |
+| UI-05 | `GET /v1/documents/{document_id}/content` | Full PDF bytes, Bearer, 1-based pages in the client |
 
-Evidence text in trace is untrusted. Truncate in API if needed; never treat as HTML.
+Evidence text in trace is untrusted. Truncate per UI-04. Never treat as HTML.
 
 ## 8. Query UX contract
 

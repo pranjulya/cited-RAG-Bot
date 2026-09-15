@@ -1,6 +1,7 @@
 # Phase 10 — Reranking
 
-**Status:** IN_PROGRESS
+**Status:** REVIEWED
+**On main:** merged PR #15. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Rerank fused retrieval candidates with a replaceable cross-encoder or hosted reranker and prove whether relevance improves.

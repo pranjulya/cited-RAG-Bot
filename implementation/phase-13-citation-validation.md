@@ -1,6 +1,7 @@
 # Phase 13 — Citation Mapping and Validation
 
-**Status:** IN_PROGRESS
+**Status:** REVIEWED
+**On main:** merged PR #18. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
 
 ## Goal
 Convert model-selected evidence IDs into authoritative document/page citations and reject fabricated or unauthorized references before response delivery.
