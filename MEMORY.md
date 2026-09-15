@@ -42,8 +42,8 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | Backend **code** for Phases 00–23 is on `main` (`9c060ae`, PRs #2–#29). That is **not** AGENTS.md `COMPLETE`. |
-| Phase file status | Backend 00–23: **REVIEWED** (merged + tests exist; DoD `COMPLETE` was never recorded). UI-00: `NOT_STARTED`. |
+| Last completed work | Backend **code** for Phases 00–23 is on `main` (`9c060ae`, PRs #2–#29). Phase status is **TESTED**, not REVIEWED (no submitted GitHub reviews), not COMPLETE. |
+| Phase file status | Backend 00–23: **TESTED** (code merged, tests exist). **Not REVIEWED** (no submitted GitHub reviews on PRs #2–#29). **Not COMPLETE**. UI-00: `NOT_STARTED`. |
 | Branch | `docs/ui-glass-box-plan` (planning only) |
 | PR | [#30](https://github.com/pranjulya/cited-RAG-Bot/pull/30) into `main`. No UI code on this branch. |
 | `main` | `9c060ae`. **Do not push or merge to `main` except via PR.** |
@@ -64,7 +64,11 @@ Do not put secrets, API keys, or raw PDF text here.
 
 ---
 
-## Phase records
+## Phase records (historical snapshots)
+
+The entries below were written when each phase PR was **opened**. They may still say `TESTED`, `IN_PROGRESS`, or PRs `OPEN`. They are not the live status.
+
+**Authoritative now:** Current state (above) and the `**Status:**` line in `implementation/phase-*.md` (**TESTED** on `main`, not REVIEWED, not COMPLETE).
 
 ### Phase 23 — Documentation, Learning, and Interview Readiness
 - **Date:** 2026-09-09

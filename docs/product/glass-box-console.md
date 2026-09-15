@@ -1,6 +1,6 @@
 # Glass-Box Console — UI Product Spec
 
-**Status:** Draft for review (no UI code until this spec is approved in the PR)  
+**Status:** Approved (merge of PR #30 constitutes approval). UI code starts at UI-00, not in #30.  
 **Date:** 2026-09-15  
 **Audience:** Client demos and a resume-quality production-shaped console on top of Cited RAG Bot.
 

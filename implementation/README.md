@@ -1,6 +1,6 @@
 # Project 04 — Phase Implementation Guide
 
-**Status:** BACKEND 00–23 **REVIEWED** ON MAIN (not COMPLETE); UI PROGRAM PLANNED (`implementation/ui/`)
+**Status:** BACKEND 00–23 **TESTED** ON MAIN (not REVIEWED, not COMPLETE); UI PROGRAM PLANNED (`implementation/ui/`)
 
 This folder is the execution layer for `Implementation.md`. Each phase is intentionally small enough to implement, test, review, learn, and complete before moving to the next dependency.
 
@@ -29,9 +29,9 @@ Before any phase:
 
 `COMPLETE` means the phase Definition of Done was recorded: implementation, automated tests, review, documentation, and Learning notes (`AGENTS.md`). **Merged to `main` is not `COMPLETE` by itself.**
 
-Backend 00–23 code is on `main` (PRs #2–#29). Those phase files are **REVIEWED**: merged and tested, but nobody ran a COMPLETE close-out. Do not describe them as done in MEMORY, README, or resume copy. A later docs PR may promote a phase to COMPLETE only with that checklist.
+Backend 00–23 **code** is on `main` (PRs #2–#29). Phase files are **TESTED**: merged and covered by automated tests. They are **not REVIEWED**: GitHub shows no submitted reviews on those PRs. They are **not COMPLETE**: AGENTS.md DoD was not recorded. A later PR may promote a phase only with recorded review evidence and a COMPLETE checklist.
 
-Older phase files still say “Prerequisites: Phase N COMPLETE”. Read that as “Phase N is on `main` (REVIEWED)”, not as AGENTS.md `COMPLETE`.
+Older phase files still say “Prerequisites: Phase N COMPLETE”. Read that as “Phase N is on `main` (TESTED)”, not as AGENTS.md `COMPLETE`.
 
 ## Phase Index
 

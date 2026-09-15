@@ -6,7 +6,7 @@
 A Vite + React + TypeScript app in `web/` that boots in Docker Compose, requires an API key, and shows live `/health` and `/ready`. Empty workspace only.
 
 ## Prerequisites
-Backend Phases 00–23 on `main`. ADR-012 drafted.
+Backend Phases 00–23 on `main` (**TESTED**, not COMPLETE). ADR-012 Accepted.
 
 ## References
 `docs/product/glass-box-console.md`, ADR-012, `docker-compose.yml`, `src/cited_rag/main.py` CORS.
@@ -26,7 +26,10 @@ SPA vs API origin, CORS, sessionStorage for secrets, compose multi-service UI.
 6. Learning note `Learning/ui-00-foundation.md`.
 
 ## Tests
-Component: key gate rejects empty key. Mock fetch: health ok / ready 503. Compose: `web` starts (smoke can be `curl` the UI origin).
+- Key gate rejects empty key.
+- After submit, the key is in `sessionStorage` (not `localStorage`) and subsequent `/health` and `/ready` fetches send `Authorization: Bearer <key>`.
+- Mock fetch: health ok / ready 503.
+- Compose: `web` starts (smoke can be `curl` the UI origin).
 
 ## Failure Scenarios
 API down → ready badge failed, not a blank white screen. Wrong key is not tested until a `/v1` call (UI-01).

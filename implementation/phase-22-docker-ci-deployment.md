@@ -1,7 +1,7 @@
 # Phase 22 — Docker, CI, and Deployment Readiness
 
-**Status:** REVIEWED
-**On main:** merged PR #27. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
+**Status:** TESTED
+**On main:** merged PR #27. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Make the complete system reproducible locally and verifiable in CI with clear dependency readiness and deployment configuration.

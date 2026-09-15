@@ -1,7 +1,7 @@
 # Phase 01 — Core Domain Model and Persistence Foundation
 
-**Status:** REVIEWED
-**On main:** merged PR #3. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
+**Status:** TESTED
+**On main:** merged PR #3. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Define durable domain entities and PostgreSQL persistence without yet implementing upload or retrieval behavior.

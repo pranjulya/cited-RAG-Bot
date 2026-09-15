@@ -1,7 +1,7 @@
 # Phase 16 — Document Deletion and Index Consistency
 
-**Status:** REVIEWED
-**On main:** merged PR #21. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
+**Status:** TESTED
+**On main:** merged PR #21. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Delete or tombstone documents safely so no stale searchable chunks remain in derived retrieval indexes.

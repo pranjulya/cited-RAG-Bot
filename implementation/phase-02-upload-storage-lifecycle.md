@@ -1,7 +1,7 @@
 # Phase 02 — PDF Upload, Object Storage, and Document Lifecycle
 
-**Status:** REVIEWED
-**On main:** merged PR #5. **Not COMPLETE:** AGENTS.md COMPLETE requires a recorded Definition of Done (implementation, tests, review, docs, Learning) at close-out; that was not recorded.
+**Status:** TESTED
+**On main:** merged PR #5. **Not REVIEWED:** GitHub PRs #2–#29 have no submitted reviews. **Not COMPLETE:** AGENTS.md DoD was not recorded at close-out.
 
 ## Goal
 Accept PDF uploads into a collection, persist source files through a storage abstraction, create document/version metadata, and expose lifecycle status.
