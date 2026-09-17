@@ -164,6 +164,7 @@ export function App() {
       return;
     }
     const document = (await response.json()) as Document;
+    if (selectedCollectionIdRef.current !== collectionId) return;
     setDocuments((current) => [...current.filter((item) => item.document_id !== documentId), document]);
     if (document.status !== "READY" && document.status !== "FAILED") {
       if (attempt === POLL_LIMIT) {
