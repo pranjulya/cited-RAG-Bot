@@ -1,6 +1,6 @@
 # UI-00 — Foundation
 
-**Status:** NOT_STARTED
+**Status:** TESTED
 
 ## Goal
 A Vite + React + TypeScript app in `web/` that boots in Docker Compose, requires an API key, and shows live `/health` and `/ready`. Empty workspace only.

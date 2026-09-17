@@ -125,10 +125,11 @@ Persistence tests skip unless `CITED_RAG_DATABASE_URL` is set. Compose runs `ale
 docker compose up --build -d --wait
 curl -sf http://localhost:8000/health
 curl -sf http://localhost:8000/ready
+curl -sf http://localhost:8080/
 docker compose down -v
 ```
 
-Compose starts PostgreSQL, Redis, Qdrant, Alembic migrate, the API, and the ingestion worker. API and worker have healthchecks; `--wait` blocks until `/health` responds and the arq process is up. The worker parses, chunks, dense-indexes, sparse-indexes, then marks versions `READY`. Authenticated calls need `Authorization: Bearer replace-me`.
+Compose starts PostgreSQL, Redis, Qdrant, Alembic migrate, the API, the ingestion worker, and the glass-box console (`http://localhost:8080`). Paste `replace-me` in the key gate. The browser calls the API at `http://localhost:8000` (not the Docker hostname `api`).
 
 ## Layout
 
