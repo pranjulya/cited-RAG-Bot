@@ -49,6 +49,20 @@ def test_create_and_get_collection(client: TestClient) -> None:
     assert blank.status_code == 422
 
 
+def test_list_collections_starts_empty_and_includes_created_collections(client: TestClient) -> None:
+    assert client.get("/v1/collections", headers=AUTH).json() == []
+    first_id = _create_collection(client, "handbooks")
+    second_id = _create_collection(client, "policies")
+
+    response = client.get("/v1/collections", headers=AUTH)
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {"collection_id": first_id, "name": "handbooks", "status": "ACTIVE"},
+        {"collection_id": second_id, "name": "policies", "status": "ACTIVE"},
+    ]
+
+
 def test_valid_pdf_upload_returns_queued_and_is_not_searchable(client: TestClient) -> None:
     collection_id = _create_collection(client)
     response = client.post(

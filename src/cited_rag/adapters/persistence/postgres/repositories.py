@@ -73,6 +73,14 @@ class PostgresCollectionRepository:
         row = await self._session.get(CollectionRow, collection_id)
         return collection_from_row(row) if row is not None else None
 
+    async def list_by_owner(self, owner_id: UUID) -> list[Collection]:
+        result = await self._session.scalars(
+            select(CollectionRow)
+            .where(CollectionRow.owner_id == owner_id)
+            .order_by(CollectionRow.created_at)
+        )
+        return [collection_from_row(row) for row in result.all()]
+
 
 class PostgresDocumentRepository:
     def __init__(self, session: AsyncSession) -> None:

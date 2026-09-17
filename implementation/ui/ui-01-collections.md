@@ -1,6 +1,6 @@
 # UI-01 — Collections
 
-**Status:** NOT_STARTED
+**Status:** TESTED
 
 ## Goal
 Create and list collections in the console. No UUID pasting.
