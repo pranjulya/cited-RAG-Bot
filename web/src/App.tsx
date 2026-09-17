@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { apiFetch } from "./api";
 import { clearApiKey, getApiKey, setApiKey } from "./auth";
 
@@ -32,6 +32,11 @@ export function App() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const selectedCollectionIdRef = useRef(selectedCollectionId);
+
+  useEffect(() => {
+    selectedCollectionIdRef.current = selectedCollectionId;
+  }, [selectedCollectionId]);
 
   useEffect(() => {
     if (!connected) {
@@ -75,7 +80,7 @@ export function App() {
 
   useEffect(() => {
     function onPopState() {
-      setSelectedCollectionId(collectionIdFromPath());
+      selectCollection(collectionIdFromPath());
     }
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -138,17 +143,24 @@ export function App() {
 
   function openCollection(collectionId: string) {
     window.history.pushState({}, "", collectionId ? `/collections/${collectionId}` : "/");
+    selectCollection(collectionId);
+  }
+
+  function selectCollection(collectionId: string | null) {
+    selectedCollectionIdRef.current = collectionId;
     setSelectedCollectionId(collectionId);
   }
 
-  async function pollDocument(documentId: string, attempt = 0) {
+  async function pollDocument(documentId: string, collectionId: string, attempt = 0) {
+    if (selectedCollectionIdRef.current !== collectionId) return;
     const response = await apiFetch(`/v1/documents/${documentId}`);
+    if (selectedCollectionIdRef.current !== collectionId) return;
     if (!response.ok) {
       if (attempt === POLL_LIMIT) {
         setUploadError("Ingestion is still waiting. Try again shortly.");
         return;
       }
-      window.setTimeout(() => void pollDocument(documentId, attempt + 1), 1000);
+      window.setTimeout(() => void pollDocument(documentId, collectionId, attempt + 1), 1000);
       return;
     }
     const document = (await response.json()) as Document;
@@ -158,7 +170,7 @@ export function App() {
         setUploadError("Ingestion is still waiting. Try again shortly.");
         return;
       }
-      window.setTimeout(() => void pollDocument(documentId, attempt + 1), 1000);
+      window.setTimeout(() => void pollDocument(documentId, collectionId, attempt + 1), 1000);
     }
   }
 
@@ -180,13 +192,14 @@ export function App() {
       return;
     }
     const uploaded = (await response.json()) as { document_id: string };
+    if (selectedCollectionIdRef.current !== selectedCollectionId) return;
     setDocuments((current) => [
       ...current.filter((document) => document.document_id !== uploaded.document_id),
       { document_id: uploaded.document_id, logical_name: file.name, status: "QUEUED" },
     ]);
     setFile(null);
     setUploadError(null);
-    await pollDocument(uploaded.document_id);
+    await pollDocument(uploaded.document_id, selectedCollectionId);
   }
 
   const selectedCollection = collections.find(
