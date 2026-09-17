@@ -66,7 +66,7 @@ Do not put secrets, API keys, or raw PDF text here.
 
 ## Phase records (historical snapshots)
 
-The entries below were written when each phase PR was **opened**. They may still say `TESTED`, `IN_PROGRESS`, or PRs `OPEN`. They are not the live status.
+The entries below were written when each phase PR was **opened** and are kept as snapshots. Where a value has changed since, the record says so inline (for example `OPEN when written; now MERGED`). No record below is the live status.
 
 **Authoritative now:** Current state (above) and the `**Status:**` line in `implementation/phase-*.md` (**TESTED** on `main`, not REVIEWED, not COMPLETE).
 
@@ -86,7 +86,7 @@ The entries below were written when each phase PR was **opened**. They may still
 - **Date:** 2026-09-09
 - **Branch:** `phase-15-query-api`
 - **PR:** [#20](https://github.com/pranjulya/cited-RAG-Bot/pull/20)
-- **Status in phase file:** `IN_PROGRESS`
+- **Status in phase file:** `IN_PROGRESS` when written; now `TESTED`
 - **Goal:** Public `POST /v1/collections/{collection_id}/query` runs the full grounded pipeline.
 - **Verification:** `pytest tests/unit` **165 passed**, 1 skipped. Integration query tests not run locally.
 - **Follow-ups:** Phase 16 deletion; hosted LLM adapter; persist QueryRun completion.
@@ -111,8 +111,8 @@ The entries below were written when each phase PR was **opened**. They may still
 
 - **Date:** 2026-09-09
 - **Branch:** `phase-10-reranking`
-- **PR:** [#15](https://github.com/pranjulya/cited-RAG-Bot/pull/15) (`phase-10-reranking` → `phase-09-hybrid-rrf`, OPEN)
-- **Status in phase file:** `IN_PROGRESS`
+- **PR:** [#15](https://github.com/pranjulya/cited-RAG-Bot/pull/15) (`phase-10-reranking` → `phase-09-hybrid-rrf`; OPEN when written, now MERGED)
+- **Status in phase file:** `IN_PROGRESS` when written; now `TESTED`
 - **Goal:** Rerank fused candidates through a replaceable port; production timeout/failure is `RERANKER_ERROR`; evaluation may disable rerank.
 
 - **Files added/changed:**
@@ -149,8 +149,8 @@ The entries below were written when each phase PR was **opened**. They may still
 
 - **Date:** 2026-09-09
 - **Branch:** `phase-09-hybrid-rrf`
-- **PR:** [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14) (`phase-09-hybrid-rrf` → `main`, OPEN)
-- **Status in phase file:** `IN_PROGRESS`
+- **PR:** [#14](https://github.com/pranjulya/cited-RAG-Bot/pull/14) (`phase-09-hybrid-rrf` → `main`; OPEN when written, now MERGED)
+- **Status in phase file:** `IN_PROGRESS` when written; now `TESTED`
 - **Goal:** Run dense and sparse independently, fuse with in-process RRF, preserve source ranks, fail closed on retriever errors, fuse empty hit lists.
 
 - **Files added/changed:**
@@ -190,7 +190,7 @@ The entries below were written when each phase PR was **opened**. They may still
 - **Date:** 2026-09-08
 - **Branch:** `phase-08-dense-retrieval`
 - **PR:** [#13](https://github.com/pranjulya/cited-RAG-Bot/pull/13) (`phase-08-dense-retrieval` → `main`, MERGED `b6d7774`)
-- **Status in phase file:** `IN_PROGRESS` (merged)
+- **Status in phase file:** `IN_PROGRESS` when written; now `TESTED`
 - **Goal:** Collection-scoped dense retrieval over READY version ids with fail-closed payload validation.
 
 - **Follow-ups for the next phase:**
@@ -201,7 +201,7 @@ The entries below were written when each phase PR was **opened**. They may still
 - **Date:** 2026-09-08
 - **Branch:** `phase-07-sparse-indexing-retrieval`
 - **PR:** [#12](https://github.com/pranjulya/cited-RAG-Bot/pull/12) (`phase-07-sparse-indexing-retrieval` → `main`, MERGED `b9ec137`)
-- **Status in phase file:** `IN_PROGRESS`
+- **Status in phase file:** `IN_PROGRESS` when written; now `TESTED`
 - **Goal:** Encode sparse vectors onto the same chunk UUIDs as dense, retrieve with collection + version filters, and set `READY` only after both named vectors exist.
 
 - **Files added/changed:**
@@ -244,7 +244,7 @@ The entries below were written when each phase PR was **opened**. They may still
 - **Date:** 2026-09-07
 - **Branch:** `phase-06-dense-indexing`
 - **PR:** [#11](https://github.com/pranjulya/cited-RAG-Bot/pull/11) (`phase-06-dense-indexing` → `main`, MERGED `2a87918`)
-- **Status in phase file:** `IN_PROGRESS` (merged; CI integration passed)
+- **Status in phase file:** `IN_PROGRESS` when written; now `TESTED`
 - **Goal:** Embed persisted chunks and upsert dense named vectors on chunk UUIDs in one application Qdrant collection that already declares `sparse`. Never `READY`. No sparse values.
 
 - **Files added/changed:**
@@ -370,7 +370,7 @@ The entries below were written when each phase PR was **opened**. They may still
 - **Date:** 2026-09-07
 - **Branch:** `phase-03-async-ingestion`
 - **PR:** [#6](https://github.com/pranjulya/cited-RAG-Bot/pull/6) (`phase-03-async-ingestion` → `main`, MERGED `f91e47f`)
-- **Status in phase file:** `REVIEWED` (was `TESTED` at merge; not `COMPLETE`)
+- **Status in phase file:** `REVIEWED` when written; now `TESTED` on `main`, not `COMPLETE`
 - **Goal:** Move ingestion off the HTTP request: durable Postgres job + Redis/arq wake-up, `QUEUED → PROCESSING`, never `READY`. Stub later pipeline stages.
 
 - **Files added/changed:**
@@ -418,7 +418,7 @@ The entries below were written when each phase PR was **opened**. They may still
 
 - **Date:** 2026-09-06
 - **Branch:** `phase-02-upload-storage-lifecycle`
-- **PR:** [#5](https://github.com/pranjulya/cited-RAG-Bot/pull/5) (`phase-02-upload-storage-lifecycle` → `main`, OPEN)
+- **PR:** [#5](https://github.com/pranjulya/cited-RAG-Bot/pull/5) (`phase-02-upload-storage-lifecycle` → `main`; OPEN when written, now MERGED)
 - **Status in phase file:** `TESTED`
 - **Goal:** Accept PDF uploads into a collection, persist source files locally, create document/version metadata, API-key collection authorization. Not searchable.
 
@@ -468,7 +468,7 @@ The entries below were written when each phase PR was **opened**. They may still
 
 - **Date:** 2026-09-06
 - **Branch:** `phase-01-domain-persistence`
-- **PR:** [#3](https://github.com/pranjulya/cited-RAG-Bot/pull/3) (`phase-01-domain-persistence` → `main`, OPEN)
+- **PR:** [#3](https://github.com/pranjulya/cited-RAG-Bot/pull/3) (`phase-01-domain-persistence` → `main`; OPEN when written, now MERGED)
 - **Status in phase file:** `TESTED`
 - **Goal:** Durable domain entities and PostgreSQL persistence for the collection → document → version → page → chunk chain. No upload, no retrieval API.
 
@@ -511,7 +511,7 @@ The entries below were written when each phase PR was **opened**. They may still
 - **Not verified / known gaps:**
   - Docker Compose Postgres/API image not run (Docker daemon not running)
   - GitHub Actions `integration-postgres` not observed green at handoff time
-  - Phase status is `TESTED`, not `COMPLETE` (review + merge still required)
+  - Phase status: `TESTED` when written; merged since; still not `COMPLETE`
 
 - **Follow-ups for the next phase:**
   - Review and merge [PR #3](https://github.com/pranjulya/cited-RAG-Bot/pull/3). Do not start Phase 02 on this branch.
@@ -522,7 +522,7 @@ The entries below were written when each phase PR was **opened**. They may still
 
 - **Date:** 2026-09-06
 - **Branch:** `phase-00-foundation`
-- **PR:** [#2](https://github.com/pranjulya/cited-RAG-Bot/pull/2) (`phase-00-foundation` → `main`, OPEN)
+- **PR:** [#2](https://github.com/pranjulya/cited-RAG-Bot/pull/2) (`phase-00-foundation` → `main`; OPEN when written, now MERGED)
 - **Status in phase file:** `TESTED`
 - **Goal:** Minimal FastAPI/Python foundation for later phases. No RAG, no Postgres, no Qdrant, no Redis, no parsing.
 
@@ -567,8 +567,8 @@ The entries below were written when each phase PR was **opened**. They may still
 
 - **Not verified / known gaps:**
   - Docker image build/start not run (Docker daemon not running)
-  - Phase status is `TESTED`, not `COMPLETE` (review + merge still required)
-  - Phase 00 PR is open (#2); not merged yet
+  - Phase status: `TESTED` when written; merged since; still not `COMPLETE`
+  - Phase 00: PR #2 was open when written; merged since
   - Starlette TestClient/httpx deprecation warnings appeared; ignored for this phase
 
 - **Follow-ups for the next phase:**
