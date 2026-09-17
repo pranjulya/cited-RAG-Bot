@@ -106,7 +106,7 @@ test("creates a collection and opens its shell without UUID entry", async () => 
 
   expect(window.location.pathname).toBe("/collections/11111111-1111-1111-1111-111111111111");
   expect(screen.getByRole("heading", { name: "Acme HR policies" })).toBeInTheDocument();
-  expect(screen.getByText("Documents arrive in the next phase.")).toBeInTheDocument();
+  expect(screen.getByLabelText("Upload PDF")).toBeInTheDocument();
 });
 
 test("shows an inline error for a blank collection name", async () => {
@@ -143,4 +143,60 @@ test("returns to the key gate when the collection list is unauthorized", async (
 
   expect(await screen.findByLabelText("API key")).toBeInTheDocument();
   expect(sessionStorage.getItem(API_KEY_STORAGE_KEY)).toBeNull();
+});
+
+test("uploads a PDF and stops polling when it is ready", async () => {
+  const collectionId = "11111111-1111-1111-1111-111111111111";
+  const documentId = "22222222-2222-2222-2222-222222222222";
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/health") || url.endsWith("/ready")) return jsonResponse({ status: "ok" });
+      if (url.endsWith("/v1/collections")) {
+        return jsonResponse([{ collection_id: collectionId, name: "Acme HR", status: "ACTIVE" }]);
+      }
+      if (url.endsWith(`/v1/collections/${collectionId}/documents`) && init?.method === "POST") {
+        return jsonResponse({ document_id: documentId, document_version_id: documentId, status: "QUEUED" });
+      }
+      if (url.endsWith(`/v1/collections/${collectionId}/documents`)) return jsonResponse([]);
+      if (url.endsWith(`/v1/documents/${documentId}`)) {
+        return jsonResponse({ document_id: documentId, logical_name: "policy.pdf", status: "READY" });
+      }
+      throw new Error(`unexpected ${url}`);
+    });
+  vi.stubGlobal("fetch", fetchMock);
+  window.history.replaceState({}, "", `/collections/${collectionId}`);
+  sessionStorage.setItem(API_KEY_STORAGE_KEY, "replace-me");
+  const user = userEvent.setup();
+  render(<App />);
+
+  await screen.findByRole("heading", { name: "Acme HR" });
+  await user.upload(screen.getByLabelText("Upload PDF"), new File(["pdf"], "policy.pdf", { type: "application/pdf" }));
+  await user.click(screen.getByRole("button", { name: "Upload" }));
+
+  expect(await screen.findByText("READY")).toBeInTheDocument();
+  expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith(`/v1/documents/${documentId}`))).toHaveLength(1);
+});
+
+test("shows a failed document and its failure code", async () => {
+  const collectionId = "11111111-1111-1111-1111-111111111111";
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/health") || url.endsWith("/ready")) return jsonResponse({ status: "ok" });
+      if (url.endsWith("/v1/collections")) {
+        return jsonResponse([{ collection_id: collectionId, name: "Acme HR", status: "ACTIVE" }]);
+      }
+      if (url.endsWith(`/v1/collections/${collectionId}/documents`)) {
+        return jsonResponse([{ document_id: "doc", logical_name: "scan.pdf", status: "FAILED", failure_code: "PDF_UNSUPPORTED" }]);
+      }
+      throw new Error(`unexpected ${url}`);
+    }),
+  );
+  window.history.replaceState({}, "", `/collections/${collectionId}`);
+  sessionStorage.setItem(API_KEY_STORAGE_KEY, "replace-me");
+  render(<App />);
+
+  expect(await screen.findByText(/\(PDF_UNSUPPORTED\)/)).toBeInTheDocument();
+  expect(screen.getByText("FAILED")).toBeInTheDocument();
 });

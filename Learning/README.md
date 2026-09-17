@@ -105,3 +105,7 @@ See `Learning/ui-00-foundation.md`.
 ## UI-01
 
 See `Learning/ui-01-collections.md`.
+
+## UI-02
+
+See `Learning/ui-02-ingest-theater.md`.

@@ -104,6 +104,23 @@ def _http_for_upload_error(exc: Exception) -> HTTPException:
     return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="upload_failed")
 
 
+@router.get("/v1/collections/{collection_id}/documents")
+async def list_documents(
+    collection_id: UUID,
+    principal: ApiPrincipal = Depends(get_principal),
+    uow: PostgresUnitOfWork = Depends(get_uow),
+) -> list[DocumentStatusResponse]:
+    collection = owned_collection_or_none(await uow.collections.get(collection_id), principal.id)
+    if collection is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="collection_not_found")
+    documents = await uow.documents.list_by_collection(collection.id)
+    responses = []
+    for document in documents:
+        versions = await uow.versions.list_by_document(document.id)
+        responses.append(_document_status_response(document, versions[-1] if versions else None))
+    return responses
+
+
 @router.post(
     "/v1/collections/{collection_id}/documents",
     status_code=status.HTTP_202_ACCEPTED,

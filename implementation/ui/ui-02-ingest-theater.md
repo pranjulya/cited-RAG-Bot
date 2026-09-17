@@ -1,6 +1,6 @@
 # UI-02 — Ingest Theater
 
-**Status:** NOT_STARTED
+**Status:** TESTED
 
 ## Goal
 Upload a PDF into the open collection and show lifecycle until `READY` or `FAILED` (with `failure_code` when failed).
