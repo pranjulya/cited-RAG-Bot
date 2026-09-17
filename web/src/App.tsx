@@ -4,7 +4,13 @@ import { clearApiKey, getApiKey, setApiKey } from "./auth";
 
 type Probe = "unknown" | "ok" | "failed";
 type Collection = { collection_id: string; name: string; status: string };
-type Document = { document_id: string; logical_name: string; status: string | null; failure_code?: string | null };
+type Document = {
+  document_id: string;
+  logical_name: string;
+  status: string | null;
+  version_number?: number | null;
+  failure_code?: string | null;
+};
 const POLL_LIMIT = 60;
 
 function collectionIdFromPath(): string | null {
@@ -77,9 +83,18 @@ export function App() {
 
   useEffect(() => {
     if (!selectedCollectionId || !connected) return;
+    let cancelled = false;
+    setDocuments([]);
     void apiFetch(`/v1/collections/${selectedCollectionId}/documents`)
-      .then(async (response) => response.ok && setDocuments(await response.json()))
-      .catch(() => setUploadError("Documents are unavailable."));
+      .then(async (response) => {
+        if (!response.ok) throw new Error("documents_unavailable");
+        const loaded = await response.json();
+        if (!cancelled) setDocuments(loaded);
+      })
+      .catch(() => !cancelled && setUploadError("Documents are unavailable."));
+    return () => {
+      cancelled = true;
+    };
   }, [connected, selectedCollectionId]);
 
   function onConnect(event: FormEvent) {
@@ -128,7 +143,14 @@ export function App() {
 
   async function pollDocument(documentId: string, attempt = 0) {
     const response = await apiFetch(`/v1/documents/${documentId}`);
-    if (!response.ok) return;
+    if (!response.ok) {
+      if (attempt === POLL_LIMIT) {
+        setUploadError("Ingestion is still waiting. Try again shortly.");
+        return;
+      }
+      window.setTimeout(() => void pollDocument(documentId, attempt + 1), 1000);
+      return;
+    }
     const document = (await response.json()) as Document;
     setDocuments((current) => [...current.filter((item) => item.document_id !== documentId), document]);
     if (document.status !== "READY" && document.status !== "FAILED") {
@@ -229,12 +251,14 @@ export function App() {
               </form>
               {uploadError ? <p className="error">{uploadError}</p> : null}
               {documents.length === 0 ? <p className="empty">No documents yet.</p> : (
-                <ul className="collections">
-                  {documents.map((document) => <li key={document.document_id}>
-                    {document.logical_name} — <strong>{document.status}</strong>
-                    {document.failure_code ? <span> ({document.failure_code})</span> : null}
-                  </li>)}
-                </ul>
+                <table className="collections">
+                  <thead><tr><th>Name</th><th>Status</th><th>Version</th></tr></thead>
+                  <tbody>{documents.map((document) => <tr key={document.document_id}>
+                    <td>{document.logical_name}</td>
+                    <td><strong>{document.status}</strong>{document.failure_code ? <span> ({document.failure_code})</span> : null}</td>
+                    <td>{document.version_number ?? "—"}</td>
+                  </tr>)}</tbody>
+                </table>
               )}
               <p className="empty">Questions arrive in UI-03.</p>
             </section>

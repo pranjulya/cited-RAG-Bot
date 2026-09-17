@@ -188,7 +188,7 @@ test("shows a failed document and its failure code", async () => {
         return jsonResponse([{ collection_id: collectionId, name: "Acme HR", status: "ACTIVE" }]);
       }
       if (url.endsWith(`/v1/collections/${collectionId}/documents`)) {
-        return jsonResponse([{ document_id: "doc", logical_name: "scan.pdf", status: "FAILED", failure_code: "PDF_UNSUPPORTED" }]);
+        return jsonResponse([{ document_id: "doc", logical_name: "scan.pdf", status: "FAILED", version_number: 1, failure_code: "PDF_UNSUPPORTED" }]);
       }
       throw new Error(`unexpected ${url}`);
     }),
@@ -199,4 +199,5 @@ test("shows a failed document and its failure code", async () => {
 
   expect(await screen.findByText(/\(PDF_UNSUPPORTED\)/)).toBeInTheDocument();
   expect(screen.getByText("FAILED")).toBeInTheDocument();
+  expect(screen.getByText("1")).toBeInTheDocument();
 });
