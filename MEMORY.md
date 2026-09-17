@@ -42,12 +42,12 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | UI-00 console shell on `ui-00-foundation` (compose `web` :8080). |
-| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED` (not REVIEWED until PR review). |
-| Branch | `ui-00-foundation` |
-| PR | Open into `main`. Do not start UI-01 until it merges. |
-| `main` | `674812d` — UI plan. **Do not push or merge to `main` except via PR.** |
-| Next action | Review UI-00 PR. Then UI-01 collections. |
+| Last completed work | UI-01 collections console on `ui-01-collections`; PR #32 is open for review. UI-00 was merged by PR #31. |
+| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED` (both await recorded review/close-out). |
+| Branch | `ui-01-collections` |
+| PR | [#32](https://github.com/pranjulya/cited-RAG-Bot/pull/32) into `main`. Do not start UI-02 until it merges. |
+| `main` | `fb3b7d3` — merged UI-00. **Do not push or merge to `main` except via PR.** |
+| Next action | Review and merge #32. Then UI-02 ingest theater from latest `main`. |
 | Blockers | Heuristic generator until UI-07. No OCR. |
 
 ---
@@ -69,6 +69,19 @@ Do not put secrets, API keys, or raw PDF text here.
 The entries below were written when each phase PR was **opened** and are kept as snapshots. Where a value has changed since, the record says so inline (for example `OPEN when written; now MERGED`). No record below is the live status.
 
 **Authoritative now:** Current state (above) and the `**Status:**` line in `implementation/phase-*.md` (**TESTED** on `main`, not REVIEWED, not COMPLETE).
+
+### UI-01 — Collections
+- **Date:** 2026-09-18
+- **Branch:** `ui-01-collections`
+- **PR:** [#32](https://github.com/pranjulya/cited-RAG-Bot/pull/32) into `main` (OPEN)
+- **Status in phase file:** `TESTED`
+- **Goal:** Let a console user create and list their collections without copying UUIDs, while keeping list visibility scoped to the authenticated API principal.
+- **Files added/changed:** `src/cited_rag/ports/repositories.py`, PostgreSQL collection repository, collection route, API/persistence tests, `web/src/App.tsx`, browser tests/setup, `Learning/ui-01-collections.md`, Learning index, phase status, and this handoff.
+- **Public contracts / commands:** `GET /v1/collections` returns the authenticated principal's collection id, name, and status. The console creates a collection with the existing POST, lists it, and opens `/collections/{collection_id}`.
+- **Decisions made in this phase (not already in ADR-011):** List order is creation order. The small console uses the browser History API instead of adding a router dependency for one collection shell.
+- **Verification run (exact commands + results):** `UV_CACHE_DIR=/private/tmp/cited-rag-uv-cache uv run --extra dev pytest tests/unit` — 213 passed, 1 skipped; `UV_CACHE_DIR=/private/tmp/cited-rag-uv-cache uv run --extra dev ruff check src tests` — passed; `UV_CACHE_DIR=/private/tmp/cited-rag-uv-cache uv run --extra dev mypy` — passed; `npm test -- --run` — 6 passed; `npm run build` — passed. Isolated Compose cold start with alternate host ports completed with all services healthy; in-container API create/list returned `Acme HR policies`.
+- **Not verified / known gaps:** Manual browser interaction on the Docker host was not run from this sandbox; browser behavior is covered by Vitest. Postgres integration tests require the integration environment and were not separately run, though the compose stack applied migrations and the live API create/list demo succeeded.
+- **Follow-ups for the next phase:** After #32 merges, start UI-02 only: collection-scoped document list, PDF upload, and terminal-status polling.
 
 ### Phase 23 — Documentation, Learning, and Interview Readiness
 - **Date:** 2026-09-09
