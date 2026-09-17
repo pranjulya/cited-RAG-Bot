@@ -42,12 +42,12 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | UI-01 collections console on `ui-01-collections`; PR #32 is open for review. UI-00 was merged by PR #31. |
-| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED` (both await recorded review/close-out). |
-| Branch | `ui-01-collections` |
-| PR | [#32](https://github.com/pranjulya/cited-RAG-Bot/pull/32) into `main`. Do not start UI-02 until it merges. |
-| `main` | `fb3b7d3` — merged UI-00. **Do not push or merge to `main` except via PR.** |
-| Next action | Review and merge #32. Then UI-02 ingest theater from latest `main`. |
+| Last completed work | UI-02 ingest theater is `TESTED` on PR [#33](https://github.com/pranjulya/cited-RAG-Bot/pull/33); UI-01 is merged to `main` by PR #32 (`d2ed797`). |
+| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED` (both await recorded review/close-out). UI-02: `TESTED` (PR #33 open). |
+| Branch | `ui-02-ingest-theater` |
+| PR | [#33](https://github.com/pranjulya/cited-RAG-Bot/pull/33) targets `main`. |
+| `main` | `d2ed797` — merged UI-01. **Do not push or merge to `main` except via PR.** |
+| Next action | Review and merge #33. Only then start UI-03. |
 | Blockers | Heuristic generator until UI-07. No OCR. |
 
 ---
@@ -70,10 +70,23 @@ The entries below were written when each phase PR was **opened** and are kept as
 
 **Authoritative now:** Current state (above) and the `**Status:**` line in `implementation/phase-*.md` (**TESTED** on `main`, not REVIEWED, not COMPLETE).
 
+### UI-02 — Ingest Theater
+- **Date:** 2026-09-18
+- **Branch:** `ui-02-ingest-theater`
+- **PR:** [#33](https://github.com/pranjulya/cited-RAG-Bot/pull/33) into `main` (OPEN when written)
+- **Status in phase file:** `TESTED`
+- **Goal:** Let a user upload a PDF to the open collection and see the authoritative ingest lifecycle through `READY` or a public `FAILED` code.
+- **Files added/changed:** `src/cited_rag/ports/repositories.py`, PostgreSQL document repository, document routes and API tests, `web/src/App.tsx` and browser tests, `Learning/ui-02-ingest-theater.md`, Learning index, phase status, and this handoff.
+- **Public contracts / commands:** `GET /v1/collections/{collection_id}/documents` returns only a principal-owned collection's documents and current version status. The UI uploads multipart PDFs, polls the existing document endpoint, bounds waiting status, and shows a versioned table.
+- **Decisions made in this phase (not already in ADR-011):** Poll every second for at most 61 status reads, then show a waiting message. Browser request/poll updates are scoped to the currently open collection so navigation cannot display another collection's status.
+- **Verification run (exact commands + results):** `UV_CACHE_DIR=/private/tmp/cited-rag-uv-cache uv run --extra dev ruff check src tests` — passed; `UV_CACHE_DIR=/private/tmp/cited-rag-uv-cache uv run --extra dev mypy` — passed; `UV_CACHE_DIR=/private/tmp/cited-rag-uv-cache uv run --extra dev pytest tests/unit` — 215 passed, 1 skipped; `npm test -- --run` — 8 passed; `npm run build` — passed. Isolated Compose demo uploaded a text PDF, observed `QUEUED`, then `READY`, and returned it from the collection document list. Independent review found and resolved collection-navigation races, non-OK status retry, and the versioned-table requirement.
+- **Not verified / known gaps:** Manual browser interaction on the Docker host was not run from this sandbox; Vitest covers browser behavior. A live failed scan was not rerun; backend/UI tests cover `PDF_UNSUPPORTED` rendering.
+- **Follow-ups for the next phase:** Merge #33 before starting UI-03; retain collection-scoped status polling as the status source until a later realtime phase explicitly replaces it.
+
 ### UI-01 — Collections
 - **Date:** 2026-09-18
 - **Branch:** `ui-01-collections`
-- **PR:** [#32](https://github.com/pranjulya/cited-RAG-Bot/pull/32) into `main` (OPEN)
+- **PR:** [#32](https://github.com/pranjulya/cited-RAG-Bot/pull/32) into `main` (MERGED `d2ed797`)
 - **Status in phase file:** `TESTED`
 - **Goal:** Let a console user create and list their collections without copying UUIDs, while keeping list visibility scoped to the authenticated API principal.
 - **Files added/changed:** `src/cited_rag/ports/repositories.py`, PostgreSQL collection repository, collection route, API/persistence tests, `web/src/App.tsx`, browser tests/setup, `Learning/ui-01-collections.md`, Learning index, phase status, and this handoff.
