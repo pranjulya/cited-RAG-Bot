@@ -55,6 +55,27 @@ async def test_create_and_read_collection(uow_factory: async_sessionmaker) -> No
 
 
 @pytest.mark.asyncio
+async def test_list_collections_is_scoped_to_owner(uow_factory: async_sessionmaker) -> None:
+    owner = ApiPrincipal(name="owner")
+    other_owner = ApiPrincipal(name="other-owner")
+    first = Collection(name="first", owner_id=owner.id)
+    second = Collection(name="second", owner_id=owner.id)
+    other = Collection(name="other", owner_id=other_owner.id)
+    async with _uow(uow_factory) as uow:
+        await uow.principals.add(owner)
+        await uow.principals.add(other_owner)
+        await uow.collections.add(first)
+        await uow.collections.add(second)
+        await uow.collections.add(other)
+        await uow.commit()
+
+    async with _uow(uow_factory) as uow:
+        collections = await uow.collections.list_by_owner(owner.id)
+
+    assert [collection.id for collection in collections] == [first.id, second.id]
+
+
+@pytest.mark.asyncio
 async def test_document_belongs_to_collection(uow_factory: async_sessionmaker) -> None:
     _, collection = await _principal_and_collection(uow_factory)
     document = Document(collection_id=collection.id, logical_name="policy.pdf")

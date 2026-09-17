@@ -101,3 +101,7 @@ See `Learning/23-documentation-learning.md` and `Learning/interview-qa.md`.
 ## UI-00
 
 See `Learning/ui-00-foundation.md`.
+
+## UI-01
+
+See `Learning/ui-01-collections.md`.

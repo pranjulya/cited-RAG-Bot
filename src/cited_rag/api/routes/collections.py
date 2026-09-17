@@ -31,6 +31,20 @@ class CollectionResponse(BaseModel):
     status: str
 
 
+@router.get("/v1/collections")
+async def list_collections(
+    principal: ApiPrincipal = Depends(get_principal),
+    uow: PostgresUnitOfWork = Depends(get_uow),
+) -> list[CollectionResponse]:
+    collections = await uow.collections.list_by_owner(principal.id)
+    return [
+        CollectionResponse(
+            collection_id=collection.id, name=collection.name, status=collection.status.value
+        )
+        for collection in collections
+    ]
+
+
 @router.post("/v1/collections", status_code=status.HTTP_201_CREATED)
 async def post_collection(
     body: CreateCollectionRequest,

@@ -140,3 +140,36 @@ def test_document_get_body_includes_failure_code_when_failed() -> None:
     assert body["status"] == "FAILED"
     assert body["failure_code"] == "PDF_UNSUPPORTED"
     assert "OCR" in body["failure_message"]
+
+
+def test_list_collections_returns_only_the_authenticated_principals_collections() -> None:
+    principal = ApiPrincipal(name="owner")
+    owned = Collection(name="handbooks", owner_id=principal.id)
+    other = Collection(name="private", owner_id=uuid4())
+    app = create_app(Settings(_env_file=None, api_key="test-placeholder-key", environment="test"))
+
+    class _Collections:
+        async def list_by_owner(self, owner_id: object) -> list[Collection]:
+            return [collection for collection in (owned, other) if collection.owner_id == owner_id]
+
+    class _Uow:
+        collections = _Collections()
+
+    async def _uow() -> object:
+        yield _Uow()
+
+    async def _principal() -> ApiPrincipal:
+        return principal
+
+    app.dependency_overrides[get_uow] = _uow
+    app.dependency_overrides[get_principal] = _principal
+    client = TestClient(app)
+
+    response = client.get(
+        "/v1/collections", headers={"Authorization": "Bearer test-placeholder-key"}
+    )
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {"collection_id": str(owned.id), "name": "handbooks", "status": "ACTIVE"}
+    ]

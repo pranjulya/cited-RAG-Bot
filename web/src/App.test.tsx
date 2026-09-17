@@ -3,9 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { App } from "./App";
 import { API_KEY_STORAGE_KEY } from "./auth";
 
-function jsonResponse(body: unknown, ok = true): Response {
+function jsonResponse(body: unknown, ok = true, status = ok ? 200 : 503): Response {
   return {
     ok,
+    status,
     json: async () => body,
   } as Response;
 }
@@ -25,6 +26,9 @@ test("stores the key in sessionStorage and sends Authorization Bearer", async ()
     if (url.endsWith("/health") || url.endsWith("/ready")) {
       expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer replace-me");
       return jsonResponse({ status: "ok" });
+    }
+    if (url.endsWith("/v1/collections")) {
+      return jsonResponse([]);
     }
     throw new Error(`unexpected ${url}`);
   });
@@ -57,6 +61,9 @@ test("ready 503 is a failed badge, not a blank screen", async () => {
       if (url.endsWith("/ready")) {
         return jsonResponse({ status: "error" }, false);
       }
+      if (url.endsWith("/v1/collections")) {
+        return jsonResponse([]);
+      }
       throw new Error(`unexpected ${url}`);
     }),
   );
@@ -64,5 +71,76 @@ test("ready 503 is a failed badge, not a blank screen", async () => {
   render(<App />);
   await screen.findByLabelText("API status");
   expect(screen.getByText("failed")).toBeInTheDocument();
-  expect(screen.getByText("Create a collection in the next phase.")).toBeInTheDocument();
+  expect(screen.getByText("No collections yet.")).toBeInTheDocument();
+});
+
+test("creates a collection and opens its shell without UUID entry", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/health") || url.endsWith("/ready")) {
+        return jsonResponse({ status: "ok" });
+      }
+      if (url.endsWith("/v1/collections") && init?.method === "POST") {
+        return jsonResponse({
+          collection_id: "11111111-1111-1111-1111-111111111111",
+          name: "Acme HR policies",
+          status: "ACTIVE",
+        });
+      }
+      if (url.endsWith("/v1/collections")) {
+        return jsonResponse([]);
+      }
+      throw new Error(`unexpected ${url}`);
+    }),
+  );
+  sessionStorage.setItem(API_KEY_STORAGE_KEY, "replace-me");
+  const user = userEvent.setup();
+  render(<App />);
+
+  await screen.findByText("No collections yet.");
+  await user.type(screen.getByLabelText("Collection name"), "Acme HR policies");
+  await user.click(screen.getByRole("button", { name: "Create collection" }));
+  await user.click(await screen.findByRole("link", { name: "Acme HR policies" }));
+
+  expect(window.location.pathname).toBe("/collections/11111111-1111-1111-1111-111111111111");
+  expect(screen.getByRole("heading", { name: "Acme HR policies" })).toBeInTheDocument();
+  expect(screen.getByText("Documents arrive in the next phase.")).toBeInTheDocument();
+});
+
+test("shows an inline error for a blank collection name", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => jsonResponse([])),
+  );
+  sessionStorage.setItem(API_KEY_STORAGE_KEY, "replace-me");
+  const user = userEvent.setup();
+  render(<App />);
+
+  await screen.findByText("No collections yet.");
+  await user.click(screen.getByRole("button", { name: "Create collection" }));
+
+  expect(screen.getByText("Collection name is required")).toBeInTheDocument();
+});
+
+test("returns to the key gate when the collection list is unauthorized", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/health") || url.endsWith("/ready")) {
+        return jsonResponse({ status: "ok" });
+      }
+      if (url.endsWith("/v1/collections")) {
+        return jsonResponse({ detail: "unauthorized" }, false, 401);
+      }
+      throw new Error(`unexpected ${url}`);
+    }),
+  );
+  sessionStorage.setItem(API_KEY_STORAGE_KEY, "expired");
+  render(<App />);
+
+  expect(await screen.findByLabelText("API key")).toBeInTheDocument();
+  expect(sessionStorage.getItem(API_KEY_STORAGE_KEY)).toBeNull();
 });
