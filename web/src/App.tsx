@@ -1,9 +1,17 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { apiFetch } from "./api";
 import { clearApiKey, getApiKey, setApiKey } from "./auth";
 
 type Probe = "unknown" | "ok" | "failed";
 type Collection = { collection_id: string; name: string; status: string };
+type Document = {
+  document_id: string;
+  logical_name: string;
+  status: string | null;
+  version_number?: number | null;
+  failure_code?: string | null;
+};
+const POLL_LIMIT = 60;
 
 function collectionIdFromPath(): string | null {
   return window.location.pathname.match(/^\/collections\/([^/]+)$/)?.[1] ?? null;
@@ -21,6 +29,14 @@ export function App() {
   const [collectionError, setCollectionError] = useState<string | null>(null);
   const [selectedCollectionId, setSelectedCollectionId] = useState(collectionIdFromPath);
   const [refresh, setRefresh] = useState(0);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const selectedCollectionIdRef = useRef(selectedCollectionId);
+
+  useEffect(() => {
+    selectedCollectionIdRef.current = selectedCollectionId;
+  }, [selectedCollectionId]);
 
   useEffect(() => {
     if (!connected) {
@@ -64,11 +80,27 @@ export function App() {
 
   useEffect(() => {
     function onPopState() {
-      setSelectedCollectionId(collectionIdFromPath());
+      selectCollection(collectionIdFromPath());
     }
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
+
+  useEffect(() => {
+    if (!selectedCollectionId || !connected) return;
+    let cancelled = false;
+    setDocuments([]);
+    void apiFetch(`/v1/collections/${selectedCollectionId}/documents`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error("documents_unavailable");
+        const loaded = await response.json();
+        if (!cancelled) setDocuments(loaded);
+      })
+      .catch(() => !cancelled && setUploadError("Documents are unavailable."));
+    return () => {
+      cancelled = true;
+    };
+  }, [connected, selectedCollectionId]);
 
   function onConnect(event: FormEvent) {
     event.preventDefault();
@@ -111,7 +143,64 @@ export function App() {
 
   function openCollection(collectionId: string) {
     window.history.pushState({}, "", collectionId ? `/collections/${collectionId}` : "/");
+    selectCollection(collectionId);
+  }
+
+  function selectCollection(collectionId: string | null) {
+    selectedCollectionIdRef.current = collectionId;
     setSelectedCollectionId(collectionId);
+  }
+
+  async function pollDocument(documentId: string, collectionId: string, attempt = 0) {
+    if (selectedCollectionIdRef.current !== collectionId) return;
+    const response = await apiFetch(`/v1/documents/${documentId}`);
+    if (selectedCollectionIdRef.current !== collectionId) return;
+    if (!response.ok) {
+      if (attempt === POLL_LIMIT) {
+        setUploadError("Ingestion is still waiting. Try again shortly.");
+        return;
+      }
+      window.setTimeout(() => void pollDocument(documentId, collectionId, attempt + 1), 1000);
+      return;
+    }
+    const document = (await response.json()) as Document;
+    if (selectedCollectionIdRef.current !== collectionId) return;
+    setDocuments((current) => [...current.filter((item) => item.document_id !== documentId), document]);
+    if (document.status !== "READY" && document.status !== "FAILED") {
+      if (attempt === POLL_LIMIT) {
+        setUploadError("Ingestion is still waiting. Try again shortly.");
+        return;
+      }
+      window.setTimeout(() => void pollDocument(documentId, collectionId, attempt + 1), 1000);
+    }
+  }
+
+  async function onUpload(event: FormEvent) {
+    event.preventDefault();
+    if (!file || !selectedCollectionId) {
+      setUploadError("Choose a PDF first.");
+      return;
+    }
+    const body = new FormData();
+    body.append("file", file);
+    const response = await apiFetch(`/v1/collections/${selectedCollectionId}/documents`, {
+      method: "POST",
+      body,
+    });
+    if (!response.ok) {
+      const error = (await response.json()) as { detail?: string };
+      setUploadError(error.detail ? `Upload failed: ${error.detail}.` : "Upload failed.");
+      return;
+    }
+    const uploaded = (await response.json()) as { document_id: string };
+    if (selectedCollectionIdRef.current !== selectedCollectionId) return;
+    setDocuments((current) => [
+      ...current.filter((document) => document.document_id !== uploaded.document_id),
+      { document_id: uploaded.document_id, logical_name: file.name, status: "QUEUED" },
+    ]);
+    setFile(null);
+    setUploadError(null);
+    await pollDocument(uploaded.document_id, selectedCollectionId);
   }
 
   const selectedCollection = collections.find(
@@ -164,7 +253,27 @@ export function App() {
                 Back to collections
               </a>
               <h2>{selectedCollection.name}</h2>
-              <p className="empty">Documents arrive in the next phase.</p>
+              <form onSubmit={onUpload}>
+                <label htmlFor="upload-pdf">Upload PDF</label>
+                <input
+                  id="upload-pdf"
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                />
+                <button type="submit">Upload</button>
+              </form>
+              {uploadError ? <p className="error">{uploadError}</p> : null}
+              {documents.length === 0 ? <p className="empty">No documents yet.</p> : (
+                <table className="collections">
+                  <thead><tr><th>Name</th><th>Status</th><th>Version</th></tr></thead>
+                  <tbody>{documents.map((document) => <tr key={document.document_id}>
+                    <td>{document.logical_name}</td>
+                    <td><strong>{document.status}</strong>{document.failure_code ? <span> ({document.failure_code})</span> : null}</td>
+                    <td>{document.version_number ?? "—"}</td>
+                  </tr>)}</tbody>
+                </table>
+              )}
               <p className="empty">Questions arrive in UI-03.</p>
             </section>
           ) : (

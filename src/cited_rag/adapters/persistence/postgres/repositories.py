@@ -93,6 +93,14 @@ class PostgresDocumentRepository:
         row = await self._session.get(DocumentRow, document_id)
         return document_from_row(row) if row is not None else None
 
+    async def list_by_collection(self, collection_id: UUID) -> list[Document]:
+        result = await self._session.scalars(
+            select(DocumentRow)
+            .where(DocumentRow.collection_id == collection_id, DocumentRow.deleted_at.is_(None))
+            .order_by(DocumentRow.created_at)
+        )
+        return [document_from_row(row) for row in result.all()]
+
     async def get_for_update(self, document_id: UUID) -> Document | None:
         result = await self._session.scalars(
             select(DocumentRow).where(DocumentRow.id == document_id).with_for_update()
