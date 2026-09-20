@@ -1,8 +1,5 @@
 QUERY_STAGES = (
     "query.request",
-    "query.access_check",
-    "query.dense_retrieval",
-    "query.sparse_retrieval",
     "query.fusion",
     "query.rerank",
     "query.context_build",

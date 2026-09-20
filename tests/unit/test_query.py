@@ -101,6 +101,8 @@ async def test_answerable_query_returns_validated_citations() -> None:
     assert outcome.citations[0].document_name == "handbook.pdf"
     assert outcome.citations[0].page_start == 1
     assert not hasattr(outcome.citations[0], "chunk_id")
+    assert outcome.evidence[0].evidence_id == "E1"
+    assert outcome.evidence[0].text == "Employees receive 20 days of leave."
 
 
 @pytest.mark.asyncio
@@ -145,6 +147,7 @@ async def test_zero_ready_versions_is_no_ready_documents() -> None:
     )
     assert outcome.status is AnswerStatus.INSUFFICIENT_EVIDENCE
     assert outcome.reason is NoAnswerReason.NO_READY_DOCUMENTS
+    assert outcome.evidence == ()
 
 
 def test_query_route_requires_bearer() -> None:

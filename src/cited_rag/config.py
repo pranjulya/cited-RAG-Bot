@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     rerank_top_n: int = Field(default=10, ge=1)
     reranker_timeout_seconds: float = Field(default=5, gt=0)
     max_evidence_items: int = Field(default=8, ge=1)
+    trace_evidence_chars: int = Field(default=2000, ge=1)
     context_token_budget: int = Field(default=1500, ge=1)
     generation_backend: Literal["heuristic"] = "heuristic"
     generation_timeout_seconds: float = Field(default=15, gt=0)

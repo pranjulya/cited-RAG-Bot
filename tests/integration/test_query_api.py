@@ -54,3 +54,15 @@ def test_query_without_ready_documents_is_insufficient(client: TestClient) -> No
     assert body["reason"] == "NO_READY_DOCUMENTS"
     assert response.headers.get("X-Correlation-ID") == "query-trace-1"
     assert "request_id" in body
+    assert body["trace"]["correlation_id"] == "query-trace-1"
+    assert [stage["name"] for stage in body["trace"]["stages"]] == [
+        "query.request",
+        "query.fusion",
+        "query.rerank",
+        "query.context_build",
+        "query.generation",
+        "query.citation_validate",
+    ]
+    assert body["trace"]["stages"][0]["status"] == "ok"
+    assert all(stage["status"] == "skipped" for stage in body["trace"]["stages"][1:])
+    assert body["trace"]["evidence"] == []

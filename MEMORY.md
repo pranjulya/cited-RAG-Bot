@@ -42,12 +42,12 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | UI-03 ask + citations is `TESTED` on PR [#34](https://github.com/pranjulya/cited-RAG-Bot/pull/34); UI-02 merged to `main` by PR #33. |
-| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED` (PR #34 open). |
-| Branch | `ui-03-ask-citations` |
-| PR | [#34](https://github.com/pranjulya/cited-RAG-Bot/pull/34) targets `main`. |
-| `main` | `38562e7` — merged UI-02. **Do not push or merge to `main` except via PR.** |
-| Next action | Review and merge #34. Only then start UI-04. |
+| Last completed work | UI-04 glass-box trace is `TESTED` on PR [#35](https://github.com/pranjulya/cited-RAG-Bot/pull/35); UI-03 merged to `main` by PR #34. |
+| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED`; UI-04: `TESTED` (PR #35 open). |
+| Branch | `ui-04-glass-box` |
+| PR | [#35](https://github.com/pranjulya/cited-RAG-Bot/pull/35) targets `main`. |
+| `main` | `280219f` — merged UI-03. **Do not push or merge to `main` except via PR.** |
+| Next action | Review and merge #35. Only then start UI-05. |
 | Blockers | Heuristic generator until UI-07. No OCR. |
 
 ---
@@ -70,10 +70,23 @@ The entries below were written when each phase PR was **opened** and are kept as
 
 **Authoritative now:** Current state (above) and the `**Status:**` line in `implementation/phase-*.md` (**TESTED** on `main`, not REVIEWED, not COMPLETE).
 
+### UI-04 — Glass Box
+- **Date:** 2026-09-20
+- **Branch:** `ui-04-glass-box`
+- **PR:** [#35](https://github.com/pranjulya/cited-RAG-Bot/pull/35) into `main` (OPEN)
+- **Status in phase file:** `TESTED`
+- **Goal:** Add a request-scoped query trace to every HTTP 200 response so the console shows the six locked stages, bounded `E1..En` evidence, timings, and correlation id without mixing concurrent requests.
+- **Files added/changed:** Query trace response models/route, ContextVar tracing, query evidence propagation, trace settings and tests, `web/src/App.tsx`, `web/src/App.test.tsx`, `web/src/styles.css`, `Learning/ui-04-glass-box.md`, Learning index, phase status, and this handoff.
+- **Public contracts / commands:** `QueryResponse.trace` is required on 200 responses and contains six ordered stage rows plus bounded evidence text. 503 responses remain detail-only. `CITED_RAG_TRACE_EVIDENCE_CHARS` controls per-item text truncation (default 2000).
+- **Decisions made in this phase (not already in ADR-011):** Product traces use a task-local ContextVar buffer while retaining the process-global list for legacy log/metric tests; skipped stages are explicit rows so early exits remain inspectable; evidence is rendered as text nodes.
+- **Verification run (exact commands + results):** `UV_CACHE_DIR=/private/tmp/cited-rag-uv-cache uv run --extra dev ruff check src tests` — passed; `UV_CACHE_DIR=/private/tmp/cited-rag-uv-cache uv run --extra dev mypy` — passed; `UV_CACHE_DIR=/private/tmp/cited-rag-uv-cache uv run --extra dev pytest tests/unit -q` — 218 passed, 1 skipped; `npm test -- --run` — 13 passed; `npm run build` — passed; `git diff --check` — passed.
+- **Not verified / known gaps:** Postgres integration tests and the Docker/Compose demo were not run because the local Docker daemon was unavailable; manual browser interaction was not run from this sandbox.
+- **Follow-ups for the next phase:** Merge #35 before starting UI-05; use the trace evidence IDs and validated citations as the input to page-proof navigation.
+
 ### UI-03 — Ask + Citations
 - **Date:** 2026-09-20
 - **Branch:** `ui-03-ask-citations`
-- **PR:** [#34](https://github.com/pranjulya/cited-RAG-Bot/pull/34) into `main` (OPEN when written)
+- **PR:** [#34](https://github.com/pranjulya/cited-RAG-Bot/pull/34) into `main` (OPEN when written; now MERGED)
 - **Status in phase file:** `TESTED`
 - **Goal:** Let a user ask a collection-scoped question and see an answer with validated page citations, or a first-class insufficient-evidence result.
 - **Files added/changed:** `web/src/App.tsx`, `web/src/App.test.tsx`, `Learning/ui-03-ask-citations.md`, Learning index, phase status, and this handoff.
