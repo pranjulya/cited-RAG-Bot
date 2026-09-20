@@ -1,6 +1,6 @@
 # UI-03 — Ask + Citations
 
-**Status:** NOT_STARTED
+**Status:** TESTED
 
 ## Goal
 The client “wow” screen: question in, grounded answer + page citations out, or a first-class no-answer.

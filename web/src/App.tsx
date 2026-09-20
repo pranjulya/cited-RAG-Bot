@@ -11,6 +11,17 @@ type Document = {
   version_number?: number | null;
   failure_code?: string | null;
 };
+type QueryResponse = {
+  request_id: string;
+  status: "ANSWERED" | "INSUFFICIENT_EVIDENCE";
+  answer: string;
+  citations: Array<{
+    document_name: string;
+    page_start: number;
+    page_end: number;
+  }>;
+  reason: string | null;
+};
 const POLL_LIMIT = 60;
 
 function collectionIdFromPath(): string | null {
@@ -32,6 +43,10 @@ export function App() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [question, setQuestion] = useState("");
+  const [queryResult, setQueryResult] = useState<QueryResponse | null>(null);
+  const [queryError, setQueryError] = useState<string | null>(null);
+  const [queryLoading, setQueryLoading] = useState(false);
   const selectedCollectionIdRef = useRef(selectedCollectionId);
 
   useEffect(() => {
@@ -90,6 +105,10 @@ export function App() {
     if (!selectedCollectionId || !connected) return;
     let cancelled = false;
     setDocuments([]);
+    setQuestion("");
+    setQueryResult(null);
+    setQueryError(null);
+    setQueryLoading(false);
     void apiFetch(`/v1/collections/${selectedCollectionId}/documents`)
       .then(async (response) => {
         if (!response.ok) throw new Error("documents_unavailable");
@@ -203,6 +222,42 @@ export function App() {
     await pollDocument(uploaded.document_id, selectedCollectionId);
   }
 
+  async function onQuery(event: FormEvent) {
+    event.preventDefault();
+    const trimmed = question.trim();
+    if (!trimmed || !selectedCollectionId) return;
+    const collectionId = selectedCollectionId;
+    setQueryLoading(true);
+    setQueryError(null);
+    setQueryResult(null);
+    try {
+      const response = await apiFetch(`/v1/collections/${collectionId}/query`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: trimmed }),
+      });
+      if (selectedCollectionIdRef.current !== collectionId) return;
+      if (!response.ok) {
+        setQueryError(
+          response.status === 503
+            ? "Query service unavailable. Try again later."
+            : response.status === 413
+              ? "Question is too long."
+              : "Question could not be answered.",
+        );
+        return;
+      }
+      const result = (await response.json()) as QueryResponse;
+      if (selectedCollectionIdRef.current === collectionId) setQueryResult(result);
+    } catch {
+      if (selectedCollectionIdRef.current === collectionId) {
+        setQueryError("Query service unavailable. Try again later.");
+      }
+    } finally {
+      if (selectedCollectionIdRef.current === collectionId) setQueryLoading(false);
+    }
+  }
+
   const selectedCollection = collections.find(
     (collection) => collection.collection_id === selectedCollectionId,
   );
@@ -274,7 +329,39 @@ export function App() {
                   </tr>)}</tbody>
                 </table>
               )}
-              <p className="empty">Questions arrive in UI-03.</p>
+              <form className="query-form" onSubmit={onQuery}>
+                <label htmlFor="query-question">Question</label>
+                <textarea
+                  id="query-question"
+                  rows={3}
+                  value={question}
+                  onChange={(event) => setQuestion(event.target.value)}
+                />
+                <button type="submit" disabled={!question.trim() || queryLoading}>
+                  {queryLoading ? "Asking…" : "Ask"}
+                </button>
+              </form>
+              {queryError ? <p className="error">{queryError}</p> : null}
+              {queryResult?.status === "ANSWERED" ? (
+                <section aria-label="Answered result" className="query-result">
+                  <h3>Answer</h3>
+                  <p>{queryResult.answer}</p>
+                  <ul aria-label="Citations">
+                    {queryResult.citations.map((citation) => (
+                      <li key={`${citation.document_name}-${citation.page_start}-${citation.page_end}`}>
+                        {citation.document_name} · pages {citation.page_start}–{citation.page_end}
+                      </li>
+                    ))}
+                  </ul>
+                  <p>Request {queryResult.request_id}</p>
+                </section>
+              ) : queryResult?.status === "INSUFFICIENT_EVIDENCE" ? (
+                <section aria-label="Insufficient evidence" className="query-result">
+                  <h3>Insufficient evidence</h3>
+                  <p>Reason: {queryResult.reason ?? "UNKNOWN"}</p>
+                  <p>Request {queryResult.request_id}</p>
+                </section>
+              ) : null}
             </section>
           ) : (
             <>
