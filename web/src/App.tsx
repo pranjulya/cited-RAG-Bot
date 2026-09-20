@@ -108,6 +108,7 @@ export function App() {
     setQuestion("");
     setQueryResult(null);
     setQueryError(null);
+    setQueryLoading(false);
     void apiFetch(`/v1/collections/${selectedCollectionId}/documents`)
       .then(async (response) => {
         if (!response.ok) throw new Error("documents_unavailable");
@@ -249,9 +250,11 @@ export function App() {
       const result = (await response.json()) as QueryResponse;
       if (selectedCollectionIdRef.current === collectionId) setQueryResult(result);
     } catch {
-      setQueryError("Query service unavailable. Try again later.");
+      if (selectedCollectionIdRef.current === collectionId) {
+        setQueryError("Query service unavailable. Try again later.");
+      }
     } finally {
-      setQueryLoading(false);
+      if (selectedCollectionIdRef.current === collectionId) setQueryLoading(false);
     }
   }
 

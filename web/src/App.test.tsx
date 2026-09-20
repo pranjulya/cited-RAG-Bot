@@ -256,7 +256,7 @@ test("renders insufficient evidence without an answer", async () => {
   stubQueryApp({
     request_id: "33333333-3333-3333-3333-333333333333",
     status: "INSUFFICIENT_EVIDENCE",
-    answer: "",
+    answer: "This answer must not render.",
     citations: [],
     reason: "NO_RETRIEVAL_RESULTS",
   });
@@ -267,6 +267,7 @@ test("renders insufficient evidence without an answer", async () => {
   expect(await screen.findByText("Insufficient evidence")).toBeInTheDocument();
   expect(screen.getByText("Reason: NO_RETRIEVAL_RESULTS")).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Answer" })).not.toBeInTheDocument();
+  expect(screen.queryByText("This answer must not render.")).not.toBeInTheDocument();
 });
 
 test("renders a query outage separately from abstention", async () => {
