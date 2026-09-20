@@ -28,12 +28,20 @@ type QueryResponse = {
   status: "ANSWERED" | "INSUFFICIENT_EVIDENCE";
   answer: string;
   citations: Array<{
+    document_id: string;
+    document_version_id: string;
     document_name: string;
     page_start: number;
     page_end: number;
   }>;
   reason: string | null;
   trace?: QueryTrace;
+};
+type PageProof = {
+  document_name: string;
+  page_start: number;
+  page_end: number;
+  url: string;
 };
 const POLL_LIMIT = 60;
 
@@ -60,7 +68,11 @@ export function App() {
   const [queryResult, setQueryResult] = useState<QueryResponse | null>(null);
   const [queryError, setQueryError] = useState<string | null>(null);
   const [queryLoading, setQueryLoading] = useState(false);
+  const [pageProof, setPageProof] = useState<PageProof | null>(null);
+  const [pageProofError, setPageProofError] = useState<string | null>(null);
   const selectedCollectionIdRef = useRef(selectedCollectionId);
+  const pageProofUrlRef = useRef<string | null>(null);
+  const pageProofRequestRef = useRef(0);
 
   useEffect(() => {
     selectedCollectionIdRef.current = selectedCollectionId;
@@ -115,6 +127,12 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    if (pageProofUrlRef.current) {
+      URL.revokeObjectURL(pageProofUrlRef.current);
+      pageProofUrlRef.current = null;
+    }
+    setPageProof(null);
+    setPageProofError(null);
     if (!selectedCollectionId || !connected) return;
     let cancelled = false;
     setDocuments([]);
@@ -131,8 +149,13 @@ export function App() {
       .catch(() => !cancelled && setUploadError("Documents are unavailable."));
     return () => {
       cancelled = true;
+      pageProofRequestRef.current += 1;
     };
   }, [connected, selectedCollectionId]);
+
+  useEffect(() => () => {
+    if (pageProofUrlRef.current) URL.revokeObjectURL(pageProofUrlRef.current);
+  }, []);
 
   function onConnect(event: FormEvent) {
     event.preventDefault();
@@ -243,6 +266,9 @@ export function App() {
     setQueryLoading(true);
     setQueryError(null);
     setQueryResult(null);
+    setPageProof(null);
+    setPageProofError(null);
+    pageProofRequestRef.current += 1;
     try {
       const response = await apiFetch(`/v1/collections/${collectionId}/query`, {
         method: "POST",
@@ -268,6 +294,31 @@ export function App() {
       }
     } finally {
       if (selectedCollectionIdRef.current === collectionId) setQueryLoading(false);
+    }
+  }
+
+  async function openCitation(citation: QueryResponse["citations"][number]) {
+    const requestId = ++pageProofRequestRef.current;
+    setPageProof(null);
+    setPageProofError(null);
+    try {
+      const response = await apiFetch(`/v1/documents/${citation.document_id}/content`);
+      if (requestId !== pageProofRequestRef.current) return;
+      if (!response.ok) {
+        setPageProofError("The source PDF is unavailable.");
+        return;
+      }
+      const url = URL.createObjectURL(await response.blob());
+      if (pageProofUrlRef.current) URL.revokeObjectURL(pageProofUrlRef.current);
+      pageProofUrlRef.current = url;
+      setPageProof({
+        document_name: citation.document_name,
+        page_start: citation.page_start,
+        page_end: citation.page_end,
+        url,
+      });
+    } catch {
+      if (requestId === pageProofRequestRef.current) setPageProofError("The source PDF is unavailable.");
     }
   }
 
@@ -362,7 +413,13 @@ export function App() {
                   <ul aria-label="Citations">
                     {queryResult.citations.map((citation) => (
                       <li key={`${citation.document_name}-${citation.page_start}-${citation.page_end}`}>
-                        {citation.document_name} · pages {citation.page_start}–{citation.page_end}
+                        <button
+                          type="button"
+                          className="citation-chip"
+                          onClick={() => void openCitation(citation)}
+                        >
+                          {citation.document_name} · pages {citation.page_start}–{citation.page_end}
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -394,6 +451,17 @@ export function App() {
                       </li>
                     ))}
                   </ul>
+                </section>
+              ) : null}
+              {pageProofError ? <p className="error">{pageProofError}</p> : null}
+              {pageProof ? (
+                <section aria-label="PDF viewer" className="query-result">
+                  <h3>Source PDF</h3>
+                  <p>Page {pageProof.page_start} of {pageProof.document_name}</p>
+                  <iframe
+                    title={`PDF viewer page ${pageProof.page_start}`}
+                    src={`${pageProof.url}#page=${pageProof.page_start}`}
+                  />
                 </section>
               ) : null}
             </section>

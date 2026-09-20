@@ -1,6 +1,6 @@
 # UI-05 — Page Proof
 
-**Status:** NOT_STARTED
+**Status:** TESTED
 
 ## Goal
 Click a citation and see that page of the source PDF. One canonical download route; the browser turns pages locally.

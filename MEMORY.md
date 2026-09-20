@@ -42,12 +42,12 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | UI-04 glass-box trace is `TESTED` on PR [#35](https://github.com/pranjulya/cited-RAG-Bot/pull/35); UI-03 merged to `main` by PR #34. |
-| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED`; UI-04: `TESTED` (PR #35 open). |
-| Branch | `ui-04-glass-box` |
-| PR | [#35](https://github.com/pranjulya/cited-RAG-Bot/pull/35) targets `main`. |
-| `main` | `280219f` — merged UI-03. **Do not push or merge to `main` except via PR.** |
-| Next action | Review and merge #35. Only then start UI-05. |
+| Last completed work | UI-05 page proof is `TESTED` on PR [#37](https://github.com/pranjulya/cited-RAG-Bot/pull/37); UI-04 merged to `main` by PR #35. |
+| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED`; UI-04: `TESTED`; UI-05: `TESTED` (PR #37 open). |
+| Branch | `ui-05-page-proof` |
+| PR | [#37](https://github.com/pranjulya/cited-RAG-Bot/pull/37) targets `main`. |
+| `main` | `df0a50e` — merged UI-04. **Do not push or merge to `main` except via PR.** |
+| Next action | Review and merge #37. Only then start UI-06. |
 | Blockers | Heuristic generator until UI-07. No OCR. |
 
 ---
@@ -70,10 +70,23 @@ The entries below were written when each phase PR was **opened** and are kept as
 
 **Authoritative now:** Current state (above) and the `**Status:**` line in `implementation/phase-*.md` (**TESTED** on `main`, not REVIEWED, not COMPLETE).
 
+### UI-05 — Page Proof
+- **Date:** 2026-09-20
+- **Branch:** `ui-05-page-proof`
+- **PR:** [#37](https://github.com/pranjulya/cited-RAG-Bot/pull/37) into `main` (OPEN)
+- **Status in phase file:** `TESTED`
+- **Goal:** Let users click a validated citation, fetch the source PDF through the authenticated API, and open its parser-owned 1-based page in the browser viewer.
+- **Files added/changed:** Authenticated document-content route, route/integration/unit tests, citation viewer UI/tests/styles, `Learning/ui-05-page-proof.md`, Learning index, phase status, and this handoff.
+- **Public contracts / commands:** `GET /v1/documents/{document_id}/content` returns raw `application/pdf` bytes with `Cache-Control: private, no-store`; unauthorized/missing/deleted documents return 404, storage failure returns 503, and oversized bytes return 413. The UI sends Bearer auth and uses `#page=<page_start>`.
+- **Decisions made in this phase (not already in ADR-011):** The API derives the canonical source key instead of exposing `storage_uri`; the native PDF viewer replaces a new pdf.js dependency while preserving the API's 1-based page authority.
+- **Verification run (exact commands + results):** `./.venv/bin/ruff check src tests` — passed; `./.venv/bin/mypy` — passed; `./.venv/bin/pytest tests/unit -q` — 221 passed, 1 skipped; `./.venv/bin/pytest tests/integration/test_upload.py -q` — 11 skipped because no database is configured; `npm test -- --run` — 14 passed; `npm run build` — passed; `git diff --check` — passed.
+- **Not verified / known gaps:** Postgres-backed integration and live Compose/browser demo require external services unavailable in this environment.
+- **Follow-ups for the next phase:** Merge #37 before starting UI-06; preserve the 404-vs-503 distinction when adding fail-closed studio states.
+
 ### UI-04 — Glass Box
 - **Date:** 2026-09-20
 - **Branch:** `ui-04-glass-box`
-- **PR:** [#35](https://github.com/pranjulya/cited-RAG-Bot/pull/35) into `main` (OPEN)
+- **PR:** [#35](https://github.com/pranjulya/cited-RAG-Bot/pull/35) into `main` (OPEN when written; now MERGED)
 - **Status in phase file:** `TESTED`
 - **Goal:** Add a request-scoped query trace to every HTTP 200 response so the console shows the six locked stages, bounded `E1..En` evidence, timings, and correlation id without mixing concurrent requests.
 - **Files added/changed:** Query trace response models/route, ContextVar tracing, query evidence propagation, trace settings and tests, `web/src/App.tsx`, `web/src/App.test.tsx`, `web/src/styles.css`, `Learning/ui-04-glass-box.md`, Learning index, phase status, and this handoff.

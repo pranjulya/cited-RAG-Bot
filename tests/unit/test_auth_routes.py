@@ -4,14 +4,16 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-from cited_rag.api.deps import _bearer_matches, get_principal, get_uow
+from cited_rag.api.deps import _bearer_matches, get_principal, get_storage, get_uow
 from cited_rag.api.routes.documents import _document_status_response
 from cited_rag.config import Settings
 from cited_rag.domain.enums import DocumentVersionStatus
+from cited_rag.domain.exceptions import StorageError
 from cited_rag.domain.models.collection import Collection
 from cited_rag.domain.models.document import Document, DocumentVersion
 from cited_rag.domain.models.principal import ApiPrincipal
 from cited_rag.main import create_app
+from cited_rag.ports.object_storage import source_pdf_key
 
 
 def test_health_remains_unauthenticated() -> None:
@@ -294,3 +296,208 @@ def test_list_documents_hides_another_principals_collection() -> None:
 
     assert response.status_code == 404
     assert response.json() == {"detail": "collection_not_found"}
+
+
+def test_document_content_returns_owned_pdf_bytes_with_private_cache() -> None:
+    principal = ApiPrincipal(name="owner")
+    collection = Collection(name="handbooks", owner_id=principal.id)
+    document = Document(collection_id=collection.id, logical_name="policy.pdf")
+    version = DocumentVersion(
+        document_id=document.id,
+        collection_id=collection.id,
+        version_number=1,
+        content_hash="ready",
+        original_filename="policy.pdf",
+        mime_type="application/pdf",
+        size_bytes=4,
+        storage_uri="local://ignored",
+        ingestion_status=DocumentVersionStatus.READY,
+    )
+    document = Document(
+        collection_id=collection.id,
+        logical_name="policy.pdf",
+        id=document.id,
+        active_version_id=version.id,
+    )
+    app = create_app(Settings(_env_file=None, api_key="test-placeholder-key", environment="test"))
+
+    class _Documents:
+        async def get(self, _document_id: object) -> Document:
+            return document
+
+    class _Collections:
+        async def get(self, _collection_id: object) -> Collection:
+            return collection
+
+    class _Versions:
+        async def list_by_document(self, _document_id: object) -> list[DocumentVersion]:
+            return [version]
+
+    class _Uow:
+        documents = _Documents()
+        collections = _Collections()
+        versions = _Versions()
+
+    class _Storage:
+        async def get(self, key: str) -> bytes:
+            assert key == source_pdf_key(
+                collection_id=collection.id, document_id=document.id, version_id=version.id
+            )
+            return b"%PDF"
+
+    async def _uow() -> object:
+        yield _Uow()
+
+    async def _principal() -> ApiPrincipal:
+        return principal
+
+    app.dependency_overrides[get_uow] = _uow
+    app.dependency_overrides[get_principal] = _principal
+    app.dependency_overrides[get_storage] = lambda: _Storage()
+    response = TestClient(app).get(
+        f"/v1/documents/{document.id}/content",
+        headers={"Authorization": "Bearer test-placeholder-key"},
+    )
+
+    assert response.status_code == 200
+    assert response.content == b"%PDF"
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.headers["cache-control"] == "private, no-store"
+
+
+def test_document_content_hides_other_principals_and_deleted_documents() -> None:
+    principal = ApiPrincipal(name="owner")
+    collection = Collection(name="private", owner_id=uuid4())
+    document = Document(collection_id=collection.id, logical_name="private.pdf")
+    app = create_app(Settings(_env_file=None, api_key="test-placeholder-key", environment="test"))
+
+    class _Documents:
+        async def get(self, _document_id: object) -> Document:
+            return document
+
+    class _Collections:
+        async def get(self, _collection_id: object) -> Collection:
+            return collection
+
+    class _Uow:
+        documents = _Documents()
+        collections = _Collections()
+
+    async def _uow() -> object:
+        yield _Uow()
+
+    async def _principal() -> ApiPrincipal:
+        return principal
+
+    class _Storage:
+        async def get(self, _key: str) -> bytes:
+            return b"%PDF"
+
+    app.dependency_overrides[get_uow] = _uow
+    app.dependency_overrides[get_principal] = _principal
+    app.dependency_overrides[get_storage] = lambda: _Storage()
+    response = TestClient(app).get(
+        f"/v1/documents/{document.id}/content",
+        headers={"Authorization": "Bearer test-placeholder-key"},
+    )
+    assert response.status_code == 404
+    assert response.json() == {"detail": "document_not_found"}
+
+    deleted = Document(
+        collection_id=collection.id,
+        logical_name="deleted.pdf",
+        id=document.id,
+        deleted_at=document.created_at,
+    )
+
+    class _DeletedDocuments:
+        async def get(self, _document_id: object) -> Document:
+            return deleted
+
+    _Uow.documents = _DeletedDocuments()
+    response = TestClient(app).get(
+        f"/v1/documents/{document.id}/content",
+        headers={"Authorization": "Bearer test-placeholder-key"},
+    )
+    assert response.status_code == 404
+
+
+def test_document_content_maps_storage_failure_and_size_limit() -> None:
+    principal = ApiPrincipal(name="owner")
+    collection = Collection(name="handbooks", owner_id=principal.id)
+    document = Document(collection_id=collection.id, logical_name="policy.pdf")
+    version = DocumentVersion(
+        document_id=document.id,
+        collection_id=collection.id,
+        version_number=1,
+        content_hash="ready",
+        original_filename="policy.pdf",
+        mime_type="application/pdf",
+        size_bytes=4,
+        storage_uri="local://ignored",
+        ingestion_status=DocumentVersionStatus.READY,
+    )
+    document = Document(
+        collection_id=collection.id,
+        logical_name="policy.pdf",
+        id=document.id,
+        active_version_id=version.id,
+    )
+
+    class _Documents:
+        async def get(self, _document_id: object) -> Document:
+            return document
+
+    class _Collections:
+        async def get(self, _collection_id: object) -> Collection:
+            return collection
+
+    class _Versions:
+        async def list_by_document(self, _document_id: object) -> list[DocumentVersion]:
+            return [version]
+
+    class _Uow:
+        documents = _Documents()
+        collections = _Collections()
+        versions = _Versions()
+
+    class _BrokenStorage:
+        async def get(self, _key: str) -> bytes:
+            raise StorageError()
+
+    async def _uow() -> object:
+        yield _Uow()
+
+    async def _principal() -> ApiPrincipal:
+        return principal
+
+    app = create_app(
+        Settings(
+            _env_file=None,
+            api_key="test-placeholder-key",
+            environment="test",
+            max_upload_bytes=3,
+        )
+    )
+    app.dependency_overrides[get_uow] = _uow
+    app.dependency_overrides[get_principal] = _principal
+    app.dependency_overrides[get_storage] = lambda: _BrokenStorage()
+    client = TestClient(app)
+    response = client.get(
+        f"/v1/documents/{document.id}/content",
+        headers={"Authorization": "Bearer test-placeholder-key"},
+    )
+    assert response.status_code == 503
+    assert response.json() == {"detail": "storage_unavailable"}
+
+    class _LargeStorage:
+        async def get(self, _key: str) -> bytes:
+            return b"%PDF"
+
+    app.dependency_overrides[get_storage] = lambda: _LargeStorage()
+    response = client.get(
+        f"/v1/documents/{document.id}/content",
+        headers={"Authorization": "Bearer test-placeholder-key"},
+    )
+    assert response.status_code == 413
+    assert response.json() == {"detail": "too_large"}

@@ -84,6 +84,25 @@ def test_valid_pdf_upload_returns_queued_and_is_not_searchable(client: TestClien
     assert status.json()["active_version_id"] is None
 
 
+def test_document_content_returns_authenticated_pdf_bytes(client: TestClient) -> None:
+    collection_id = _create_collection(client)
+    uploaded = client.post(
+        f"/v1/collections/{collection_id}/documents",
+        headers=AUTH,
+        files={"file": ("policy.pdf", MINIMAL_PDF, "application/pdf")},
+    )
+    assert uploaded.status_code == 202
+    document_id = uploaded.json()["document_id"]
+
+    response = client.get(f"/v1/documents/{document_id}/content", headers=AUTH)
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.headers["cache-control"] == "private, no-store"
+    assert response.content.startswith(b"%PDF")
+    assert client.get(f"/v1/documents/{document_id}/content").status_code == 401
+
+
 def test_non_pdf_rejected(client: TestClient) -> None:
     collection_id = _create_collection(client)
     response = client.post(

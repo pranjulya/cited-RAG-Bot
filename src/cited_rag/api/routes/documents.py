@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile, status
 from pydantic import BaseModel
 
 from cited_rag.adapters.persistence.postgres.uow import PostgresUnitOfWork
@@ -25,7 +25,7 @@ from cited_rag.domain.exceptions import (
 from cited_rag.domain.models.document import Document, DocumentVersion
 from cited_rag.domain.models.principal import ApiPrincipal
 from cited_rag.domain.policies import public_ingestion_status
-from cited_rag.ports.object_storage import ObjectStorage
+from cited_rag.ports.object_storage import ObjectStorage, source_pdf_key
 from cited_rag.ports.queue import JobQueue
 
 router = APIRouter()
@@ -84,6 +84,14 @@ def _document_status_response(
         failure_code=current.failure_code if failed else None,
         failure_message=current.failure_message if failed else None,
     )
+
+
+def _source_version(document: Document, versions: list[DocumentVersion]) -> DocumentVersion | None:
+    if document.active_version_id is not None:
+        for version in versions:
+            if version.id == document.active_version_id and version.storage_uri:
+                return version
+    return next((version for version in reversed(versions) if version.storage_uri), None)
 
 
 def _http_for_upload_error(exc: Exception) -> HTTPException:
@@ -231,6 +239,46 @@ async def get_document(
     versions = await uow.versions.list_by_document(document.id)
     current = versions[-1] if versions else None
     return _document_status_response(document, current)
+
+
+@router.get("/v1/documents/{document_id}/content")
+async def get_document_content(
+    document_id: UUID,
+    principal: ApiPrincipal = Depends(get_principal),
+    uow: PostgresUnitOfWork = Depends(get_uow),
+    storage: ObjectStorage = Depends(get_storage),
+    settings: Settings = Depends(get_settings_dep),
+) -> Response:
+    document = await uow.documents.get(document_id)
+    if document is None or document.deleted_at is not None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="document_not_found")
+    collection = owned_collection_or_none(
+        await uow.collections.get(document.collection_id), principal.id
+    )
+    if collection is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="document_not_found")
+    version = _source_version(document, await uow.versions.list_by_document(document.id))
+    if version is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="document_not_found")
+    key = source_pdf_key(
+        collection_id=version.collection_id,
+        document_id=version.document_id,
+        version_id=version.id,
+    )
+    try:
+        content = await storage.get(key)
+    except StorageError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="storage_unavailable",
+        ) from exc
+    if len(content) > settings.max_upload_bytes:
+        raise HTTPException(status_code=status.HTTP_413_CONTENT_TOO_LARGE, detail="too_large")
+    return Response(
+        content=content,
+        media_type="application/pdf",
+        headers={"Cache-Control": "private, no-store"},
+    )
 
 
 @router.delete("/v1/documents/{document_id}", status_code=status.HTTP_202_ACCEPTED)
