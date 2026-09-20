@@ -42,12 +42,12 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | UI-05 page proof is `TESTED` on PR [#37](https://github.com/pranjulya/cited-RAG-Bot/pull/37); UI-04 merged to `main` by PR #35. |
-| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED`; UI-04: `TESTED`; UI-05: `TESTED` (PR #37 open). |
-| Branch | `ui-05-page-proof` |
-| PR | [#37](https://github.com/pranjulya/cited-RAG-Bot/pull/37) targets `main`. |
-| `main` | `df0a50e` — merged UI-04. **Do not push or merge to `main` except via PR.** |
-| Next action | Review and merge #37. Only then start UI-06. |
+| Last completed work | UI-05 page proof merged to `main` by PR #37 (`fedfdab`); collection-list fix merged by PR #36. `main` CI green on all four jobs. |
+| Phase file status | Backend 00–23: **TESTED**. UI-00–UI-05: `TESTED` (merged; review/close-out recorded in this review pass). UI-06: `NOT_STARTED`. |
+| Branch | `main` (`fedfdab`) |
+| PR | None open. Next: UI-06 fail-closed studio from latest `main`. |
+| `main` | `fedfdab` — merged UI-05. **Do not push or merge to `main` except via PR.** |
+| Next action | Start UI-06 (`implementation/ui/ui-06-fail-closed-studio.md`) from latest `main`. One UI phase per PR. |
 | Blockers | Heuristic generator until UI-07. No OCR. |
 
 ---
@@ -73,7 +73,7 @@ The entries below were written when each phase PR was **opened** and are kept as
 ### UI-05 — Page Proof
 - **Date:** 2026-09-20
 - **Branch:** `ui-05-page-proof`
-- **PR:** [#37](https://github.com/pranjulya/cited-RAG-Bot/pull/37) into `main` (OPEN)
+- **PR:** [#37](https://github.com/pranjulya/cited-RAG-Bot/pull/37) into `main` (OPEN when written; now MERGED `fedfdab`)
 - **Status in phase file:** `TESTED`
 - **Goal:** Let users click a validated citation, fetch the source PDF through the authenticated API, and open its parser-owned 1-based page in the browser viewer.
 - **Files added/changed:** Authenticated document-content route, route/integration/unit tests, citation viewer UI/tests/styles, `Learning/ui-05-page-proof.md`, Learning index, phase status, and this handoff.
