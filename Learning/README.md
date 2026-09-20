@@ -109,3 +109,7 @@ See `Learning/ui-01-collections.md`.
 ## UI-02
 
 See `Learning/ui-02-ingest-theater.md`.
+
+## UI-03
+
+See `Learning/ui-03-ask-citations.md`.
