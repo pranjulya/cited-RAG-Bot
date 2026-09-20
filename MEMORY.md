@@ -42,12 +42,12 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | UI-05 page proof is `TESTED` and merged to `main` by PR [#37](https://github.com/pranjulya/cited-RAG-Bot/pull/37); UI-04 merged by PR #35. |
-| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED`; UI-04: `TESTED`; UI-05: `TESTED`; UI-06: `TESTED`. |
-| Branch | `ui-06-fail-closed-studio` |
-| PR | [#39](https://github.com/pranjulya/cited-RAG-Bot/pull/39) targets `main` (OPEN). |
-| `main` | `fedfdab` — merged UI-05 via PR #37. **Do not push or merge to `main` except via PR.** |
-| Next action | Review and merge #39. Only then start UI-07. |
+| Last completed work | UI-06 fail-closed studio is `TESTED` and merged to `main` by PR [#39](https://github.com/pranjulya/cited-RAG-Bot/pull/39); UI-05 merged by PR #37. |
+| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED`; UI-04: `TESTED`; UI-05: `TESTED`; UI-06: `TESTED`; UI-07: `TESTED`. |
+| Branch | `ui-07-hosted-generation` |
+| PR | [#40](https://github.com/pranjulya/cited-RAG-Bot/pull/40) targets `main` (OPEN). |
+| `main` | `a1370da` — merged UI-06 via PR #39. **Do not push or merge to `main` except via PR.** |
+| Next action | Review and merge #40. Only then start UI-08. |
 | Blockers | Heuristic generator until UI-07. No OCR. |
 
 ---
@@ -70,10 +70,23 @@ The entries below were written when each phase PR was **opened** and are kept as
 
 **Authoritative now:** Current state (above) and the `**Status:**` line in `implementation/phase-*.md` (**TESTED** on `main`, not REVIEWED, not COMPLETE).
 
+### UI-07 — Hosted Generation
+- **Date:** 2026-09-20
+- **Branch:** `ui-07-hosted-generation`
+- **PR:** [#40](https://github.com/pranjulya/cited-RAG-Bot/pull/40) into `main` (OPEN)
+- **Status in phase file:** `TESTED`
+- **Goal:** Add an OpenAI-compatible grounded-generation adapter while keeping heuristic generation as the CI default and preserving the existing evidence/citation contract.
+- **Files added/changed:** `src/cited_rag/adapters/generation/openai_compatible.py`, generation settings/factory, query response metadata, `web/src/App.tsx`, frontend/backend tests, `.env.example`, deployment/README docs, `Learning/ui-07-hosted-generation.md`, Learning index, phase status, and this handoff.
+- **Public contracts / commands:** `CITED_RAG_GENERATION_BACKEND=heuristic|openai_compatible`; hosted settings remain server-side (`BASE_URL`, `MODEL`, `API_KEY`). Query 200 responses add non-secret `generation_backend`; the UI renders `heuristic` or `hosted` only.
+- **Decisions made in this phase (not already in ADR-011):** The adapter uses stdlib HTTP and JSON-mode chat completions, appending `/chat/completions` to an OpenAI-compatible `/v1` base URL; missing hosted keys fail startup rather than silently falling back; provider metadata is exposed only as a backend label.
+- **Verification run (exact commands + results):** `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/pytest tests/unit -q` — 227 passed, 1 skipped; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/pytest tests/integration/test_query_api.py -q` — 2 skipped because no database is configured; `npm test -- --run` — 19 passed; `npm run build` — passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/ruff check src tests` — passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/mypy` — passed; `git -c core.fsmonitor=false diff --check` — passed.
+- **Not verified / known gaps:** No live billed provider call, live Compose hosted demo, Postgres integration, or manual browser run was performed; fake transport fixtures cover success, malformed JSON, timeout, and missing evidence IDs.
+- **Follow-ups for the next phase:** Merge #40 before starting UI-08; keep the hosted key server-only while packaging compose/CI/screenshots/deploy evidence.
+
 ### UI-06 — Fail-Closed Studio
 - **Date:** 2026-09-20
 - **Branch:** `ui-06-fail-closed-studio`
-- **PR:** [#39](https://github.com/pranjulya/cited-RAG-Bot/pull/39) into `main` (OPEN)
+- **PR:** [#39](https://github.com/pranjulya/cited-RAG-Bot/pull/39) into `main` (OPEN when written; now MERGED `a1370da`)
 - **Status in phase file:** `TESTED`
 - **Goal:** Make failure modes demoable with distinct abstain/outage/auth/not-found/citation-validation states, visible ingestion failure codes, and a confirmed delete flow that waits for the authoritative 404.
 - **Files added/changed:** `web/src/App.tsx`, `web/src/App.test.tsx`, `implementation/ui/ui-06-fail-closed-studio.md`, `Learning/ui-06-fail-closed-studio.md`, `Learning/README.md`, and this handoff.
