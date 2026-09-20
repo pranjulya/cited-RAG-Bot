@@ -1,6 +1,6 @@
 # UI-06 — Fail-Closed Studio
 
-**Status:** NOT_STARTED
+**Status:** TESTED
 
 ## Goal
 Make failure modes demoable: bad ingest, abstain, delete, operational 503 vs 200 no-answer.

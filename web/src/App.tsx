@@ -67,7 +67,9 @@ export function App() {
   const [question, setQuestion] = useState("");
   const [queryResult, setQueryResult] = useState<QueryResponse | null>(null);
   const [queryError, setQueryError] = useState<string | null>(null);
+  const [queryErrorCode, setQueryErrorCode] = useState<string | null>(null);
   const [queryLoading, setQueryLoading] = useState(false);
+  const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
   const [pageProof, setPageProof] = useState<PageProof | null>(null);
   const [pageProofError, setPageProofError] = useState<string | null>(null);
   const selectedCollectionIdRef = useRef(selectedCollectionId);
@@ -136,9 +138,11 @@ export function App() {
     if (!selectedCollectionId || !connected) return;
     let cancelled = false;
     setDocuments([]);
+    setDeletingDocumentId(null);
     setQuestion("");
     setQueryResult(null);
     setQueryError(null);
+    setQueryErrorCode(null);
     setQueryLoading(false);
     void apiFetch(`/v1/collections/${selectedCollectionId}/documents`)
       .then(async (response) => {
@@ -258,6 +262,46 @@ export function App() {
     await pollDocument(uploaded.document_id, selectedCollectionId);
   }
 
+  async function pollDeletion(documentId: string, collectionId: string, attempt = 0) {
+    if (selectedCollectionIdRef.current !== collectionId) return;
+    try {
+      const response = await apiFetch(`/v1/documents/${documentId}`);
+      if (selectedCollectionIdRef.current !== collectionId) return;
+      if (response.status === 404) {
+        setDocuments((current) => current.filter((document) => document.document_id !== documentId));
+        setDeletingDocumentId(null);
+        return;
+      }
+      if (attempt === POLL_LIMIT) {
+        setUploadError("Deletion is still waiting. Try again shortly.");
+        setDeletingDocumentId(null);
+        return;
+      }
+      window.setTimeout(() => void pollDeletion(documentId, collectionId, attempt + 1), 1000);
+    } catch {
+      setUploadError("Deletion status is unavailable. Try again shortly.");
+      setDeletingDocumentId(null);
+    }
+  }
+
+  async function onDeleteDocument(document: Document) {
+    if (!selectedCollectionId || !window.confirm(`Delete ${document.logical_name}?`)) return;
+    setDeletingDocumentId(document.document_id);
+    setUploadError(null);
+    const response = await apiFetch(`/v1/documents/${document.document_id}`, { method: "DELETE" });
+    if (response.status === 401) {
+      clearApiKey();
+      setConnected(false);
+      return;
+    }
+    if (!response.ok) {
+      setUploadError("Document could not be deleted.");
+      setDeletingDocumentId(null);
+      return;
+    }
+    await pollDeletion(document.document_id, selectedCollectionId);
+  }
+
   async function onQuery(event: FormEvent) {
     event.preventDefault();
     const trimmed = question.trim();
@@ -265,6 +309,7 @@ export function App() {
     const collectionId = selectedCollectionId;
     setQueryLoading(true);
     setQueryError(null);
+    setQueryErrorCode(null);
     setQueryResult(null);
     setPageProof(null);
     setPageProofError(null);
@@ -277,13 +322,24 @@ export function App() {
       });
       if (selectedCollectionIdRef.current !== collectionId) return;
       if (!response.ok) {
+        if (response.status === 401) {
+          clearApiKey();
+          setConnected(false);
+          return;
+        }
+        const detail = ((await response.json().catch(() => ({}))) as { detail?: string }).detail;
         setQueryError(
           response.status === 503
             ? "Query service unavailable. Try again later."
             : response.status === 413
               ? "Question is too long."
-              : "Question could not be answered.",
+              : response.status === 422 && detail === "citation_validation_failed"
+                ? "Citations could not be validated. The answer was blocked."
+                : response.status === 404
+                  ? "The collection or source document was not found."
+                  : "Question could not be answered.",
         );
+        if (response.status === 503 && detail) setQueryErrorCode(detail);
         return;
       }
       const result = (await response.json()) as QueryResponse;
@@ -385,11 +441,12 @@ export function App() {
               {uploadError ? <p className="error">{uploadError}</p> : null}
               {documents.length === 0 ? <p className="empty">No documents yet.</p> : (
                 <table className="collections">
-                  <thead><tr><th>Name</th><th>Status</th><th>Version</th></tr></thead>
+                  <thead><tr><th>Name</th><th>Status</th><th>Version</th><th>Actions</th></tr></thead>
                   <tbody>{documents.map((document) => <tr key={document.document_id}>
                     <td>{document.logical_name}</td>
-                    <td><strong>{document.status}</strong>{document.failure_code ? <span> ({document.failure_code})</span> : null}</td>
+                    <td><strong>{document.status}</strong>{document.failure_code ? <span> (<a href={`#failure-${document.failure_code}`}>{document.failure_code}</a>)</span> : null}</td>
                     <td>{document.version_number ?? "—"}</td>
+                    <td><button type="button" onClick={() => void onDeleteDocument(document)} disabled={deletingDocumentId === document.document_id}>{deletingDocumentId === document.document_id ? "Deleting…" : `Delete ${document.logical_name}`}</button></td>
                   </tr>)}</tbody>
                 </table>
               )}
@@ -406,6 +463,7 @@ export function App() {
                 </button>
               </form>
               {queryError ? <p className="error">{queryError}</p> : null}
+              {queryErrorCode ? <p className="error">Failure code: {queryErrorCode}</p> : null}
               {queryResult?.status === "ANSWERED" ? (
                 <section aria-label="Answered result" className="query-result">
                   <h3>Answer</h3>

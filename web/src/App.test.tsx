@@ -197,9 +197,46 @@ test("shows a failed document and its failure code", async () => {
   sessionStorage.setItem(API_KEY_STORAGE_KEY, "replace-me");
   render(<App />);
 
-  expect(await screen.findByText(/\(PDF_UNSUPPORTED\)/)).toBeInTheDocument();
+  expect(await screen.findByRole("link", { name: "PDF_UNSUPPORTED" })).toHaveAttribute(
+    "href",
+    "#failure-PDF_UNSUPPORTED",
+  );
   expect(screen.getByText("FAILED")).toBeInTheDocument();
   expect(screen.getByText("1")).toBeInTheDocument();
+});
+
+test("deletes a document and removes it after the API reports 404", async () => {
+  const collectionId = "11111111-1111-1111-1111-111111111111";
+  const documentId = "22222222-2222-2222-2222-222222222222";
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    if (url.endsWith("/health") || url.endsWith("/ready")) return jsonResponse({ status: "ok" });
+    if (url.endsWith("/v1/collections")) {
+      return jsonResponse([{ collection_id: collectionId, name: "Acme HR", status: "ACTIVE" }]);
+    }
+    if (url.endsWith(`/v1/collections/${collectionId}/documents`)) {
+      return jsonResponse([{ document_id: documentId, logical_name: "policy.pdf", status: "READY", version_number: 1 }]);
+    }
+    if (url.endsWith(`/v1/documents/${documentId}`) && init?.method === "DELETE") {
+      return jsonResponse({ document_id: documentId, status: "DELETING" }, true, 202);
+    }
+    if (url.endsWith(`/v1/documents/${documentId}`)) {
+      return jsonResponse({ detail: "document_not_found" }, false, 404);
+    }
+    throw new Error(`unexpected ${url} ${init?.method ?? "GET"}`);
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  vi.stubGlobal("confirm", vi.fn(() => true));
+  window.history.replaceState({}, "", `/collections/${collectionId}`);
+  sessionStorage.setItem(API_KEY_STORAGE_KEY, "replace-me");
+  const user = userEvent.setup();
+  render(<App />);
+
+  await screen.findByText("policy.pdf");
+  await user.click(screen.getByRole("button", { name: "Delete policy.pdf" }));
+
+  expect(await screen.findByText("No documents yet.")).toBeInTheDocument();
+  expect(fetchMock.mock.calls.some(([url, request]) => String(url).endsWith(`/v1/documents/${documentId}`) && request?.method === "DELETE")).toBe(true);
 });
 
 function stubQueryApp(queryResponse: unknown, ok = true, status = 200) {
@@ -353,7 +390,37 @@ test("renders a query outage separately from abstention", async () => {
   await user.click(screen.getByRole("button", { name: "Ask" }));
 
   expect(await screen.findByText("Query service unavailable. Try again later.")).toBeInTheDocument();
+  expect(screen.getByText("Failure code: query_failed")).toBeInTheDocument();
   expect(screen.queryByText("Insufficient evidence")).not.toBeInTheDocument();
+});
+
+test("renders citation validation failure separately from an outage", async () => {
+  stubQueryApp({ detail: "citation_validation_failed" }, false, 422);
+  const user = await openQueryPanel();
+  await user.type(screen.getByLabelText("Question"), "How much leave?");
+  await user.click(screen.getByRole("button", { name: "Ask" }));
+
+  expect(await screen.findByText("Citations could not be validated. The answer was blocked.")).toBeInTheDocument();
+  expect(screen.queryByText("Query service unavailable. Try again later.")).not.toBeInTheDocument();
+});
+
+test("returns to the key gate when a query is unauthorized", async () => {
+  stubQueryApp({ detail: "unauthorized" }, false, 401);
+  const user = await openQueryPanel();
+  await user.type(screen.getByLabelText("Question"), "How much leave?");
+  await user.click(screen.getByRole("button", { name: "Ask" }));
+
+  expect(await screen.findByLabelText("API key")).toBeInTheDocument();
+  expect(sessionStorage.getItem(API_KEY_STORAGE_KEY)).toBeNull();
+});
+
+test("renders a missing collection or document separately", async () => {
+  stubQueryApp({ detail: "document_not_found" }, false, 404);
+  const user = await openQueryPanel();
+  await user.type(screen.getByLabelText("Question"), "How much leave?");
+  await user.click(screen.getByRole("button", { name: "Ask" }));
+
+  expect(await screen.findByText("The collection or source document was not found.")).toBeInTheDocument();
 });
 
 test("keeps empty questions disabled and displays a 413 query error", async () => {

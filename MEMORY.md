@@ -42,12 +42,12 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | UI-05 page proof is `TESTED` on PR [#37](https://github.com/pranjulya/cited-RAG-Bot/pull/37); UI-04 merged to `main` by PR #35. |
-| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED`; UI-04: `TESTED`; UI-05: `TESTED` (PR #37 open). |
-| Branch | `ui-05-page-proof` |
-| PR | [#37](https://github.com/pranjulya/cited-RAG-Bot/pull/37) targets `main`. |
-| `main` | `df0a50e` — merged UI-04. **Do not push or merge to `main` except via PR.** |
-| Next action | Review and merge #37. Only then start UI-06. |
+| Last completed work | UI-05 page proof is `TESTED` and merged to `main` by PR [#37](https://github.com/pranjulya/cited-RAG-Bot/pull/37); UI-04 merged by PR #35. |
+| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED`; UI-04: `TESTED`; UI-05: `TESTED`; UI-06: `IN_PROGRESS`. |
+| Branch | `ui-06-fail-closed-studio` |
+| PR | Not opened yet; UI-06 will target `main`. |
+| `main` | `fedfdab` — merged UI-05 via PR #37. **Do not push or merge to `main` except via PR.** |
+| Next action | Implement UI-06 fail-closed studio, verify it, then open its separate PR. |
 | Blockers | Heuristic generator until UI-07. No OCR. |
 
 ---
