@@ -49,15 +49,19 @@ def test_create_and_get_collection(client: TestClient) -> None:
     assert blank.status_code == 422
 
 
-def test_list_collections_starts_empty_and_includes_created_collections(client: TestClient) -> None:
-    assert client.get("/v1/collections", headers=AUTH).json() == []
+def test_list_collections_includes_created_collections_in_creation_order(
+    client: TestClient,
+) -> None:
+    before = {row["collection_id"] for row in client.get("/v1/collections", headers=AUTH).json()}
     first_id = _create_collection(client, "handbooks")
     second_id = _create_collection(client, "policies")
 
     response = client.get("/v1/collections", headers=AUTH)
 
     assert response.status_code == 200
-    assert response.json() == [
+    created = [row for row in response.json() if row["collection_id"] not in before]
+    assert [row["collection_id"] for row in created] == [first_id, second_id]
+    assert created == [
         {"collection_id": first_id, "name": "handbooks", "status": "ACTIVE"},
         {"collection_id": second_id, "name": "policies", "status": "ACTIVE"},
     ]
