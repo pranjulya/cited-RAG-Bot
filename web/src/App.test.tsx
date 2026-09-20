@@ -296,6 +296,23 @@ test("renders an answered query with page citation and request id", async () => 
   expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith(`/v1/collections/11111111-1111-1111-1111-111111111111/query`))).toBe(true);
 });
 
+test("shows a non-secret hosted generator badge from query metadata", async () => {
+  stubQueryApp({
+    request_id: "33333333-3333-3333-3333-333333333333",
+    status: "INSUFFICIENT_EVIDENCE",
+    answer: "",
+    citations: [],
+    reason: "MODEL_ABSTENTION",
+    generation_backend: "openai_compatible",
+  });
+  const user = await openQueryPanel();
+  await user.type(screen.getByLabelText("Question"), "How much leave?");
+  await user.click(screen.getByRole("button", { name: "Ask" }));
+
+  expect(await screen.findByLabelText("Generator")).toHaveTextContent("hosted");
+  expect(screen.queryByText("server-only-key")).not.toBeInTheDocument();
+});
+
 test("fetches a citation PDF with auth and opens the cited 1-based page", async () => {
   const createObjectURL = vi.fn(() => "blob:policy");
   vi.stubGlobal("URL", { createObjectURL, revokeObjectURL: vi.fn() });

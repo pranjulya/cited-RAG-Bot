@@ -52,6 +52,7 @@ def test_query_without_ready_documents_is_insufficient(client: TestClient) -> No
     assert body["status"] == "INSUFFICIENT_EVIDENCE"
     assert body["citations"] == []
     assert body["reason"] == "NO_READY_DOCUMENTS"
+    assert body["generation_backend"] == "heuristic"
     assert response.headers.get("X-Correlation-ID") == "query-trace-1"
     assert "request_id" in body
     assert body["trace"]["correlation_id"] == "query-trace-1"

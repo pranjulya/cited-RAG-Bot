@@ -79,6 +79,19 @@ def test_rrf_settings_have_positive_defaults() -> None:
     assert settings.fused_top_k == 20
 
 
+def test_hosted_generation_settings_are_server_side() -> None:
+    settings = Settings(
+        _env_file=None,
+        generation_backend="openai_compatible",
+        generation_base_url="http://localhost:9000/v1",
+        generation_model="demo-model",
+        generation_api_key="server-only-key",
+    )
+    assert settings.generation_backend == "openai_compatible"
+    assert settings.generation_model == "demo-model"
+    assert settings.generation_api_key is not None
+
+
 def test_chunk_overlap_must_be_smaller_than_target() -> None:
     get_settings.cache_clear()
     with pytest.raises(ValidationError, match="CHUNK_OVERLAP"):

@@ -33,7 +33,7 @@ query → dense & sparse retrieve → RRF → rerank → context (E1..)
       → generate → citation validate → response
 ```
 
-Hybrid fusion is in-process Reciprocal Rank Fusion. Production timeouts fail closed (`DENSE_RETRIEVAL_ERROR`, `SPARSE_RETRIEVAL_ERROR`, `RERANKER_ERROR`, `GENERATION_PROVIDER_ERROR`). Empty hit lists still fuse. Hash embeddings / overlap rerank / heuristic generator are local defaults; measured fixture scores are in `reports/v1-defaults.md`.
+Hybrid fusion is in-process Reciprocal Rank Fusion. Production timeouts fail closed (`DENSE_RETRIEVAL_ERROR`, `SPARSE_RETRIEVAL_ERROR`, `RERANKER_ERROR`, `GENERATION_PROVIDER_ERROR`). Empty hit lists still fuse. Hash embeddings / overlap rerank / heuristic generator are local defaults; set `CITED_RAG_GENERATION_BACKEND=openai_compatible` with a server-side key for a hosted demo. Measured fixture scores are in `reports/v1-defaults.md`.
 
 ## Measured retrieval (golden-v1)
 

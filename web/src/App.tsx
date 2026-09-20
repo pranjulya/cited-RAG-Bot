@@ -36,6 +36,7 @@ type QueryResponse = {
   }>;
   reason: string | null;
   trace?: QueryTrace;
+  generation_backend?: "heuristic" | "openai_compatible";
 };
 type PageProof = {
   document_name: string;
@@ -69,6 +70,7 @@ export function App() {
   const [queryError, setQueryError] = useState<string | null>(null);
   const [queryErrorCode, setQueryErrorCode] = useState<string | null>(null);
   const [queryLoading, setQueryLoading] = useState(false);
+  const [generationBackend, setGenerationBackend] = useState<"heuristic" | "openai_compatible">("heuristic");
   const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
   const [pageProof, setPageProof] = useState<PageProof | null>(null);
   const [pageProofError, setPageProofError] = useState<string | null>(null);
@@ -144,6 +146,7 @@ export function App() {
     setQueryError(null);
     setQueryErrorCode(null);
     setQueryLoading(false);
+    setGenerationBackend("heuristic");
     void apiFetch(`/v1/collections/${selectedCollectionId}/documents`)
       .then(async (response) => {
         if (!response.ok) throw new Error("documents_unavailable");
@@ -343,7 +346,10 @@ export function App() {
         return;
       }
       const result = (await response.json()) as QueryResponse;
-      if (selectedCollectionIdRef.current === collectionId) setQueryResult(result);
+      if (selectedCollectionIdRef.current === collectionId) {
+        setQueryResult(result);
+        setGenerationBackend(result.generation_backend ?? "heuristic");
+      }
     } catch {
       if (selectedCollectionIdRef.current === collectionId) {
         setQueryError("Query service unavailable. Try again later.");
@@ -414,6 +420,9 @@ export function App() {
             </li>
             <li data-status={ready}>
               ready <strong>{ready}</strong>
+            </li>
+            <li aria-label="Generator">
+              generator <strong>{generationBackend === "openai_compatible" ? "hosted" : "heuristic"}</strong>
             </li>
           </ul>
           {selectedCollection ? (

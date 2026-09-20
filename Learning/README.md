@@ -125,3 +125,7 @@ See `Learning/ui-05-page-proof.md`.
 ## UI-06
 
 See `Learning/ui-06-fail-closed-studio.md`.
+
+## UI-07
+
+See `Learning/ui-07-hosted-generation.md`.
