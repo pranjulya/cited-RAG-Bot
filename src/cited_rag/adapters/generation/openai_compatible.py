@@ -78,9 +78,15 @@ class OpenAICompatibleGroundedGenerator:
     def _parse(self, payload: Mapping[str, object]) -> GroundedGenerationResult:
         try:
             choices = payload["choices"]
-            first = choices[0]  # type: ignore[index]
-            message = first["message"]  # type: ignore[index]
-            content = message["content"]  # type: ignore[index]
+            if not isinstance(choices, list) or not choices:
+                raise TypeError("choices is not a non-empty list")
+            first = choices[0]
+            if not isinstance(first, dict):
+                raise TypeError("choice is not an object")
+            message = first.get("message")
+            if not isinstance(message, dict):
+                raise TypeError("message is not an object")
+            content = message.get("content")
             if not isinstance(content, str):
                 raise TypeError("content is not text")
             result = json.loads(content)

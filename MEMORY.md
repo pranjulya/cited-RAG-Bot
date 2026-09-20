@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | UI-06 fail-closed studio is `TESTED` and merged to `main` by PR [#39](https://github.com/pranjulya/cited-RAG-Bot/pull/39); UI-05 merged by PR #37. |
-| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED`; UI-04: `TESTED`; UI-05: `TESTED`; UI-06: `TESTED`; UI-07: `TESTED`. |
-| Branch | `ui-07-hosted-generation` |
-| PR | [#40](https://github.com/pranjulya/cited-RAG-Bot/pull/40) targets `main` (OPEN). |
-| `main` | `a1370da` — merged UI-06 via PR #39. **Do not push or merge to `main` except via PR.** |
-| Next action | Review and merge #40. Only then start UI-08. |
-| Blockers | Heuristic generator until UI-07. No OCR. |
+| Last completed work | UI-07 hosted generation is `TESTED` and merged to `main` by PR [#40](https://github.com/pranjulya/cited-RAG-Bot/pull/40); UI-06 merged by PR #39. |
+| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED`; UI-04: `TESTED`; UI-05: `TESTED`; UI-06: `TESTED`; UI-07: `TESTED`; UI-08: `TESTED`. |
+| Branch | `ui-08-production-pack` |
+| PR | [#41](https://github.com/pranjulya/cited-RAG-Bot/pull/41) targets `main` (OPEN). |
+| `main` | `a8c4aa0` — merged UI-07 via PR #40. **Do not push or merge to `main` except via PR.** |
+| Next action | Review and merge #41. UI-08 is the final planned UI phase. |
+| Blockers | No OCR. Live Docker/Compose verification was unavailable in this environment; CI retains those checks. |
 
 ---
 
@@ -68,7 +68,20 @@ Do not put secrets, API keys, or raw PDF text here.
 
 The entries below were written when each phase PR was **opened** and are kept as snapshots. Where a value has changed since, the record says so inline (for example `OPEN when written; now MERGED`). No record below is the live status.
 
-**Authoritative now:** Current state (above) and the `**Status:**` line in `implementation/phase-*.md` (**TESTED** on `main`, not REVIEWED, not COMPLETE).
+**Authoritative now:** Current state (above) and the `**Status:**` line in the current backend/UI phase file (**TESTED** on `main`, not REVIEWED, not COMPLETE).
+
+### UI-08 — Production Pack
+- **Date:** 2026-09-20
+- **Branch:** `ui-08-production-pack`
+- **PR:** [#41](https://github.com/pranjulya/cited-RAG-Bot/pull/41) into `main` (OPEN)
+- **Status in phase file:** `TESTED`
+- **Goal:** Package the glass-box console as a production-shaped demo with a tested static web image contract, browser smoke coverage, responsive presentation, Compose/CI checks, screenshot evidence, and operator/demo documentation without adding new RAG behavior.
+- **Files added/changed:** `.github/workflows/ci.yml`, `.gitignore`, `web/package.json`, `web/package-lock.json`, `web/playwright.config.ts`, `web/tests/smoke.spec.ts`, `web/src/styles.css`, `web/vite.config.ts`, `docs/screenshots/ui-08-ask-narrow.png`, `README.md`, `docs/operations/deployment.md`, `Learning/ui-08-production-pack.md`, `Learning/README.md`, UI-08 status/readme, hosted-response type guard/test, and the implementation plan.
+- **Public contracts / commands:** Added `npm run test:e2e` (Playwright Chromium smoke); CI now runs the production web build and browser smoke with API route mocks, while Compose continues to probe `http://localhost:8080/` alongside API health/readiness. No API or citation contract changed.
+- **Decisions made in this phase (not already in ADR-011):** Browser smoke uses deterministic API mocks to avoid billed provider calls; the web image remains Vite build output served by nginx; the hosted adapter validates the response shape explicitly so current mypy versions keep CI fail-closed.
+- **Verification run (exact commands + results):** `npm ci` — passed; `npm test -- --run` — 19 passed; `npm run build` — passed; `env PLAYWRIGHT_CHANNEL=chrome npm run test:e2e -- --project=chromium` — 1 passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/ruff check .` — passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/ruff format --check .` — passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/mypy src` — passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/pytest tests/unit -q` — 228 passed, 1 skipped; `docker compose config` — passed; `git diff --check` — passed.
+- **Not verified / known gaps:** Local Docker daemon/image build and live Compose/client demo were unavailable; CI runs the full Docker/Compose checks. No manual browser run against a live API or hosted provider was performed.
+- **Follow-ups for the next phase:** Merge #41; no further UI implementation phase is planned after UI-08. Future work requires a new phase/ADR for SSO, OCR, or real multi-tenant deployment.
 
 ### UI-07 — Hosted Generation
 - **Date:** 2026-09-20

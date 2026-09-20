@@ -1,6 +1,6 @@
 # UI implementation — Glass-Box Console
 
-**Status:** UI-00–UI-05 **TESTED** ON MAIN (not REVIEWED, not COMPLETE); UI-06 NOT_STARTED
+**Status:** UI-00–UI-07 **TESTED** ON MAIN (not REVIEWED, not COMPLETE); UI-08 IN_PROGRESS
 
 This folder is the execution layer for the console. Backend RAG remains `implementation/phase-00` … `phase-23`. Do not implement UI-N until UI-(N-1) is merged to `main` (same rule as backend).
 
