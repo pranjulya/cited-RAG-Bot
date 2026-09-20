@@ -77,7 +77,7 @@ class PostgresCollectionRepository:
         result = await self._session.scalars(
             select(CollectionRow)
             .where(CollectionRow.owner_id == owner_id)
-            .order_by(CollectionRow.created_at)
+            .order_by(CollectionRow.created_at, CollectionRow.id)
         )
         return [collection_from_row(row) for row in result.all()]
 
@@ -97,7 +97,7 @@ class PostgresDocumentRepository:
         result = await self._session.scalars(
             select(DocumentRow)
             .where(DocumentRow.collection_id == collection_id, DocumentRow.deleted_at.is_(None))
-            .order_by(DocumentRow.created_at)
+            .order_by(DocumentRow.created_at, DocumentRow.id)
         )
         return [document_from_row(row) for row in result.all()]
 
