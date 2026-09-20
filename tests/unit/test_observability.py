@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 from uuid import uuid4
@@ -7,6 +8,7 @@ from uuid import uuid4
 import pytest
 
 from cited_rag.application.retrieval.retrievers import retrieve_dense
+from cited_rag.observability import tracing
 from cited_rag.observability.correlation import get_correlation_id, set_correlation_id
 from cited_rag.observability.metrics import InMemoryMetrics
 from cited_rag.observability.redact import redact_text
@@ -82,3 +84,30 @@ def test_span_records_name_duration_and_correlation() -> None:
     assert recorded.correlation_id == "trace-9"
     assert recorded.duration_ms >= 0
     set_correlation_id("-")
+
+
+@pytest.mark.asyncio
+async def test_trace_buffer_isolated_per_async_query() -> None:
+    async def run(name: str) -> tuple[str, str]:
+        set_correlation_id(name)
+        tracing.start_trace()
+        with span(name):
+            await asyncio.sleep(0)
+        record = tracing.take_trace()[0]
+        return record.name, record.correlation_id
+
+    first, second = await asyncio.gather(run("query.first"), run("query.second"))
+    assert first == ("query.first", "query.first")
+    assert second == ("query.second", "query.second")
+    set_correlation_id("-")
+
+
+def test_query_stage_catalog_has_exactly_six_product_rows() -> None:
+    assert QUERY_STAGES == (
+        "query.request",
+        "query.fusion",
+        "query.rerank",
+        "query.context_build",
+        "query.generation",
+        "query.citation_validate",
+    )

@@ -11,6 +11,18 @@ type Document = {
   version_number?: number | null;
   failure_code?: string | null;
 };
+type QueryTrace = {
+  correlation_id: string;
+  stages: Array<{ name: string; duration_ms: number; status: "ok" | "error" | "skipped" }>;
+  evidence: Array<{
+    id: string;
+    document_name: string;
+    page_start: number;
+    page_end: number;
+    text: string;
+    truncated: boolean;
+  }>;
+};
 type QueryResponse = {
   request_id: string;
   status: "ANSWERED" | "INSUFFICIENT_EVIDENCE";
@@ -21,6 +33,7 @@ type QueryResponse = {
     page_end: number;
   }>;
   reason: string | null;
+  trace?: QueryTrace;
 };
 const POLL_LIMIT = 60;
 
@@ -360,6 +373,27 @@ export function App() {
                   <h3>Insufficient evidence</h3>
                   <p>Reason: {queryResult.reason ?? "UNKNOWN"}</p>
                   <p>Request {queryResult.request_id}</p>
+                </section>
+              ) : null}
+              {queryResult?.trace ? (
+                <section aria-label="Query trace" className="query-result">
+                  <h3>Trace</h3>
+                  <p>Correlation {queryResult.trace.correlation_id}</p>
+                  <ol aria-label="Trace stages">
+                    {queryResult.trace.stages.map((stage) => (
+                      <li key={stage.name}>
+                        <span>{stage.name}</span> <strong>{stage.status}</strong> ({stage.duration_ms} ms)
+                      </li>
+                    ))}
+                  </ol>
+                  <ul aria-label="Trace evidence">
+                    {queryResult.trace.evidence.map((item) => (
+                      <li key={item.id}>
+                        <strong>{item.id}</strong> {item.document_name} · pages {item.page_start}–{item.page_end}
+                        <p>{item.text}{item.truncated ? " …" : ""}</p>
+                      </li>
+                    ))}
+                  </ul>
                 </section>
               ) : null}
             </section>

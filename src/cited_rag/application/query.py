@@ -19,6 +19,7 @@ from cited_rag.config import Settings
 from cited_rag.domain.enums import AnswerStatus
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.evaluation import EvaluationRunConfig
+from cited_rag.domain.models.evidence import EvidenceRecord
 from cited_rag.domain.models.policy import NoAnswerDecision
 from cited_rag.domain.models.query_result import QueryOutcome
 from cited_rag.observability.correlation import get_correlation_id, set_correlation_id
@@ -34,12 +35,16 @@ from cited_rag.ports.sparse_encoder import SparseEncoder
 logger = logging.getLogger("cited_rag.query")
 
 
-def _from_decision(decision: NoAnswerDecision) -> QueryOutcome:
+def _from_decision(
+    decision: NoAnswerDecision,
+    evidence: Sequence[EvidenceRecord] = (),
+) -> QueryOutcome:
     return QueryOutcome(
         status=AnswerStatus.INSUFFICIENT_EVIDENCE,
         answer=decision.message,
         citations=(),
         reason=decision.reason,
+        evidence=tuple(evidence),
     )
 
 
@@ -116,7 +121,7 @@ async def answer_question(
         )
         if before is not None:
             metrics.incr("query.no_answer")
-            return _from_decision(before)
+            return _from_decision(before, evidence.records)
         with span("query.generation"):
             generated = await generate_grounded_answer(
                 stripped,
@@ -139,6 +144,7 @@ async def answer_question(
                 answer=after.message,
                 citations=citations,
                 reason=after.reason,
+                evidence=evidence.records,
             )
         with span("query.citation_validate"):
             citations = validate_citations(
@@ -159,4 +165,5 @@ async def answer_question(
             answer=generated.answer,
             citations=citations,
             reason=None,
+            evidence=evidence.records,
         )

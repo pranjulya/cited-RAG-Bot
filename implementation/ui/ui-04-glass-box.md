@@ -1,6 +1,6 @@
 # UI-04 — Glass Box
 
-**Status:** NOT_STARTED
+**Status:** TESTED
 
 ## Goal
 The same HTTP 200 query response, with a **request-scoped** `trace` so the console can show stages, evidence `E1..En`, timings, and correlation id.

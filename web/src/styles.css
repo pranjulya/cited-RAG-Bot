@@ -112,3 +112,23 @@ h1 {
 .badges li[data-status="failed"] strong {
   color: var(--bad);
 }
+
+.query-result {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.query-result ol,
+.query-result ul {
+  padding-left: 1.4rem;
+}
+
+.query-result li + li {
+  margin-top: 0.55rem;
+}
+
+.query-result strong {
+  color: var(--accent);
+}

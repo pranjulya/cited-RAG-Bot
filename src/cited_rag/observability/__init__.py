@@ -6,7 +6,7 @@ from cited_rag.observability.correlation import (
 from cited_rag.observability.metrics import InMemoryMetrics, metrics
 from cited_rag.observability.redact import redact_text
 from cited_rag.observability.stages import QUERY_STAGES
-from cited_rag.observability.tracing import span, traces
+from cited_rag.observability.tracing import span, start_trace, take_trace, traces
 
 __all__ = [
     "CorrelationIdFilter",
@@ -17,5 +17,7 @@ __all__ = [
     "redact_text",
     "set_correlation_id",
     "span",
+    "start_trace",
+    "take_trace",
     "traces",
 ]

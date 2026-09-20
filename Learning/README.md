@@ -113,3 +113,7 @@ See `Learning/ui-02-ingest-theater.md`.
 ## UI-03
 
 See `Learning/ui-03-ask-citations.md`.
+
+## UI-04
+
+See `Learning/ui-04-glass-box.md`.

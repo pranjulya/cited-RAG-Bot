@@ -252,6 +252,46 @@ test("renders an answered query with page citation and request id", async () => 
   expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith(`/v1/collections/11111111-1111-1111-1111-111111111111/query`))).toBe(true);
 });
 
+test("renders the glass-box trace timeline and evidence cards", async () => {
+  stubQueryApp({
+    request_id: "33333333-3333-3333-3333-333333333333",
+    status: "ANSWERED",
+    answer: "Employees receive 20 days of leave.",
+    citations: [],
+    reason: null,
+    trace: {
+      correlation_id: "corr-1",
+      stages: [
+        { name: "query.request", duration_ms: 1, status: "ok" },
+        { name: "query.fusion", duration_ms: 2, status: "ok" },
+        { name: "query.rerank", duration_ms: 3, status: "ok" },
+        { name: "query.context_build", duration_ms: 4, status: "ok" },
+        { name: "query.generation", duration_ms: 5, status: "ok" },
+        { name: "query.citation_validate", duration_ms: 6, status: "ok" },
+      ],
+      evidence: [{
+        id: "E1",
+        document_id: "doc",
+        document_version_id: "version",
+        document_name: "handbook.pdf",
+        page_start: 1,
+        page_end: 2,
+        text: "Employees receive 20 days of leave.",
+        truncated: false,
+      }],
+    },
+  });
+  const user = await openQueryPanel();
+  await user.type(screen.getByLabelText("Question"), "How much leave?");
+  await user.click(screen.getByRole("button", { name: "Ask" }));
+
+  expect(await screen.findByRole("heading", { name: "Trace" })).toBeInTheDocument();
+  expect(screen.getByText("Correlation corr-1")).toBeInTheDocument();
+  expect(screen.getByText("query.fusion")).toBeInTheDocument();
+  expect(screen.getByText("E1")).toBeInTheDocument();
+  expect(screen.getAllByText("Employees receive 20 days of leave.")).toHaveLength(2);
+});
+
 test("renders insufficient evidence without an answer", async () => {
   stubQueryApp({
     request_id: "33333333-3333-3333-3333-333333333333",
