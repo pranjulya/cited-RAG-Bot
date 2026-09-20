@@ -42,12 +42,12 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | UI-02 ingest theater is `TESTED` on PR [#33](https://github.com/pranjulya/cited-RAG-Bot/pull/33); UI-01 is merged to `main` by PR #32 (`d2ed797`). |
-| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED` (both await recorded review/close-out). UI-02: `TESTED` (PR #33 open). |
-| Branch | `ui-02-ingest-theater` |
-| PR | [#33](https://github.com/pranjulya/cited-RAG-Bot/pull/33) targets `main`. |
-| `main` | `d2ed797` — merged UI-01. **Do not push or merge to `main` except via PR.** |
-| Next action | Review and merge #33. Only then start UI-03. |
+| Last completed work | UI-03 ask + citations is `TESTED` on PR [#34](https://github.com/pranjulya/cited-RAG-Bot/pull/34); UI-02 merged to `main` by PR #33. |
+| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED` (PR #34 open). |
+| Branch | `ui-03-ask-citations` |
+| PR | [#34](https://github.com/pranjulya/cited-RAG-Bot/pull/34) targets `main`. |
+| `main` | `38562e7` — merged UI-02. **Do not push or merge to `main` except via PR.** |
+| Next action | Review and merge #34. Only then start UI-04. |
 | Blockers | Heuristic generator until UI-07. No OCR. |
 
 ---
@@ -70,10 +70,23 @@ The entries below were written when each phase PR was **opened** and are kept as
 
 **Authoritative now:** Current state (above) and the `**Status:**` line in `implementation/phase-*.md` (**TESTED** on `main`, not REVIEWED, not COMPLETE).
 
+### UI-03 — Ask + Citations
+- **Date:** 2026-09-20
+- **Branch:** `ui-03-ask-citations`
+- **PR:** [#34](https://github.com/pranjulya/cited-RAG-Bot/pull/34) into `main` (OPEN when written)
+- **Status in phase file:** `TESTED`
+- **Goal:** Let a user ask a collection-scoped question and see an answer with validated page citations, or a first-class insufficient-evidence result.
+- **Files added/changed:** `web/src/App.tsx`, `web/src/App.test.tsx`, `Learning/ui-03-ask-citations.md`, Learning index, phase status, and this handoff.
+- **Public contracts / commands:** The console posts `{question}` to `POST /v1/collections/{collection_id}/query`; `ANSWERED` renders answer/citations/request id, `INSUFFICIENT_EVIDENCE` renders reason without answer text, `503` renders outage, and `413` renders query-too-long.
+- **Decisions made in this phase (not already in ADR-011):** Citation chips display `document_name` plus the inclusive page range; request results and errors are ignored after collection navigation so one collection cannot paint another collection's screen.
+- **Verification run (exact commands + results):** `UV_CACHE_DIR=/private/tmp/cited-rag-uv-cache uv run --extra dev ruff check src tests` — passed; `UV_CACHE_DIR=/private/tmp/cited-rag-uv-cache uv run --extra dev mypy` — passed; `UV_CACHE_DIR=/private/tmp/cited-rag-uv-cache uv run --extra dev pytest tests/unit` — 215 passed, 1 skipped; `npm test -- --run` — 12 passed; `npm run build` — passed. Independent review found no remaining P0/P1 issues; review P2 state-isolation fixes were applied and re-tested.
+- **Not verified / known gaps:** Isolated live Compose query demo was attempted but the local Docker daemon was unresponsive; UI behavior is covered by Vitest and the existing query API/unit tests. Manual browser interaction was not run from this sandbox.
+- **Follow-ups for the next phase:** Merge #34 before starting UI-04; preserve the public citation shape and keep stage/E-ID trace work in UI-04.
+
 ### UI-02 — Ingest Theater
 - **Date:** 2026-09-18
 - **Branch:** `ui-02-ingest-theater`
-- **PR:** [#33](https://github.com/pranjulya/cited-RAG-Bot/pull/33) into `main` (OPEN when written)
+- **PR:** [#33](https://github.com/pranjulya/cited-RAG-Bot/pull/33) into `main` (MERGED)
 - **Status in phase file:** `TESTED`
 - **Goal:** Let a user upload a PDF to the open collection and see the authoritative ingest lifecycle through `READY` or a public `FAILED` code.
 - **Files added/changed:** `src/cited_rag/ports/repositories.py`, PostgreSQL document repository, document routes and API tests, `web/src/App.tsx` and browser tests, `Learning/ui-02-ingest-theater.md`, Learning index, phase status, and this handoff.
