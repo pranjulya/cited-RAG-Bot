@@ -57,7 +57,10 @@ class Settings(BaseSettings):
     max_evidence_items: int = Field(default=8, ge=1)
     trace_evidence_chars: int = Field(default=2000, ge=1)
     context_token_budget: int = Field(default=1500, ge=1)
-    generation_backend: Literal["heuristic"] = "heuristic"
+    generation_backend: Literal["heuristic", "openai_compatible"] = "heuristic"
+    generation_base_url: str = "https://api.openai.com/v1"
+    generation_model: str = "gpt-4o-mini"
+    generation_api_key: SecretStr | None = None
     generation_timeout_seconds: float = Field(default=15, gt=0)
     min_rerank_score: float = Field(default=0, ge=0)
     query_max_chars: int = Field(default=4000, ge=1, le=20000)

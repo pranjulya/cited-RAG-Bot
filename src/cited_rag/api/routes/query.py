@@ -72,6 +72,7 @@ class QueryResponse(BaseModel):
     citations: list[CitationBody]
     reason: str | None = None
     trace: TraceBody
+    generation_backend: Literal["heuristic", "openai_compatible"]
 
 
 def _trace_body(
@@ -231,6 +232,7 @@ async def post_query(
                 correlation_id=getattr(request.state, "correlation_id", "-"),
                 settings=settings,
             ),
+            generation_backend=settings.generation_backend,
         )
     finally:
         take_trace()

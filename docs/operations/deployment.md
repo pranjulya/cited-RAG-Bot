@@ -9,6 +9,23 @@ docker compose up --build
 
 Compose starts PostgreSQL, Redis, Qdrant, Alembic migrate, API (`:8000`), and the ingestion worker. Postgres is published on host **5433** so a local Postgres on 5432 is not selected. Authenticated `/v1/*` calls need `Authorization: Bearer replace-me`. Secrets stay in `.env`, not in the image.
 
+## Hosted generation demo
+
+CI and local defaults use the deterministic heuristic generator. To point the
+API at an OpenAI-compatible provider, set these server-side values in `.env`
+(never `VITE_*`, and never in the browser):
+
+```bash
+CITED_RAG_GENERATION_BACKEND=openai_compatible
+CITED_RAG_GENERATION_BASE_URL=https://api.openai.com/v1
+CITED_RAG_GENERATION_MODEL=gpt-4o-mini
+CITED_RAG_GENERATION_API_KEY=replace-with-a-server-secret
+```
+
+The same shape works with compatible providers such as xAI by changing the
+base URL and model. A missing hosted key fails startup; the API never silently
+falls back to heuristic generation.
+
 ## Readiness
 
 - `GET /health` — process is up

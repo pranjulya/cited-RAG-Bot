@@ -1,6 +1,6 @@
 # UI-07 — Hosted Generation
 
-**Status:** NOT_STARTED
+**Status:** TESTED
 
 ## Goal
 Plug an OpenAI-compatible generator behind the existing port so paraphrase questions can answer in client demos. Citation validation and evidence contract do not change. Heuristic stays CI default.
