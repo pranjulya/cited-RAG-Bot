@@ -132,3 +132,19 @@ h1 {
 .query-result strong {
   color: var(--accent);
 }
+
+.citation-chip {
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--line);
+  padding: 0.35rem 0.55rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.query-result iframe {
+  width: 100%;
+  min-height: 32rem;
+  border: 1px solid var(--line);
+  background: #fff;
+}

@@ -204,15 +204,22 @@ test("shows a failed document and its failure code", async () => {
 
 function stubQueryApp(queryResponse: unknown, ok = true, status = 200) {
   const collectionId = "11111111-1111-1111-1111-111111111111";
-  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url.endsWith("/health") || url.endsWith("/ready")) return jsonResponse({ status: "ok" });
     if (url.endsWith("/v1/collections")) {
       return jsonResponse([{ collection_id: collectionId, name: "Acme HR", status: "ACTIVE" }]);
     }
     if (url.endsWith(`/v1/collections/${collectionId}/documents`)) return jsonResponse([]);
+    if (url.endsWith("/v1/documents/doc/content")) {
+      return {
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(["%PDF-1.4"], { type: "application/pdf" }),
+      } as Response;
+    }
     if (url.endsWith(`/v1/collections/${collectionId}/query`)) return jsonResponse(queryResponse, ok, status);
-    throw new Error(`unexpected ${url}`);
+    throw new Error(`unexpected ${url} ${JSON.stringify(init)}`);
   });
   vi.stubGlobal("fetch", fetchMock);
   window.history.replaceState({}, "", `/collections/${collectionId}`);
@@ -250,6 +257,35 @@ test("renders an answered query with page citation and request id", async () => 
   expect(screen.getByText("handbook.pdf · pages 1–2")).toBeInTheDocument();
   expect(screen.getByText(`Request ${requestId}`)).toBeInTheDocument();
   expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith(`/v1/collections/11111111-1111-1111-1111-111111111111/query`))).toBe(true);
+});
+
+test("fetches a citation PDF with auth and opens the cited 1-based page", async () => {
+  const createObjectURL = vi.fn(() => "blob:policy");
+  vi.stubGlobal("URL", { createObjectURL, revokeObjectURL: vi.fn() });
+  const fetchMock = stubQueryApp({
+    request_id: "33333333-3333-3333-3333-333333333333",
+    status: "ANSWERED",
+    answer: "Employees receive 20 days of leave.",
+    citations: [{
+      document_id: "doc",
+      document_version_id: "version",
+      document_name: "handbook.pdf",
+      page_start: 2,
+      page_end: 2,
+    }],
+    reason: null,
+  });
+  const user = await openQueryPanel();
+  await user.type(screen.getByLabelText("Question"), "How much leave?");
+  await user.click(screen.getByRole("button", { name: "Ask" }));
+  await user.click(await screen.findByRole("button", { name: "handbook.pdf · pages 2–2" }));
+
+  const viewer = await screen.findByTitle("PDF viewer page 2");
+  expect(viewer).toHaveAttribute("src", "blob:policy#page=2");
+  const contentCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/v1/documents/doc/content"));
+  expect(contentCall).toBeDefined();
+  expect(new Headers(contentCall?.[1]?.headers).get("Authorization")).toBe("Bearer replace-me");
+  expect(createObjectURL).toHaveBeenCalled();
 });
 
 test("renders the glass-box trace timeline and evidence cards", async () => {

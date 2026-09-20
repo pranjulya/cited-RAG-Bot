@@ -117,3 +117,7 @@ See `Learning/ui-03-ask-citations.md`.
 ## UI-04
 
 See `Learning/ui-04-glass-box.md`.
+
+## UI-05
+
+See `Learning/ui-05-page-proof.md`.
