@@ -34,7 +34,8 @@ class _FakeTransport:
     def request(cls, request: object, timeout: float) -> _FakeResponse:
         del timeout
         cls.seen_headers = {
-            key: value for key, value in request.header_items()  # type: ignore[attr-defined]
+            key: value
+            for key, value in request.header_items()  # type: ignore[attr-defined]
         }
         cls.seen_body = json.loads(request.data.decode())  # type: ignore[attr-defined]
         if cls.delay_seconds:
@@ -170,9 +171,7 @@ async def test_invalid_hosted_json_is_generation_error(fake_transport: str) -> N
 
 def test_missing_hosted_key_fails_generator_creation() -> None:
     with pytest.raises(ValueError, match="GENERATION_API_KEY"):
-        create_generator(
-            Settings(_env_file=None, generation_backend="openai_compatible")
-        )
+        create_generator(Settings(_env_file=None, generation_backend="openai_compatible"))
 
 
 @pytest.mark.asyncio
