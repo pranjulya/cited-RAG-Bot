@@ -1,6 +1,6 @@
 # UI-08 — Production Pack
 
-**Status:** NOT_STARTED
+**Status:** IN_PROGRESS
 
 ## Goal
 Ship the console as a production-shaped demo: CI, compose, empty/error/mobile, screenshots, deploy notes, resume copy. No new RAG features.

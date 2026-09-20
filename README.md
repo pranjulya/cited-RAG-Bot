@@ -20,6 +20,19 @@ curl -sS -X POST http://localhost:8000/v1/collections \
 # POST /v1/collections/{id}/query  {"question":"How much leave?"}
 ```
 
+### 10-minute console demo
+
+Open [http://localhost:8080](http://localhost:8080), enter `replace-me`, and:
+
+1. Create `Acme HR` and open it.
+2. Upload a text PDF and wait for `READY`.
+3. Ask a policy question; open its page citation and the trace evidence.
+4. Ask an unsupported question to show `INSUFFICIENT_EVIDENCE`.
+5. Delete the document and show that the next query returns `NO_READY_DOCUMENTS`.
+6. Optionally restart with hosted-generation settings and repeat the question.
+
+The smoke-tested narrow-screen view is [the UI-08 screenshot](docs/screenshots/ui-08-ask-narrow.png).
+
 1. `POST /v1/collections` with the Bearer header → `201`
 2. `POST /v1/collections/{id}/documents` (PDF) → `202 QUEUED`
 3. Worker parses, chunks, indexes dense **and** sparse on the same chunk UUID, then `READY`
@@ -112,6 +125,7 @@ mypy src
 pytest tests/unit
 python -m cited_rag.evaluation
 python -m cited_rag.evaluation --matrix
+cd web && npm ci && npm test -- --run && npm run build && npx playwright install chromium && npm run test:e2e
 # Compose-published Postgres is localhost:5433. CI services use 5432.
 CITED_RAG_DATABASE_URL=postgresql+asyncpg://cited_rag:cited_rag@localhost:5433/cited_rag \
 CITED_RAG_QDRANT_URL=http://localhost:6333 pytest tests/integration
