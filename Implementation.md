@@ -2,7 +2,7 @@
 
 ## Master Implementation Plan
 
-**Status:** Backend 00–23 **code** on `main` (phase files **TESTED**, not REVIEWED, not COMPLETE); UI program planned (ADR-012 Accepted, UI-00…UI-08)  
+**Status:** Backend 00–23 and UI-00…UI-08 **code** on `main` (phase files **TESTED**, not REVIEWED, not COMPLETE); Jev is deferred to a separate future phase
 **Version:** 1.2  
 **Scope:** PDF-only, multi-document Cited RAG with page-level citations; glass-box console after backend freeze
 
