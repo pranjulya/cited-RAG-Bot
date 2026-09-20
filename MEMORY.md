@@ -43,11 +43,11 @@ Do not put secrets, API keys, or raw PDF text here.
 | Field | Value |
 |---|---|
 | Last completed work | UI-05 page proof is `TESTED` and merged to `main` by PR [#37](https://github.com/pranjulya/cited-RAG-Bot/pull/37); UI-04 merged by PR #35. |
-| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED`; UI-04: `TESTED`; UI-05: `TESTED`; UI-06: `IN_PROGRESS`. |
+| Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED`; UI-04: `TESTED`; UI-05: `TESTED`; UI-06: `TESTED`. |
 | Branch | `ui-06-fail-closed-studio` |
-| PR | Not opened yet; UI-06 will target `main`. |
+| PR | [#39](https://github.com/pranjulya/cited-RAG-Bot/pull/39) targets `main` (OPEN). |
 | `main` | `fedfdab` — merged UI-05 via PR #37. **Do not push or merge to `main` except via PR.** |
-| Next action | Implement UI-06 fail-closed studio, verify it, then open its separate PR. |
+| Next action | Review and merge #39. Only then start UI-07. |
 | Blockers | Heuristic generator until UI-07. No OCR. |
 
 ---
@@ -69,6 +69,19 @@ Do not put secrets, API keys, or raw PDF text here.
 The entries below were written when each phase PR was **opened** and are kept as snapshots. Where a value has changed since, the record says so inline (for example `OPEN when written; now MERGED`). No record below is the live status.
 
 **Authoritative now:** Current state (above) and the `**Status:**` line in `implementation/phase-*.md` (**TESTED** on `main`, not REVIEWED, not COMPLETE).
+
+### UI-06 — Fail-Closed Studio
+- **Date:** 2026-09-20
+- **Branch:** `ui-06-fail-closed-studio`
+- **PR:** [#39](https://github.com/pranjulya/cited-RAG-Bot/pull/39) into `main` (OPEN)
+- **Status in phase file:** `TESTED`
+- **Goal:** Make failure modes demoable with distinct abstain/outage/auth/not-found/citation-validation states, visible ingestion failure codes, and a confirmed delete flow that waits for the authoritative 404.
+- **Files added/changed:** `web/src/App.tsx`, `web/src/App.test.tsx`, `implementation/ui/ui-06-fail-closed-studio.md`, `Learning/ui-06-fail-closed-studio.md`, `Learning/README.md`, and this handoff.
+- **Public contracts / commands:** No API changes. The UI uses existing `DELETE /v1/documents/{document_id}` and polls `GET /v1/documents/{document_id}` until 404; 503 failure codes remain visible separately from the outage copy.
+- **Decisions made in this phase (not already in ADR-011):** Deletion removes a row only after the server reports 404; failure codes are links to in-console anchors; the optional scenario panel was skipped because the existing states and demo flow cover the phase.
+- **Verification run (exact commands + results):** `npm test -- --run` — 18 passed; `npm run build` — passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/ruff check src tests` — passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/mypy` — passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/pytest tests/unit -q` — 221 passed, 1 skipped; `git -c core.fsmonitor=false diff --check` — passed.
+- **Not verified / known gaps:** Live Compose failure/delete demo, Postgres integration tests, and manual browser interaction were not run in this sandbox.
+- **Follow-ups for the next phase:** Merge #39 before starting UI-07; preserve the visible fail-closed distinction while adding the hosted generation adapter.
 
 ### UI-05 — Page Proof
 - **Date:** 2026-09-20
