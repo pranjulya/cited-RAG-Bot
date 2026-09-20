@@ -86,7 +86,7 @@ The entries below were written when each phase PR was **opened** and are kept as
 ### UI-05 — Page Proof
 - **Date:** 2026-09-20
 - **Branch:** `ui-05-page-proof`
-- **PR:** [#37](https://github.com/pranjulya/cited-RAG-Bot/pull/37) into `main` (OPEN)
+- **PR:** [#37](https://github.com/pranjulya/cited-RAG-Bot/pull/37) into `main` (OPEN when written; now MERGED `fedfdab`)
 - **Status in phase file:** `TESTED`
 - **Goal:** Let users click a validated citation, fetch the source PDF through the authenticated API, and open its parser-owned 1-based page in the browser viewer.
 - **Files added/changed:** Authenticated document-content route, route/integration/unit tests, citation viewer UI/tests/styles, `Learning/ui-05-page-proof.md`, Learning index, phase status, and this handoff.
