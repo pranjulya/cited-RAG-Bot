@@ -20,7 +20,7 @@ List vs get-by-id, principal-scoped index, empty states.
 ## Tasks
 1. Backend: list collections for the API principal; tests for empty list, create-then-list, other principal cannot see (single-key V1: ownership still encoded on rows).
 2. UI: create collection (existing POST), render list, navigate to a collection shell (documents/ask placeholders).
-3. 401 → return to key gate. 400 blank name → inline error.
+3. 401 → return to key gate. 422 blank name → inline error.
 4. Learning note.
 
 ## Tests
