@@ -33,22 +33,28 @@ class _FakeTransport:
     @classmethod
     def request(cls, request: object, timeout: float) -> _FakeResponse:
         del timeout
-        cls.seen_headers = {
-            key: value
-            for key, value in request.header_items()  # type: ignore[attr-defined]
-        }
-        cls.seen_body = json.loads(request.data.decode())  # type: ignore[attr-defined]
+
+        header_items = getattr(request, "header_items", None)
+        if not callable(header_items):
+            raise TypeError("request did not provide header_items()")
+
+        body = getattr(request, "data", None)
+        if not isinstance(body, (bytes, bytearray)):
+            raise TypeError("request did not provide body bytes")
+
+        cls.seen_headers = {key: value for key, value in header_items()}
+        cls.seen_body = json.loads(body.decode())
         if cls.delay_seconds:
             import time
 
             time.sleep(cls.delay_seconds)
-        body = json.dumps(
+        payload = json.dumps(
             {
                 "choices": [{"message": {"content": cls.response_content}}],
                 "usage": {"prompt_tokens": 12, "completion_tokens": 7},
             }
         ).encode()
-        return _FakeResponse(body)
+        return _FakeResponse(payload)
 
 
 class _FakeResponse:
