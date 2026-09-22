@@ -26,6 +26,24 @@ The same shape works with compatible providers such as xAI by changing the
 base URL and model. A missing hosted key fails startup; the API never silently
 falls back to heuristic generation.
 
+## Jev shadow observation
+
+Jev is disabled by default. To opt in to shadow-only answerability
+measurements, set these values server-side in `.env`:
+
+```bash
+CITED_RAG_JEV_SHADOW_ENABLED=true
+CITED_RAG_JEV_BASE_URL=https://api.typesafe.ai
+CITED_RAG_JEV_MODEL=typesafe/jev-1.13
+CITED_RAG_JEV_API_KEY=replace-with-a-server-secret
+CITED_RAG_JEV_TIMEOUT_SECONDS=2
+```
+
+Shadow failures do not change answers or citations, but enabled requests can
+incur the configured provider timeout and usage cost. Jev does not receive
+document/page/chunk identifiers, and its decision is not exposed in the public
+query response. Disable it when measuring baseline latency.
+
 ## Readiness
 
 - `GET /health` — process is up

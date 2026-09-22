@@ -62,6 +62,11 @@ class Settings(BaseSettings):
     generation_model: str = "gpt-4o-mini"
     generation_api_key: SecretStr | None = None
     generation_timeout_seconds: float = Field(default=15, gt=0)
+    jev_shadow_enabled: bool = False
+    jev_base_url: str = "https://api.typesafe.ai"
+    jev_model: str = "typesafe/jev-1.13"
+    jev_api_key: SecretStr | None = None
+    jev_timeout_seconds: float = Field(default=2, gt=0)
     min_rerank_score: float = Field(default=0, ge=0)
     query_max_chars: int = Field(default=4000, ge=1, le=20000)
     max_in_flight_queries: int = Field(default=32, ge=1)
@@ -120,6 +125,18 @@ class Settings(BaseSettings):
         identity = SparseEncoderConfig.for_backend(self.sparse_encoder_backend)
         self.sparse_encoder_name = identity.name
         self.sparse_encoder_version = identity.version
+        return self
+
+    @model_validator(mode="after")
+    def enforce_jev_shadow_api_key(self) -> Self:
+        if not self.jev_shadow_enabled:
+            return self
+        secret = self.jev_api_key.get_secret_value() if self.jev_api_key is not None else ""
+        if not secret.strip() or secret.strip() == "replace-me":
+            raise ValueError(
+                "CITED_RAG_JEV_API_KEY must be set to a non-placeholder value when "
+                "CITED_RAG_JEV_SHADOW_ENABLED=true"
+            )
         return self
 
 

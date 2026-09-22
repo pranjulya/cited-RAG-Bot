@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Mapping, Sequence
 from uuid import UUID
@@ -17,15 +18,17 @@ from cited_rag.application.retrieval import ReciprocalRankFusion, retrieve_hybri
 from cited_rag.application.retrieval.retrievers import ChunkLoader
 from cited_rag.config import Settings
 from cited_rag.domain.enums import AnswerStatus
+from cited_rag.domain.exceptions import DecisionProviderError
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.evaluation import EvaluationRunConfig
-from cited_rag.domain.models.evidence import EvidenceRecord
+from cited_rag.domain.models.evidence import EvidencePackage, EvidenceRecord
 from cited_rag.domain.models.policy import NoAnswerDecision
 from cited_rag.domain.models.query_result import QueryOutcome
 from cited_rag.observability.correlation import get_correlation_id, set_correlation_id
 from cited_rag.observability.metrics import metrics
 from cited_rag.observability.redact import redact_text
 from cited_rag.observability.tracing import span
+from cited_rag.ports.decision import EvidenceDecisioner
 from cited_rag.ports.embedding import EmbeddingProvider
 from cited_rag.ports.generation import GroundedGenerator
 from cited_rag.ports.reranker import Reranker
@@ -33,6 +36,39 @@ from cited_rag.ports.retrieval_store import RetrievalStore
 from cited_rag.ports.sparse_encoder import SparseEncoder
 
 logger = logging.getLogger("cited_rag.query")
+
+
+async def _observe_jev_shadow(
+    question: str,
+    evidence: EvidencePackage,
+    *,
+    decisioner: EvidenceDecisioner | None,
+    timeout_seconds: float,
+    baseline: str,
+) -> None:
+    if decisioner is None:
+        return
+    if not evidence.records:
+        metrics.incr("query.jev_shadow.skipped")
+        return
+    with span("query.jev_shadow"):
+        metrics.incr("query.jev_shadow.called")
+        try:
+            decision = await asyncio.wait_for(
+                decisioner.decide(question, evidence), timeout=timeout_seconds
+            )
+        except (DecisionProviderError, TimeoutError):
+            metrics.incr("query.jev_shadow.failed")
+            logger.warning("jev shadow decision failed baseline=%s", baseline)
+            return
+        metrics.incr("query.jev_shadow.completed")
+        logger.info(
+            "jev shadow decision model=%s answerable=%s probability=%.4f baseline=%s",
+            decision.model,
+            decision.answerable,
+            decision.answerable_probability,
+            baseline,
+        )
 
 
 def _from_decision(
@@ -62,6 +98,7 @@ async def answer_question(
     reranker: Reranker,
     generator: GroundedGenerator,
     settings: Settings,
+    decisioner: EvidenceDecisioner | None = None,
     evaluation: EvaluationRunConfig | None = None,
     correlation_id: str | None = None,
 ) -> QueryOutcome:
@@ -118,6 +155,13 @@ async def answer_question(
             reranked=reranked,
             evidence=evidence,
             min_rerank_score=settings.min_rerank_score,
+        )
+        await _observe_jev_shadow(
+            stripped,
+            evidence,
+            decisioner=decisioner,
+            timeout_seconds=settings.jev_timeout_seconds,
+            baseline=before.reason.value if before is not None else "candidate_generation",
         )
         if before is not None:
             metrics.incr("query.no_answer")

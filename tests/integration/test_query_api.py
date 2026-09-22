@@ -15,6 +15,16 @@ pytestmark = [pytest.mark.postgres]
 AUTH = {"Authorization": "Bearer test-placeholder-key"}
 
 
+class _FakeDecisioner:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def decide(self, question: str, evidence: object) -> object:
+        del question, evidence
+        self.calls += 1
+        return object()
+
+
 @pytest.fixture
 def client(migrated_database: str, tmp_path: Path) -> Iterator[TestClient]:
     settings = Settings(
@@ -67,3 +77,45 @@ def test_query_without_ready_documents_is_insufficient(client: TestClient) -> No
     assert body["trace"]["stages"][0]["status"] == "ok"
     assert all(stage["status"] == "skipped" for stage in body["trace"]["stages"][1:])
     assert body["trace"]["evidence"] == []
+
+
+def test_shadow_enabled_preserves_no_ready_api_contract(
+    migrated_database: str, tmp_path: Path
+) -> None:
+    settings = Settings(
+        _env_file=None,
+        environment="test",
+        api_key="test-placeholder-key",
+        database_url=migrated_database,
+        local_storage_path=str(tmp_path / "objects"),
+        max_upload_bytes=1024 * 1024,
+        jev_shadow_enabled=True,
+        jev_api_key="test-jev-key",
+    )
+    app = create_app(settings)
+    fake = _FakeDecisioner()
+    with TestClient(app) as test_client:
+        app.state.jev_decisioner = fake
+        created = test_client.post("/v1/collections", json={"name": "empty"}, headers=AUTH)
+        assert created.status_code == 201
+        collection_id = created.json()["collection_id"]
+        response = test_client.post(
+            f"/v1/collections/{collection_id}/query",
+            json={"question": "How much leave?"},
+            headers=AUTH,
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "INSUFFICIENT_EVIDENCE"
+    assert body["citations"] == []
+    assert body["reason"] == "NO_READY_DOCUMENTS"
+    assert [stage["name"] for stage in body["trace"]["stages"]] == [
+        "query.request",
+        "query.fusion",
+        "query.rerank",
+        "query.context_build",
+        "query.generation",
+        "query.citation_validate",
+    ]
+    assert fake.calls == 0

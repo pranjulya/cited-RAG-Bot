@@ -92,6 +92,33 @@ def test_hosted_generation_settings_are_server_side() -> None:
     assert settings.generation_api_key is not None
 
 
+def test_jev_shadow_is_disabled_by_default() -> None:
+    settings = Settings(_env_file=None)
+    assert settings.jev_shadow_enabled is False
+    assert settings.jev_model == "typesafe/jev-1.13"
+    assert settings.jev_api_key is None
+
+
+def test_enabled_jev_shadow_requires_a_real_key() -> None:
+    with pytest.raises(ValidationError, match="JEV_API_KEY"):
+        Settings(_env_file=None, jev_shadow_enabled=True)
+
+
+def test_jev_shadow_settings_are_server_side() -> None:
+    settings = Settings(
+        _env_file=None,
+        jev_shadow_enabled=True,
+        jev_base_url="http://localhost:9000",
+        jev_model="typesafe/jev-1.13",
+        jev_api_key="server-only-key",
+        jev_timeout_seconds=1.5,
+    )
+    assert settings.jev_shadow_enabled is True
+    assert settings.jev_base_url == "http://localhost:9000"
+    assert settings.jev_timeout_seconds == 1.5
+    assert "server-only-key" not in repr(settings)
+
+
 def test_chunk_overlap_must_be_smaller_than_target() -> None:
     get_settings.cache_clear()
     with pytest.raises(ValidationError, match="CHUNK_OVERLAP"):

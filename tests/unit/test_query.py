@@ -15,8 +15,11 @@ from cited_rag.application.query import answer_question
 from cited_rag.config import Settings
 from cited_rag.domain.embedding import EmbeddingConfig
 from cited_rag.domain.enums import AnswerStatus, NoAnswerReason
+from cited_rag.domain.exceptions import DecisionProviderError
 from cited_rag.domain.models.chunk import Chunk
+from cited_rag.domain.models.decision import EvidenceDecision
 from cited_rag.domain.models.document import DocumentVersion
+from cited_rag.domain.models.evidence import EvidencePackage
 from cited_rag.main import create_app
 
 
@@ -76,6 +79,18 @@ def _settings() -> Settings:
     )
 
 
+class _ShadowDecisioner:
+    def __init__(self, *, failure: bool = False) -> None:
+        self.failure = failure
+        self.calls: list[tuple[str, EvidencePackage]] = []
+
+    async def decide(self, question: str, evidence: EvidencePackage) -> EvidenceDecision:
+        self.calls.append((question, evidence))
+        if self.failure:
+            raise DecisionProviderError("provider unavailable")
+        return EvidenceDecision(answerable_probability=0.9, model="test-jev")
+
+
 @pytest.mark.asyncio
 async def test_answerable_query_returns_validated_citations() -> None:
     version = _version()
@@ -130,8 +145,67 @@ async def test_unsupported_query_is_insufficient_evidence() -> None:
 
 
 @pytest.mark.asyncio
+async def test_shadow_decision_does_not_change_answer_or_citations() -> None:
+    version = _version()
+    chunks = [_chunk(version, 0, "Employees receive 20 days of leave.")]
+    store = MemoryRetrievalStore()
+    await _index(version, chunks, store)
+    decisioner = _ShadowDecisioner()
+
+    outcome = await answer_question(
+        "How much leave?",
+        collection_id=version.collection_id,
+        document_version_ids=[version.id],
+        chunks=chunks,
+        document_names={version.document_id: "handbook.pdf"},
+        embedder=HashEmbeddingProvider(dimension=8),
+        encoder=LexicalSparseEncoder(),
+        store=store,
+        reranker=LexicalOverlapReranker(),
+        generator=HeuristicGroundedGenerator(),
+        settings=_settings(),
+        decisioner=decisioner,
+    )
+
+    assert outcome.status is AnswerStatus.ANSWERED
+    assert len(outcome.citations) == 1
+    assert len(decisioner.calls) == 1
+    assert decisioner.calls[0][0] == "How much leave?"
+    assert decisioner.calls[0][1].records[0].evidence_id == "E1"
+
+
+@pytest.mark.asyncio
+async def test_shadow_provider_failure_does_not_change_no_answer() -> None:
+    version = _version()
+    chunks = [_chunk(version, 0, "Employees receive 20 days of leave.")]
+    store = MemoryRetrievalStore()
+    await _index(version, chunks, store)
+    decisioner = _ShadowDecisioner(failure=True)
+
+    outcome = await answer_question(
+        "What is the nuclear launch code?",
+        collection_id=version.collection_id,
+        document_version_ids=[version.id],
+        chunks=chunks,
+        document_names={version.document_id: "handbook.pdf"},
+        embedder=HashEmbeddingProvider(dimension=8),
+        encoder=LexicalSparseEncoder(),
+        store=store,
+        reranker=LexicalOverlapReranker(),
+        generator=HeuristicGroundedGenerator(),
+        settings=_settings(),
+        decisioner=decisioner,
+    )
+
+    assert outcome.status is AnswerStatus.INSUFFICIENT_EVIDENCE
+    assert outcome.citations == ()
+    assert len(decisioner.calls) == 1
+
+
+@pytest.mark.asyncio
 async def test_zero_ready_versions_is_no_ready_documents() -> None:
     version = _version()
+    decisioner = _ShadowDecisioner()
     outcome = await answer_question(
         "How much leave?",
         collection_id=version.collection_id,
@@ -144,10 +218,12 @@ async def test_zero_ready_versions_is_no_ready_documents() -> None:
         reranker=LexicalOverlapReranker(),
         generator=HeuristicGroundedGenerator(),
         settings=_settings(),
+        decisioner=decisioner,
     )
     assert outcome.status is AnswerStatus.INSUFFICIENT_EVIDENCE
     assert outcome.reason is NoAnswerReason.NO_READY_DOCUMENTS
     assert outcome.evidence == ()
+    assert decisioner.calls == []
 
 
 def test_query_route_requires_bearer() -> None:
