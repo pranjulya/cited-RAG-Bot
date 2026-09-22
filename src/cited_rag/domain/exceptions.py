@@ -128,6 +128,12 @@ class GenerationError(DomainError):
         super().__init__(message)
 
 
+class DecisionProviderError(DomainError):
+    def __init__(self, message: str = "decision provider failed") -> None:
+        self.failure_code = "DECISION_PROVIDER_ERROR"
+        super().__init__(message)
+
+
 class CitationValidationError(DomainError):
     def __init__(self, message: str = "citation validation failed") -> None:
         self.failure_code = "CITATION_VALIDATION_FAILED"

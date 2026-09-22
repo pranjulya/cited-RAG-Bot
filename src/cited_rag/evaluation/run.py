@@ -19,7 +19,7 @@ from cited_rag.application.rerank import rerank_candidates
 from cited_rag.application.retrieval import ReciprocalRankFusion, retrieve_hybrid
 from cited_rag.domain.embedding import EmbeddingConfig
 from cited_rag.domain.enums import AnswerStatus
-from cited_rag.domain.exceptions import CitationValidationError
+from cited_rag.domain.exceptions import CitationValidationError, DecisionProviderError
 from cited_rag.domain.models.chunk import Chunk
 from cited_rag.domain.models.document import DocumentVersion
 from cited_rag.domain.models.evaluation import EvaluationRunConfig
@@ -32,6 +32,7 @@ from cited_rag.evaluation.metrics import (
     no_answer_recall,
     recall_at_k,
 )
+from cited_rag.ports.decision import EvidenceDecisioner
 
 
 @dataclass
@@ -53,6 +54,18 @@ class EvaluationManifest:
     config: str
     layers: LayerResults
     case_ids: list[str] = field(default_factory=list)
+    jev_shadow: ShadowDecisionResults | None = None
+
+
+@dataclass
+class ShadowDecisionResults:
+    cases: int
+    agreement: float
+    false_answer_disagreements: int
+    abstention_disagreements: int
+    latency_ms: int
+    failures: int
+    probabilities: dict[str, float] = field(default_factory=dict)
 
 
 async def run_evaluation(
@@ -60,6 +73,7 @@ async def run_evaluation(
     *,
     evaluation: EvaluationRunConfig | None = None,
     config_name: str = "hybrid-rerank",
+    decisioner: EvidenceDecisioner | None = None,
 ) -> EvaluationManifest:
     dataset = load_golden_dataset(dataset_path)
     version, chunks, store = await _index_corpus(dataset)
@@ -74,6 +88,12 @@ async def run_evaluation(
     abstained_correct = 0
     unanswerable = 0
     answered_unanswerable = 0
+    shadow_agreements = 0
+    shadow_false_answer_disagreements = 0
+    shadow_abstention_disagreements = 0
+    shadow_failures = 0
+    shadow_started = time.perf_counter()
+    shadow_probabilities: dict[str, float] = {}
     for case in dataset.cases:
         fused = await retrieve_hybrid(
             case.question,
@@ -107,6 +127,19 @@ async def run_evaluation(
             token_budget=1500,
             document_names={version.document_id: "eval.pdf"},
         )
+        if decisioner is not None:
+            try:
+                shadow = await decisioner.decide(case.question, evidence)
+            except DecisionProviderError:
+                shadow_failures += 1
+            else:
+                shadow_probabilities[case.id] = shadow.answerable_probability
+                if shadow.answerable == case.answerable:
+                    shadow_agreements += 1
+                elif case.answerable:
+                    shadow_abstention_disagreements += 1
+                else:
+                    shadow_false_answer_disagreements += 1
         generated = await generate_grounded_answer(
             case.question,
             evidence,
@@ -150,6 +183,19 @@ async def run_evaluation(
         config=config_name,
         layers=layers,
         case_ids=[case.id for case in dataset.cases],
+        jev_shadow=(
+            ShadowDecisionResults(
+                cases=len(dataset.cases),
+                agreement=shadow_agreements / len(dataset.cases) if dataset.cases else 1.0,
+                false_answer_disagreements=shadow_false_answer_disagreements,
+                abstention_disagreements=shadow_abstention_disagreements,
+                latency_ms=int((time.perf_counter() - shadow_started) * 1000),
+                failures=shadow_failures,
+                probabilities=shadow_probabilities,
+            )
+            if decisioner is not None
+            else None
+        ),
     )
 
 

@@ -12,6 +12,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
+from cited_rag.adapters.decision import create_decisioner
 from cited_rag.adapters.embedding.hashing import HashEmbeddingProvider
 from cited_rag.adapters.generation import create_generator
 from cited_rag.adapters.persistence.postgres.session import create_engine, create_session_factory
@@ -64,6 +65,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.sparse_encoder = create_sparse_encoder(settings)
     app.state.reranker = create_reranker(settings)
     app.state.generator = create_generator(settings)
+    app.state.jev_decisioner = create_decisioner(settings)
     store = None
     if settings.qdrant_url:
         store = QdrantRetrievalStore(

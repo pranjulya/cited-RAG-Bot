@@ -160,6 +160,7 @@ async def post_query(
     encoder = getattr(request.app.state, "sparse_encoder", None)
     reranker = getattr(request.app.state, "reranker", None)
     generator = getattr(request.app.state, "generator", None)
+    decisioner = getattr(request.app.state, "jev_decisioner", None)
     missing = store is None or embedder is None or encoder is None
     if missing or reranker is None or generator is None:
         raise HTTPException(
@@ -199,6 +200,7 @@ async def post_query(
                 reranker=reranker,
                 generator=generator,
                 settings=settings,
+                decisioner=decisioner,
                 correlation_id=getattr(request.state, "correlation_id", None),
             )
 
