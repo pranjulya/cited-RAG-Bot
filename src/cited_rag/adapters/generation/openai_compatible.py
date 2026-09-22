@@ -84,6 +84,15 @@ class OpenAICompatibleGroundedGenerator:
             message = first["message"]
             assert isinstance(message, dict)
             content = message["content"]
+            if not isinstance(choices, list) or not choices:
+                raise TypeError("choices is not a non-empty list")
+            first = choices[0]
+            if not isinstance(first, dict):
+                raise TypeError("choice is not an object")
+            message = first.get("message")
+            if not isinstance(message, dict):
+                raise TypeError("message is not an object")
+            content = message.get("content")
             if not isinstance(content, str):
                 raise TypeError("content is not text")
             result = json.loads(content)

@@ -129,3 +129,7 @@ See `Learning/ui-06-fail-closed-studio.md`.
 ## UI-07
 
 See `Learning/ui-07-hosted-generation.md`.
+
+## UI-08
+
+See `Learning/ui-08-production-pack.md`.

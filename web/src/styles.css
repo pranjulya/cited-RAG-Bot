@@ -95,9 +95,47 @@ h1 {
   padding: 0;
   margin: 0 0 1.5rem;
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
   font-family: ui-sans-serif, system-ui, sans-serif;
   font-size: 0.85rem;
+}
+
+.collection-shell > form,
+.collection-form,
+.query-form {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+
+.collection-shell input[type="file"],
+.collection-form input,
+.query-form textarea {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.65rem 0.7rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font: inherit;
+}
+
+.collection-shell button,
+.collection-form button,
+.query-form button {
+  width: fit-content;
+  padding: 0.55rem 0.9rem;
+}
+
+.collections {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.collections table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
 .badges li {
@@ -147,4 +185,27 @@ h1 {
   min-height: 32rem;
   border: 1px solid var(--line);
   background: #fff;
+}
+
+@media (max-width: 34rem) {
+  .shell {
+    padding: 2rem 0.75rem 3rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  .gate,
+  .workspace {
+    padding: 1rem;
+  }
+
+  .badges li {
+    flex: 1 1 7rem;
+  }
+
+  .query-result iframe {
+    min-height: 24rem;
+  }
 }

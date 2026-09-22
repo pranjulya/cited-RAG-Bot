@@ -169,6 +169,24 @@ async def test_invalid_hosted_json_is_generation_error(fake_transport: str) -> N
         )
 
 
+@pytest.mark.asyncio
+async def test_malformed_hosted_choice_is_generation_error(
+    fake_transport: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        openai_compatible,
+        "urlopen",
+        lambda request, timeout: _FakeResponse(b'{"choices":[null]}'),
+    )
+    with pytest.raises(GenerationError, match="malformed"):
+        await OpenAICompatibleGroundedGenerator(
+            base_url=fake_transport,
+            api_key="test-key",
+            model="demo-model",
+            timeout_seconds=1,
+        ).generate(GenerationPrompt(system="system", question="question", evidence_json="{}"))
+
+
 def test_missing_hosted_key_fails_generator_creation() -> None:
     with pytest.raises(ValueError, match="GENERATION_API_KEY"):
         create_generator(Settings(_env_file=None, generation_backend="openai_compatible"))
