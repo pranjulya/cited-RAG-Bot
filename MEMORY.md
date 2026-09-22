@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | UI-07 hosted generation is `TESTED` and merged to `main` by PR [#40](https://github.com/pranjulya/cited-RAG-Bot/pull/40); UI-06 merged by PR #39. |
+| Last completed work | UI-08 production pack is `TESTED` and merged to `main` by PR [#41](https://github.com/pranjulya/cited-RAG-Bot/pull/41); UI-07 merged by PR #40. |
 | Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED`; UI-04: `TESTED`; UI-05: `TESTED`; UI-06: `TESTED`; UI-07: `TESTED`; UI-08: `TESTED`. |
-| Branch | `ui-08-production-pack` |
-| PR | [#41](https://github.com/pranjulya/cited-RAG-Bot/pull/41) targets `main` (OPEN). |
-| `main` | `a8c4aa0` — merged UI-07 via PR #40. **Do not push or merge to `main` except via PR.** |
-| Next action | Review and merge #41. UI-08 is the final planned UI phase. |
-| Blockers | No OCR. Live Docker/Compose verification was unavailable in this environment; CI retains those checks. |
+| Branch | `main` |
+| PR | None open for the approved V1 plan. |
+| `main` | `69cf45b` — merged UI-08 via PR #41. **Do not push or merge to `main` except via PR.** |
+| Next action | V1 implementation is landed. No next phase is defined; Jev is deferred to a separate future branch and PR. |
+| Blockers | No OCR. Local Docker/Compose verification was unavailable; CI passed the production checks. |
 
 ---
 
@@ -73,7 +73,7 @@ The entries below were written when each phase PR was **opened** and are kept as
 ### UI-08 — Production Pack
 - **Date:** 2026-09-20
 - **Branch:** `ui-08-production-pack`
-- **PR:** [#41](https://github.com/pranjulya/cited-RAG-Bot/pull/41) into `main` (OPEN)
+- **PR:** [#41](https://github.com/pranjulya/cited-RAG-Bot/pull/41) into `main` (MERGED `69cf45b`)
 - **Status in phase file:** `TESTED`
 - **Goal:** Package the glass-box console as a production-shaped demo with a tested static web image contract, browser smoke coverage, responsive presentation, Compose/CI checks, screenshot evidence, and operator/demo documentation without adding new RAG behavior.
 - **Files added/changed:** `.github/workflows/ci.yml`, `.gitignore`, `web/package.json`, `web/package-lock.json`, `web/playwright.config.ts`, `web/tests/smoke.spec.ts`, `web/src/styles.css`, `web/vite.config.ts`, `docs/screenshots/ui-08-ask-narrow.png`, `README.md`, `docs/operations/deployment.md`, `Learning/ui-08-production-pack.md`, `Learning/README.md`, UI-08 status/readme, hosted-response type guard/test, and the implementation plan.
@@ -81,12 +81,12 @@ The entries below were written when each phase PR was **opened** and are kept as
 - **Decisions made in this phase (not already in ADR-011):** Browser smoke uses deterministic API mocks to avoid billed provider calls; the web image remains Vite build output served by nginx; the hosted adapter validates the response shape explicitly so current mypy versions keep CI fail-closed.
 - **Verification run (exact commands + results):** `npm ci` — passed; `npm test -- --run` — 19 passed; `npm run build` — passed; `env PLAYWRIGHT_CHANNEL=chrome npm run test:e2e -- --project=chromium` — 1 passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/ruff check .` — passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/ruff format --check .` — passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/mypy src` — passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/pytest tests/unit -q` — 228 passed, 1 skipped; `docker compose config` — passed; `git diff --check` — passed.
 - **Not verified / known gaps:** Local Docker daemon/image build and live Compose/client demo were unavailable; CI runs the full Docker/Compose checks. No manual browser run against a live API or hosted provider was performed.
-- **Follow-ups for the next phase:** Merge #41; no further UI implementation phase is planned after UI-08. Future work requires a new phase/ADR for SSO, OCR, or real multi-tenant deployment.
+- **Follow-ups for the next phase:** No further UI implementation phase is planned after UI-08. Future work requires a new phase/ADR; Jev will be implemented separately from the latest `main`.
 
 ### UI-07 — Hosted Generation
 - **Date:** 2026-09-20
 - **Branch:** `ui-07-hosted-generation`
-- **PR:** [#40](https://github.com/pranjulya/cited-RAG-Bot/pull/40) into `main` (OPEN)
+- **PR:** [#40](https://github.com/pranjulya/cited-RAG-Bot/pull/40) into `main` (MERGED `a8c4aa0`)
 - **Status in phase file:** `TESTED`
 - **Goal:** Add an OpenAI-compatible grounded-generation adapter while keeping heuristic generation as the CI default and preserving the existing evidence/citation contract.
 - **Files added/changed:** `src/cited_rag/adapters/generation/openai_compatible.py`, generation settings/factory, query response metadata, `web/src/App.tsx`, frontend/backend tests, `.env.example`, deployment/README docs, `Learning/ui-07-hosted-generation.md`, Learning index, phase status, and this handoff.
