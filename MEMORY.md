@@ -42,13 +42,13 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | UI-08 production pack is `TESTED` and merged to `main` by PR [#41](https://github.com/pranjulya/cited-RAG-Bot/pull/41); UI-07 merged by PR #40. |
+| Last completed work | JEV-01 Jev shadow decision layer is `TESTED` on `codex/jev-shadow`; PR [#44](https://github.com/pranjulya/cited-RAG-Bot/pull/44) is open. V1 UI-08 is merged to `main` by PR #41. |
 | Phase file status | Backend 00–23: **TESTED**. UI-00: `TESTED`; UI-01: `TESTED`; UI-02: `TESTED`; UI-03: `TESTED`; UI-04: `TESTED`; UI-05: `TESTED`; UI-06: `TESTED`; UI-07: `TESTED`; UI-08: `TESTED`. |
-| Branch | `main` |
-| PR | None open for the approved V1 plan. |
-| `main` | `69cf45b` — merged UI-08 via PR #41. **Do not push or merge to `main` except via PR.** |
-| Next action | V1 implementation is landed. No next phase is defined; Jev is deferred to a separate future branch and PR. |
-| Blockers | No OCR. Local Docker/Compose verification was unavailable; CI passed the production checks. |
+| Branch | `codex/jev-shadow` |
+| PR | [#44](https://github.com/pranjulya/cited-RAG-Bot/pull/44) — OPEN into `main`. |
+| `main` | `b86024e` — merged V1 closeout docs via PR #43. **Do not push or merge to `main` except via PR.** |
+| Next action | Review and merge PR #44. Only then plan any Jev-controlled routing phase from the merged `main`. |
+| Blockers | Live PostgreSQL/Qdrant integration and live TypeSafe smoke were not run; no provider key is stored or required for CI. |
 
 ---
 
@@ -68,7 +68,20 @@ Do not put secrets, API keys, or raw PDF text here.
 
 The entries below were written when each phase PR was **opened** and are kept as snapshots. Where a value has changed since, the record says so inline (for example `OPEN when written; now MERGED`). No record below is the live status.
 
-**Authoritative now:** Current state (above) and the `**Status:**` line in the current backend/UI phase file (**TESTED** on `main`, not REVIEWED, not COMPLETE).
+**Authoritative now:** Current state (above) and the `**Status:**` line in the current phase file (**TESTED** on `codex/jev-shadow`, not REVIEWED, not COMPLETE; prior backend/UI phases are **TESTED** on `main`).
+
+### JEV-01 — Jev Shadow Decision Layer
+- Date: 2026-09-22
+- Branch: `codex/jev-shadow`
+- PR: [#44](https://github.com/pranjulya/cited-RAG-Bot/pull/44) into `main` (OPEN)
+- Status in phase file: `TESTED`
+- Goal (one paragraph): Add an opt-in TypeSafe `typesafe/jev-1.13` answerability decision after evidence construction in shadow mode. Jev receives only the question plus application-created `E1..En` evidence labels/text; its result is recorded for comparison and cannot change answers, citations, no-answer decisions, HTTP responses, or the UI.
+- Files added/changed: ADR-013; JEV-01 phase and Learning notes; Jev design spec and implementation plan; TypeSafe decision adapter/port/model; settings and lifespan wiring; query shadow observation; evaluation comparison fields; deployment/env documentation; adapter/query/config/evaluation/API tests; minimal malformed-choice fix in the existing OpenAI adapter.
+- Public contracts / commands: Added server-only `CITED_RAG_JEV_SHADOW_ENABLED`, `CITED_RAG_JEV_BASE_URL`, `CITED_RAG_JEV_MODEL`, `CITED_RAG_JEV_API_KEY`, and `CITED_RAG_JEV_TIMEOUT_SECONDS`. Jev is disabled by default. No public query response or trace-stage schema changed.
+- Decisions made in this phase (not already in ADR-011): Jev is a separate provider boundary; shadow failures are observable but fail open to the existing deterministic query path; the first decision is one Noul answerability probability; no production threshold or routing behavior is enabled; existing hosted-generation parser validation was simplified so malformed provider choices retain the tested `GenerationError("malformed")` classification.
+- Verification run (exact commands + results): `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/pytest tests -q` — 247 passed, 47 skipped; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/pytest tests/integration/test_query_api.py -q` — 3 skipped because `CITED_RAG_DATABASE_URL` is unavailable; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/ruff check src tests` — passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/ruff format --check src tests` — passed; `/private/tmp/cited-rag-ui-05-page-proof/.venv/bin/mypy src` — passed; `git -c core.fsmonitor=false diff --check` — passed.
+- Not verified / known gaps: No live TypeSafe request was made; no PostgreSQL/Qdrant-backed query E2E ran in this sandbox; optional live smoke remains unconfigured; PR review and merge are pending.
+- Follow-ups for the next phase: Review shadow agreement/latency/failure data after PR #44 merges. Do not enable Jev-controlled abstention or routing until a new phase/ADR and calibrated golden-set baseline are approved.
 
 ### UI-08 — Production Pack
 - **Date:** 2026-09-20
