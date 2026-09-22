@@ -1,8 +1,8 @@
 # UI implementation — Glass-Box Console
 
-**Status:** UI-00–UI-08 **TESTED** ON MAIN (not REVIEWED, not COMPLETE)
+**Status:** UI-00–UI-08 **TESTED** ON MAIN (not REVIEWED, not COMPLETE); NO FURTHER UI PHASES PLANNED
 
-This folder is the execution layer for the console. Backend RAG remains `implementation/phase-00` … `phase-23`. Do not implement UI-N until UI-(N-1) is merged to `main` (same rule as backend).
+This folder is the execution layer for the console. Backend RAG remains `implementation/phase-00` … `phase-23`. Do not implement UI-N until UI-(N-1) is merged to `main` (same rule as backend). Do not merge a phase or fix PR when `main` CI is red — rebase onto green `main` first so the next phase inherits a passing suite.
 
 ## Authoritative docs
 
