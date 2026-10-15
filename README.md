@@ -103,7 +103,7 @@ arq cited_rag.workers.ingestion_worker.WorkerSettings
 - `POST /v1/collections/{collection_id}/documents` (multipart PDF) → `202` `{"status":"QUEUED"}`
 - `POST /v1/collections/{collection_id}/query` → `200` `ANSWERED` | `INSUFFICIENT_EVIDENCE`
 - `DELETE /v1/documents/{document_id}` → `202` `DELETING` (tombstone, then index purge)
-- List-all-collections and list-documents-in-collection are omitted in V1 so far
+- Also available: `GET /v1/collections`, `GET /v1/collections/{id}`, `GET /v1/collections/{id}/documents`
 
 ## Database
 
@@ -127,11 +127,14 @@ python -m cited_rag.evaluation
 python -m cited_rag.evaluation --matrix
 cd web && npm ci && npm test -- --run && npm run build && npx playwright install chromium && npm run test:e2e
 # Compose-published Postgres is localhost:5433. CI services use 5432.
-CITED_RAG_DATABASE_URL=postgresql+asyncpg://cited_rag:cited_rag@localhost:5433/cited_rag \
+# Integration tests DROP and recreate every table in the target database.
+# Point them only at a disposable database, and opt in explicitly:
+CITED_RAG_ALLOW_DESTRUCTIVE_TESTS=1 \
+CITED_RAG_DATABASE_URL=postgresql+asyncpg://cited_rag:cited_rag@localhost:5433/cited_rag_test \
 CITED_RAG_QDRANT_URL=http://localhost:6333 pytest tests/integration
 ```
 
-Persistence tests skip unless `CITED_RAG_DATABASE_URL` is set. Compose runs `alembic upgrade head` before the API starts. CI also builds the compose stack and probes `/health` and `/ready` (`.github/workflows/ci.yml` job `compose-smoke`).
+Persistence tests skip unless `CITED_RAG_DATABASE_URL` is set and `CITED_RAG_ALLOW_DESTRUCTIVE_TESTS=1` (they reset that database). Compose runs `alembic upgrade head` before the API starts. CI also builds the compose stack and probes `/health` and `/ready` (`.github/workflows/ci.yml` job `compose-smoke`).
 
 ## Docker
 
