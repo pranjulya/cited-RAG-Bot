@@ -479,10 +479,11 @@ export function App() {
                   <p>{queryResult.answer}</p>
                   <ul aria-label="Citations">
                     {queryResult.citations.map((citation) => (
-                      <li key={`${citation.document_name}-${citation.page_start}-${citation.page_end}`}>
+                      <li key={`${citation.document_id}-${citation.document_version_id}-${citation.page_start}-${citation.page_end}`}>
                         <button
                           type="button"
                           className="citation-chip"
+                          title={`Document ${citation.document_id}`}
                           onClick={() => void openCitation(citation)}
                         >
                           {citation.document_name} · pages {citation.page_start}–{citation.page_end}
