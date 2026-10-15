@@ -451,3 +451,28 @@ test("keeps empty questions disabled and displays a 413 query error", async () =
 
   expect(await screen.findByText("Question is too long.")).toBeInTheDocument();
 });
+
+test("keeps two same-named documents as separate citations", async () => {
+  const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  stubQueryApp({
+    request_id: "44444444-4444-4444-4444-444444444444",
+    status: "ANSWERED",
+    answer: "Both policies say 20 days.",
+    citations: [
+      { document_id: "doc-a", document_version_id: "ver-a", document_name: "policy.pdf", page_start: 1, page_end: 1 },
+      { document_id: "doc-b", document_version_id: "ver-b", document_name: "policy.pdf", page_start: 1, page_end: 1 },
+    ],
+    reason: null,
+  });
+  const user = await openQueryPanel();
+  await user.type(screen.getByLabelText("Question"), "How much leave?");
+  await user.click(screen.getByRole("button", { name: "Ask" }));
+
+  const chips = await screen.findAllByRole("button", { name: "policy.pdf · pages 1–1" });
+  expect(chips).toHaveLength(2);
+  const titles = chips.map((chip) => chip.getAttribute("title") ?? "");
+  expect(titles[0]).not.toBe("");
+  expect(titles[0]).not.toBe(titles[1]);
+  expect(errorSpy.mock.calls.some(([message]) => String(message).includes("same key"))).toBe(false);
+  errorSpy.mockRestore();
+});

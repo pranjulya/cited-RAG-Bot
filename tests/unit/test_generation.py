@@ -91,6 +91,35 @@ async def test_heuristic_answers_from_overlapping_evidence() -> None:
 
 
 @pytest.mark.asyncio
+async def test_heuristic_quotes_only_the_relevant_evidence() -> None:
+    # The remote-work chunk shares only "employees" with the question (1 term);
+    # the leave chunk shares four. The weak chunk falls below half the best score.
+    result = await generate_grounded_answer(
+        "How many days of paid leave do employees get?",
+        _package(
+            "Full-time employees receive 25 days of paid annual leave.",
+            "Remote work: employees may work remotely on Mondays.",
+        ),
+        generator=HeuristicGroundedGenerator(),
+        timeout_seconds=1,
+    )
+    assert result.status is AnswerStatus.ANSWERED
+    assert result.claims[0].evidence_ids == ("E1",)
+    assert "remotely" not in result.answer
+
+
+@pytest.mark.asyncio
+async def test_heuristic_ignores_stopword_only_overlap() -> None:
+    result = await generate_grounded_answer(
+        "How do I do it?",
+        _package("It is what they do in the office."),
+        generator=HeuristicGroundedGenerator(),
+        timeout_seconds=1,
+    )
+    assert result.status is AnswerStatus.INSUFFICIENT_EVIDENCE
+
+
+@pytest.mark.asyncio
 async def test_heuristic_abstains_without_support() -> None:
     result = await generate_grounded_answer(
         "What is the nuclear launch code?",

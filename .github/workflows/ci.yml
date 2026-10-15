@@ -106,6 +106,8 @@ jobs:
       CITED_RAG_DATABASE_URL: postgresql+asyncpg://cited_rag:cited_rag@localhost:5432/cited_rag
       CITED_RAG_REDIS_URL: redis://localhost:6379/0
       CITED_RAG_QDRANT_URL: http://localhost:6333
+      # Disposable CI database: the migration round-trip in conftest drops all tables.
+      CITED_RAG_ALLOW_DESTRUCTIVE_TESTS: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

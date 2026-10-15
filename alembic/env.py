@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from cited_rag.adapters.persistence.postgres import models as _models  # noqa: F401
 from cited_rag.adapters.persistence.postgres.base import Base
+from cited_rag.config import get_settings
 
 config = context.config
 
@@ -19,9 +20,16 @@ target_metadata = Base.metadata
 
 
 def _database_url() -> str:
+    # Environment first (CI, Compose), then the same .env file the app reads.
     url = os.environ.get("CITED_RAG_DATABASE_URL")
     if not url:
-        raise RuntimeError("CITED_RAG_DATABASE_URL is required to run migrations")
+        secret = get_settings().database_url
+        url = secret.get_secret_value() if secret is not None else ""
+    if not url:
+        raise RuntimeError(
+            "CITED_RAG_DATABASE_URL is required to run migrations "
+            "(set it in the environment or in .env)"
+        )
     return url
 
 

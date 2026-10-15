@@ -31,6 +31,15 @@ def migrated_database(database_url: str) -> str:
     from alembic import command
     from alembic.config import Config
 
+    # The migration round-trip below drops every table. Refuse to run against a
+    # database that a developer may be using unless they opt in explicitly.
+    if os.environ.get("CITED_RAG_ALLOW_DESTRUCTIVE_TESTS") != "1":
+        pytest.skip(
+            "integration tests reset the database (downgrade base); point "
+            "CITED_RAG_DATABASE_URL at a disposable database and set "
+            "CITED_RAG_ALLOW_DESTRUCTIVE_TESTS=1"
+        )
+
     cfg = Config("alembic.ini")
     os.environ["CITED_RAG_DATABASE_URL"] = database_url
     command.upgrade(cfg, "head")
