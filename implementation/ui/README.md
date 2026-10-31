@@ -1,6 +1,6 @@
 # UI implementation — Glass-Box Console
 
-**Status:** UI-00–UI-08 **TESTED** ON MAIN (not REVIEWED, not COMPLETE); NO FURTHER UI PHASES PLANNED
+**Status:** UI-00–UI-08 **TESTED** ON MAIN (not REVIEWED, not COMPLETE). UI-09 (end-user chat, ADR-014) **TESTED** on its branch, not merged.
 
 This folder is the execution layer for the console. Backend RAG remains `implementation/phase-00` … `phase-23`. Do not implement UI-N until UI-(N-1) is merged to `main` (same rule as backend). Do not merge a phase or fix PR when `main` CI is red — rebase onto green `main` first so the next phase inherits a passing suite.
 
@@ -9,6 +9,7 @@ This folder is the execution layer for the console. Backend RAG remains `impleme
 1. `MEMORY.md` (Current state)
 2. `docs/architecture/decisions/ADR-011-v1-locked-policies.md`
 3. `docs/architecture/decisions/ADR-012-glass-box-console.md`
+   and `ADR-014-end-user-chat.md` for UI-09
 4. `docs/product/glass-box-console.md`
 5. this file and the current `implementation/ui/ui-XX-*.md`
 
@@ -35,6 +36,7 @@ Never commit to `main`. Branch names: `ui-00-foundation`, `ui-01-collections`, �
 | UI-06 | Fail-closed studio | UI-05 | Scan fail, abstain, delete, 503 vs 200 |
 | UI-07 | Hosted generation | UI-06 | Paraphrase answers with hosted model; citations still validated |
 | UI-08 | Production pack | UI-07 | Compose `web` in CI, screenshots, resume copy, deploy notes |
+| UI-09 | End-user chat | UI-08 | `/chat`: add a PDF, ask in plain language, open the cited page |
 
 ## Invariants
 

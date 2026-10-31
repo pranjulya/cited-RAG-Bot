@@ -20,6 +20,20 @@ curl -sS -X POST http://localhost:8000/v1/collections \
 # POST /v1/collections/{id}/query  {"question":"How much leave?"}
 ```
 
+### End-user chat (for people asking about their own PDFs)
+
+Open [http://localhost:8080/chat](http://localhost:8080/chat) and enter `replace-me`.
+
+1. Create a knowledge base, for example `HR policies`.
+2. Select **Add PDF** and choose `samples/acme-hr-policy.pdf`. Wait until it shows **Ready**.
+3. Ask "How many days of paid annual leave do employees get?".
+4. Select source **[1]** to see the quoted passage and the PDF page.
+5. Ask "What is the dress code?" to see the "not in your documents" reply.
+
+The chat answers each question on its own. It does not use earlier messages, and it does not save the conversation. The operator console stays at `/`. Design: `docs/architecture/decisions/ADR-014-end-user-chat.md`.
+
+![Chat with a cited source open](docs/screenshots/ui-09-chat-desktop.png)
+
 ### 10-minute console demo
 
 Open [http://localhost:8080](http://localhost:8080), enter `replace-me`, and:

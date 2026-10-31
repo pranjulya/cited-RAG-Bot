@@ -134,6 +134,10 @@ See `Learning/ui-07-hosted-generation.md`.
 
 See `Learning/ui-08-production-pack.md`.
 
+## UI-09
+
+See `Learning/ui-09-end-user-chat.md`.
+
 ## JEV-01
 
 See `Learning/jev-01-shadow.md`.
