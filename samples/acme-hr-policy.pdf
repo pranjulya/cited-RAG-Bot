@@ -1,0 +1,96 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R 10 0 R] /Count 4 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 5 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+5 0 obj
+<< /Length 318 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+72 720 Td
+(Acme Corp - Employee Handbook - Section 1: Annual Leave) Tj T*
+(Full-time employees receive 24 days of paid annual leave per calendar year.) Tj T*
+(Leave accrues monthly at two days per month of service.) Tj T*
+(Up to five unused days may be carried into the next calendar year.) Tj T*
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 7 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+7 0 obj
+<< /Length 284 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+72 720 Td
+(Section 2: Remote Work) Tj T*
+(Remote work is allowed up to three days per week with manager approval.) Tj T*
+(Employees must be reachable during core hours from 10:00 to 16:00.) Tj T*
+(Acme provides a one-time home office allowance of 500 USD.) Tj T*
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 9 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+9 0 obj
+<< /Length 283 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+72 720 Td
+(Section 3: Expenses) Tj T*
+(Expense claims must be submitted within 30 days with original receipts.) Tj T*
+(Meals during business travel are reimbursed up to 60 USD per day.) Tj T*
+(Economy class is required for flights shorter than six hours.) Tj T*
+ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 11 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+11 0 obj
+<< /Length 291 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+72 720 Td
+(Section 4: Parental Leave) Tj T*
+(Primary caregivers receive 16 weeks of fully paid parental leave.) Tj T*
+(Secondary caregivers receive 4 weeks of fully paid parental leave.) Tj T*
+(Parental leave must start within 12 months of the birth or adoption.) Tj T*
+ET
+endstream
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000134 00000 n 
+0000000204 00000 n 
+0000000330 00000 n 
+0000000699 00000 n 
+0000000825 00000 n 
+0000001160 00000 n 
+0000001286 00000 n 
+0000001620 00000 n 
+0000001748 00000 n 
+trailer << /Size 12 /Root 1 0 R >>
+startxref
+2091
+%%EOF
