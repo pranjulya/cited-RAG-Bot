@@ -20,12 +20,26 @@ curl -sS -X POST http://localhost:8000/v1/collections \
 # POST /v1/collections/{id}/query  {"question":"How much leave?"}
 ```
 
+### End-user chat (for people asking about their own PDFs)
+
+Open [http://localhost:8080/chat](http://localhost:8080/chat) and enter `replace-me`.
+
+1. Create a knowledge base, for example `HR policies`.
+2. Select **Add PDF** and choose `samples/acme-hr-policy.pdf`. Wait until it shows **Ready**.
+3. Ask "How many days of paid annual leave do employees get?".
+4. Select source **[1]** to see the quoted passage and the PDF page.
+5. Ask "What is the dress code?" to see the "not in your documents" reply.
+
+The chat answers each question on its own. It does not use earlier messages, and it does not save the conversation. The operator console stays at `/`. Design: `docs/architecture/decisions/ADR-014-end-user-chat.md`.
+
+![Chat with a cited source open](docs/screenshots/ui-09-chat-desktop.png)
+
 ### 10-minute console demo
 
 Open [http://localhost:8080](http://localhost:8080), enter `replace-me`, and:
 
 1. Create `Acme HR` and open it.
-2. Upload a text PDF and wait for `READY`.
+2. Upload a text PDF (for example `samples/acme-hr-policy.pdf`) and wait for `READY`.
 3. Ask a policy question; open its page citation and the trace evidence.
 4. Ask an unsupported question to show `INSUFFICIENT_EVIDENCE`.
 5. Delete the document and show that the next query returns `NO_READY_DOCUMENTS`.
@@ -95,6 +109,46 @@ Do not commit `.env`. Placeholders in `.env.example` are not production secrets.
 uvicorn cited_rag.main:app --reload --host 0.0.0.0 --port 8000
 arq cited_rag.workers.ingestion_worker.WorkerSettings
 ```
+
+### Run locally without Docker builds
+
+Use this when you want to run the API, worker, and console from source. Docker is still used for Postgres, Redis, and Qdrant.
+
+```bash
+docker compose up -d --wait postgres redis qdrant
+python3.12 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+cp .env.example .env
+alembic upgrade head
+```
+
+Then start three processes, each in its own terminal (with `.venv` active for the first two):
+
+```bash
+uvicorn cited_rag.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+```bash
+arq cited_rag.workers.ingestion_worker.WorkerSettings
+```
+
+```bash
+cd web && npm ci && npm run dev -- --port 8080
+```
+
+Open [http://localhost:8080](http://localhost:8080) and enter `replace-me`.
+
+### Sample PDF
+
+`samples/acme-hr-policy.pdf` is a four-page policy (leave, remote work, expenses, parental leave). Regenerate it with `python scripts/make_demo_pdf.py`.
+
+With the default heuristic generator, these questions give cited answers:
+
+- "How many days of paid annual leave do employees get?" → page 1
+- "Can I work remotely?" → page 2
+- "How long is parental leave for primary caregivers?" → page 4
+
+"What is the dress code?" returns `INSUFFICIENT_EVIDENCE`. The heuristic generator is lexical, so paraphrases such as "What is the daily meal limit when travelling?" can also abstain. Use hosted generation (`CITED_RAG_GENERATION_BACKEND=openai_compatible`) for paraphrase questions.
 
 - Liveness: `GET /health` → `{"status":"ok"}` (unauthenticated)
 - Readiness: `GET /ready` → `{"status":"ok"}` when Postgres and local storage work; HTTP 503 otherwise (unauthenticated)
