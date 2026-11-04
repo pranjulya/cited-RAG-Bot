@@ -42,12 +42,12 @@ Do not put secrets, API keys, or raw PDF text here.
 
 | Field | Value |
 |---|---|
-| Last completed work | UI-09 end-user chat (`/chat`, ADR-014) is `TESTED` on branch `claude/wizardly-goldberg-k3hoty`, not merged. Before it: JEV-01 merged by PR [#44](https://github.com/pranjulya/cited-RAG-Bot/pull/44); UI-08 merged by PR #41. |
+| Last completed work | UI-09 end-user chat (`/chat`, ADR-014) is `TESTED` on branch `claude/wizardly-goldberg-k3hoty`, PR [#48](https://github.com/pranjulya/cited-RAG-Bot/pull/48) open, not merged. Before it: JEV-01 merged by PR [#44](https://github.com/pranjulya/cited-RAG-Bot/pull/44); UI-08 merged by PR #41. |
 | Phase file status | Backend 00–23: **TESTED**. UI-00 … UI-08: `TESTED` on `main`. UI-09: `TESTED` on its branch. |
 | Branch | `claude/wizardly-goldberg-k3hoty` (UI-09 + demo sample PDF) |
-| PR | None opened yet for UI-09. Open one into `main` when the user asks. |
+| PR | [#48](https://github.com/pranjulya/cited-RAG-Bot/pull/48) into `main` (OPEN; CI green on `83ede63`: lint-type-unit, integration-postgres, web-unit, web-e2e, compose-smoke). |
 | `main` | `424deb1` — merged PR #47 (demo fixes) after Jev PR #44. **Do not push or merge to `main` except via PR.** |
-| Next action | Review and merge UI-09. Then decide on user accounts / per-tenant keys and multi-turn questions (each needs an ADR). Run live shadow E2E for Jev when a key is configured. |
+| Next action | Review and merge PR [#48](https://github.com/pranjulya/cited-RAG-Bot/pull/48). Then decide on user accounts / per-tenant keys and multi-turn questions (each needs an ADR). Run live shadow E2E for Jev when a key is configured. |
 | Blockers | Local Jev key, database URL, Qdrant URL, and Docker daemon are not configured in this environment. |
 
 ---
@@ -73,14 +73,14 @@ The entries below were written when each phase PR was **opened** and are kept as
 ### UI-09 — End-User Chat
 - Date: 2026-10-31
 - Branch: `claude/wizardly-goldberg-k3hoty`
-- PR: none yet (user has not asked for one)
+- PR: [#48](https://github.com/pranjulya/cited-RAG-Bot/pull/48) into `main` (OPEN when written)
 - Status in phase file: `TESTED`
 - Goal (one paragraph): Add a plain-language chat surface at `/chat` for end users who upload their own HR PDFs. It keeps the console's trust signals (validated page citations, quoted evidence, abstention reasons, 503 vs 200 vs 422) without request IDs or pipeline stages. The console at `/` is unchanged. Also adds `samples/acme-hr-policy.pdf` and `scripts/make_demo_pdf.py` for demos.
 - Files added/changed: ADR-014; `implementation/ui/ui-09-end-user-chat.md`; `web/src/chat/{ChatApp.tsx,ChatApp.test.tsx,types.ts,chat.css}`; `web/src/main.tsx` (route switch); `web/tests/chat.spec.ts`; `Learning/ui-09-end-user-chat.md`; README; ADR and UI indexes; `docs/screenshots/ui-09-chat-*.png`; `samples/`, `scripts/make_demo_pdf.py`.
 - Public contracts / commands: New browser route `/chat` and `/chat/{collection_id}`. No API, schema, or settings change.
 - Decisions made in this phase (not already in ADR-011): ADR-014 — chat beside the console, same auth, single-turn only, no stored threads, evidence matched by document and version ID, three distinct failure messages.
 - Verification run (exact commands + results): `ruff check .`, `ruff format --check .`, `mypy src` pass. `pytest tests/unit` 248 passed, 1 skipped. `pytest tests/integration` with `CITED_RAG_ALLOW_DESTRUCTIVE_TESTS=1` on a disposable DB: 47 passed. `cd web && npm run typecheck && npm test && npm run build`: 32 unit tests pass. Playwright (console smoke + chat smoke): 2 passed. Manual Playwright drive against live API/worker/Postgres/Redis/Qdrant: upload → Ready → cited answers on pages 1 and 4 → dress-code abstains → remove → input disabled; phone width has no horizontal scroll.
-- Not verified / known gaps: Full `docker compose up --build` not run in the cloud sandbox (Docker Hub 429 and TLS proxy inside builds); infra ran from mirrored images, API/worker/web ran from source. PDF frame renders blank in headless Chromium; quoted passage and open-in-new-tab work. Not REVIEWED.
+- Not verified / known gaps: Full `docker compose up --build` not run in the cloud sandbox (Docker Hub 429 and TLS proxy inside builds); CI `compose-smoke` on PR #48 did build and probe it successfully. PDF frame renders blank in headless Chromium; quoted passage and open-in-new-tab work. Not REVIEWED.
 - Follow-ups for the next phase: User accounts / per-tenant keys; multi-turn query rewriting; consider making `/chat` the root route once the console moves; heuristic answers include section headings and can repeat text across documents.
 
 ### JEV-01 — Jev Shadow Decision Layer
